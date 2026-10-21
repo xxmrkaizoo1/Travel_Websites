@@ -219,7 +219,7 @@ return new class extends Migration
                         'eyebrow' => 'CITY & HERITAGE',
                         'title' => 'Bangkok',
                         'body' => 'Discover riverside landmarks, lively neighbourhoods and the capital’s celebrated food scene.',
-                        'link_label' => '',
+                        'link_label' => 'Discover Bangkok Tour',
                         'link_url' => '',
                     ],
                     1 => [
@@ -228,7 +228,7 @@ return new class extends Migration
                         'eyebrow' => 'NORTHERN THAILAND',
                         'title' => 'Chiang Mai & Chiang Rai',
                         'body' => 'Take in a slower pace among historic temples, mountain scenery and local markets.',
-                        'link_label' => '',
+                        'link_label' => 'Discover Chiang Mai & Chiang Mai Tour ',
                         'link_url' => '',
                     ],
                     2 => [
@@ -237,7 +237,7 @@ return new class extends Migration
                         'eyebrow' => 'COASTAL GETAWAY',
                         'title' => 'Pattaya',
                         'body' => 'Balance relaxed seaside time with nearby attractions and an easy-going city stay.',
-                        'link_label' => '',
+                        'link_label' => 'Discover Pattaya Tour Package',
                         'link_url' => '',
                     ],
                     3 => [
@@ -246,7 +246,7 @@ return new class extends Migration
                         'eyebrow' => 'ISLAND ESCAPE',
                         'title' => 'Phuket',
                         'body' => 'Enjoy a flexible island stay with beaches, viewpoints and time to unwind.',
-                        'link_label' => '',
+                        'link_label' => 'Discover Phuket Tour Package',
                         'link_url' => '',
                     ],
                     4 => [
@@ -255,7 +255,7 @@ return new class extends Migration
                         'eyebrow' => 'ANDAMAN COAST',
                         'title' => 'Krabi',
                         'body' => 'Discover dramatic limestone scenery, quiet coves and coastal boat journeys.',
-                        'link_label' => '',
+                        'link_label' => 'Discover Krabi Tour Package',
                         'link_url' => '',
                     ],
                     5 => [
@@ -264,7 +264,7 @@ return new class extends Migration
                         'eyebrow' => 'RIVER & NATURE',
                         'title' => 'Kanchanaburi',
                         'body' => 'Explore riverside scenery, historic sites and a more relaxed side of Thailand.',
-                        'link_label' => '',
+                        'link_label' => 'Discover Kanchanaburi  Tour  Package',
                         'link_url' => '',
                     ],
                 ],
@@ -321,7 +321,7 @@ return new class extends Migration
                         'eyebrow' => 'NORTHERN VIETNAM',
                         'title' => 'Hanoi',
                         'body' => 'Discover a characterful old quarter, lakeside walks and a rich food culture.',
-                        'link_label' => '',
+                        'link_label' => 'Discover Hanoi Tour Package',
                         'link_url' => '',
                     ],
                     1 => [
@@ -330,7 +330,7 @@ return new class extends Migration
                         'eyebrow' => 'LANDSCAPES & BAY',
                         'title' => 'Ha Long Bay',
                         'body' => 'Take in striking limestone scenery and time on the water in the north.',
-                        'link_label' => '',
+                        'link_label' => 'Discover Ha Long Bay Tour  Package',
                         'link_url' => '',
                     ],
                     2 => [
@@ -339,7 +339,7 @@ return new class extends Migration
                         'eyebrow' => 'CENTRAL VIETNAM',
                         'title' => 'Da Nang & Hoi An',
                         'body' => 'Pair an easy coastal stay with lantern-lit lanes and historic architecture.',
-                        'link_label' => '',
+                        'link_label' => 'Discover Da Nang & Hai An Tour Package',
                         'link_url' => '',
                     ],
                     3 => [
@@ -348,7 +348,7 @@ return new class extends Migration
                         'eyebrow' => 'SOUTHERN VIETNAM',
                         'title' => 'Ho Chi Minh City',
                         'body' => 'Explore a dynamic city with historic sights, lively markets and local cafés.',
-                        'link_label' => '',
+                        'link_label' => 'Discover Ho Chi Minh City  , Tour Package',
                         'link_url' => '',
                     ],
                     4 => [
@@ -357,7 +357,7 @@ return new class extends Migration
                         'eyebrow' => 'RIVER & COUNTRYSIDE',
                         'title' => 'Mekong Delta',
                         'body' => 'Slow down among waterways, green landscapes and riverside communities.',
-                        'link_label' => '',
+                        'link_label' => 'Discover Mekong Delta  Tour Package',
                         'link_url' => '',
                     ],
                 ],
@@ -414,7 +414,7 @@ return new class extends Migration
                         'eyebrow' => 'ISLAND ESCAPE',
                         'title' => 'Boracay',
                         'body' => 'Spend time by the sea, with soft sands, clear water and a relaxed island pace.',
-                        'link_label' => '',
+                        'link_label' => 'Disacover Boracay Tour Package',
                         'link_url' => '',
                     ],
                     1 => [
@@ -423,7 +423,7 @@ return new class extends Migration
                         'eyebrow' => 'NATURE & COAST',
                         'title' => 'Palawan',
                         'body' => 'Discover limestone scenery, quiet lagoons and beautiful coastal landscapes.',
-                        'link_label' => '',
+                        'link_label' => 'Discover  Palawan Tour Package',
                         'link_url' => '',
                     ],
                     2 => [
@@ -432,7 +432,7 @@ return new class extends Migration
                         'eyebrow' => 'CITY & HERITAGE',
                         'title' => 'Manila',
                         'body' => 'Explore a vibrant capital with historic districts, local markets and city life.',
-                        'link_label' => '',
+                        'link_label' => 'Discover Manila Tour Package',
                         'link_url' => '',
                     ],
                     3 => [
@@ -441,7 +441,7 @@ return new class extends Migration
                         'eyebrow' => 'ISLAND ADVENTURE',
                         'title' => 'Cebu',
                         'body' => 'Pair city discoveries with waterfalls, coastlines and easy island excursions.',
-                        'link_label' => '',
+                        'link_label' => 'Discover Cebu Tour Package',
                         'link_url' => '',
                     ],
                     4 => [
@@ -450,7 +450,7 @@ return new class extends Migration
                         'eyebrow' => 'ISLAND & NATURE',
                         'title' => 'Bohol',
                         'body' => 'Enjoy a slower island stay with countryside views, beaches and local culture.',
-                        'link_label' => '',
+                        'link_label' => 'Discover  Bohol Tour Package ',
                         'link_url' => '',
                     ],
                 ],
