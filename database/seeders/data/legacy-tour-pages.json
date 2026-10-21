@@ -1,0 +1,418 @@
+{
+    "bali": {
+        "meta_title": "Bali Tour Packages | Smart Muslim by Roystar Travel & Tours",
+        "meta_description": "Discover Bali with four private tour packages, from a romantic 4D3N escape to a 5D4N Nusa Penida adventure.",
+        "hero_eyebrow": "PRIVATE BALI TOUR PACKAGES",
+        "hero_headline": "Bali, your way.",
+        "hero_highlight": "Moments to remember.",
+        "hero_body": "Choose a romantic island escape, visit Bali’s iconic temples and beaches, or add an unforgettable day discovering Nusa Penida.",
+        "hero_cta_label": "Explore the packages",
+        "hero_note": "4D3N & 5D4N · PRIVATE TOURS · BALI, INDONESIA",
+        "hero_image": "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=2000&q=90",
+        "intro_eyebrow": "WELCOME TO BALI",
+        "intro_headline": "Island beauty,",
+        "intro_highlight": "thoughtfully planned.",
+        "intro_body": "From the mountain views of Kintamani to the beaches of Melasti and Jimbaran, discover Bali with a private itinerary designed around the moments you want to experience. Choose from four tour packages, including a 5D4N journey to Nusa Penida.",
+        "intro_link_label": "Compare the Bali itineraries",
+        "intro_image": "https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?auto=format&fit=crop&w=1000&q=85",
+        "intro_image_alt": "Tropical Indonesian coastline",
+        "intro_image_caption": "Your Bali escape starts here.",
+        "highlights_eyebrow": "A BALI JOURNEY FOR EVERY TRAVELLER",
+        "highlights_headline": "Find the trip that feels like yours.",
+        "highlights_body": "Four private tour choices bring Bali’s temples, landscapes and island life together.",
+        "highlights": [
+            {
+                "title": "Honeymoon moments",
+                "body": "Enjoy Bali’s scenery, a sunset dinner by Jimbaran Beach and a romantic private escape."
+            },
+            {
+                "title": "Temples & traditions",
+                "body": "Visit Uluwatu, Tanah Lot, Lempuyang and Tirta Gangga on selected itineraries."
+            },
+            {
+                "title": "Island adventures",
+                "body": "Take in Kintamani’s mountain and lake views or discover Nusa Penida’s dramatic coast."
+            }
+        ],
+        "contact_eyebrow": "READY FOR BALI?",
+        "contact_headline": "Let’s find the right Bali package for you.",
+        "contact_body": "Ask our travel team about the Honeymoon, Heaven Gate, Fantastik or Nusa Penida itinerary, and get current pricing and availability.",
+        "contact_cta_label": "Enquire on WhatsApp",
+        "contact_href": "https://wa.me/60165500590?text=Hi%2C%20I%27d%20like%20to%20enquire%20about%20the%20Bali%20tour%20packages.",
+        "package_data": {
+            "itineraries_eyebrow": "CHOOSE YOUR BALI PACKAGE",
+            "itineraries_headline": "Four ways to experience Bali.",
+            "itineraries_body": "All tours include private transport, hotel accommodation with breakfast, guided visits, entrance fees and meals as listed.",
+            "itineraries": [
+                {
+                    "duration": "4 DAYS · 3 NIGHTS",
+                    "title": "Honeymoon",
+                    "summary": "A romantic escape with mountain scenery, Bali temples and dinner by the sea.",
+                    "featured": false,
+                    "days": [
+                        {
+                            "title": "Arrive in Bali",
+                            "body": "Arrive at Ngurah Rai Airport, meet your local representative and transfer to the hotel. Enjoy free time for personal activities.",
+                            "meals": "MEALS NOT INCLUDED"
+                        },
+                        {
+                            "title": "Aloha Swing & Kintamani",
+                            "body": "Visit Aloha Swing, including its swings and photo nests. Have lunch in Kintamani with views of Mount and Lake Batur, visit a Bali coffee plantation and enjoy dinner at a local restaurant before returning to the hotel.",
+                            "meals": "BREAKFAST · LUNCH · DINNER"
+                        },
+                        {
+                            "title": "Tanah Lot & Melasti Beach",
+                            "body": "Visit Tanah Lot Temple and Melasti Beach. Enjoy lunch at a local restaurant and a romantic dinner at Jimbaran Beach before returning to the hotel.",
+                            "meals": "BREAKFAST · LUNCH · DINNER"
+                        },
+                        {
+                            "title": "Depart from Bali",
+                            "body": "Have breakfast, check out and transfer to the airport.",
+                            "meals": "BREAKFAST"
+                        }
+                    ],
+                    "cta_label": "Enquire about the Honeymoon package",
+                    "cta_url": "https://wa.me/60165500590?text=Hi%2C%20I%27d%20like%20to%20enquire%20about%20the%204D3N%20Bali%20Honeymoon%20package."
+                },
+                {
+                    "duration": "4 DAYS · 3 NIGHTS",
+                    "title": "Heaven Gate",
+                    "summary": "Discover Bali’s celebrated temples, cultural stops and the coast.",
+                    "featured": true,
+                    "days": [
+                        {
+                            "title": "Arrival, Uluwatu & Jimbaran",
+                            "body": "Arrive in Bali and visit Uluwatu Temple. Enjoy a barbecue dinner at Jimbaran, then check in at the hotel.",
+                            "meals": "DINNER"
+                        },
+                        {
+                            "title": "Kintamani & Alas Harum",
+                            "body": "Visit a batik factory, Celuk’s silver artisans and a coffee plantation featuring Kopi Luwak. Have lunch in Kintamani, visit Alas Harum and shop for souvenirs. Dinner at a local restaurant.",
+                            "meals": "BREAKFAST · LUNCH · DINNER"
+                        },
+                        {
+                            "title": "Heaven Gate & Virgin Beach",
+                            "body": "Set out early to visit Lempuyang Temple, Tirta Gangga and Virgin Beach. Enjoy lunch and dinner at local restaurants.",
+                            "meals": "BREAKFAST · LUNCH · DINNER"
+                        },
+                        {
+                            "title": "Depart from Bali",
+                            "body": "Have breakfast and transfer to the airport.",
+                            "meals": "BREAKFAST"
+                        }
+                    ],
+                    "cta_label": "Enquire about Heaven Gate",
+                    "cta_url": "https://wa.me/60165500590?text=Hi%2C%20I%27d%20like%20to%20enquire%20about%20the%204D3N%20Bali%20Heaven%20Gate%20package."
+                },
+                {
+                    "duration": "4 DAYS · 3 NIGHTS",
+                    "title": "Fantastik",
+                    "summary": "Pair Kintamani and Alas Harum with the beaches and temples of southern Bali.",
+                    "featured": false,
+                    "days": [
+                        {
+                            "title": "Arrive in Bali",
+                            "body": "Arrive at Ngurah Rai Airport, meet your local representative and transfer directly to the hotel. Free time for personal activities.",
+                            "meals": "MEALS NOT INCLUDED"
+                        },
+                        {
+                            "title": "Kintamani & Alas Harum",
+                            "body": "Visit Batubulan Batik Factory, Celuk’s silver artisans and a traditional coffee plantation featuring Kopi Luwak. Have lunch in Kintamani with Mount and Lake Batur views. Visit Alas Harum Tegalalang (swing not included), shop for souvenirs and enjoy dinner at a local restaurant.",
+                            "meals": "BREAKFAST · LUNCH · DINNER"
+                        },
+                        {
+                            "title": "Nusa Dua, Melasti & Uluwatu",
+                            "body": "Optional water sports are available at Tanjung Benoa (not included). Visit Puja Mandala, relax or swim at Melasti Beach and see Uluwatu Temple on the cliff. Have lunch at a local restaurant and a seafood barbecue dinner at Jimbaran.",
+                            "meals": "BREAKFAST · LUNCH · DINNER"
+                        },
+                        {
+                            "title": "Depart from Bali",
+                            "body": "Have breakfast, check out and transfer to the airport.",
+                            "meals": "BREAKFAST"
+                        }
+                    ],
+                    "cta_label": "Enquire about Fantastik",
+                    "cta_url": "https://wa.me/60165500590?text=Hi%2C%20I%27d%20like%20to%20enquire%20about%20the%204D3N%20Bali%20Fantastik%20package."
+                },
+                {
+                    "duration": "5 DAYS · 4 NIGHTS",
+                    "title": "Nusa Penida",
+                    "summary": "Explore southern Bali before spending a day among Nusa Penida’s coastal landmarks.",
+                    "featured": false,
+                    "days": [
+                        {
+                            "title": "Arrive in Bali",
+                            "body": "Arrive in Bali, meet your local representative and check in at the hotel. Enjoy free time for personal activities.",
+                            "meals": "MEALS NOT INCLUDED"
+                        },
+                        {
+                            "title": "Kintamani & Alas Harum",
+                            "body": "Visit a batik factory, Celuk’s silver artisans and a traditional coffee plantation featuring Kopi Luwak. Have lunch in Kintamani with mountain and lake views. Visit Alas Harum (swing not included), shop for souvenirs and enjoy dinner at a local restaurant.",
+                            "meals": "BREAKFAST · LUNCH · DINNER"
+                        },
+                        {
+                            "title": "Nusa Dua, Melasti & Uluwatu",
+                            "body": "Optional water sports are available at Tanjung Benoa (not included). Visit Puja Mandala, Melasti Beach and Uluwatu Temple. Have lunch at a local restaurant and barbecue dinner at Jimbaran.",
+                            "meals": "BREAKFAST · LUNCH · DINNER"
+                        },
+                        {
+                            "title": "Nusa Penida island tour",
+                            "body": "Depart early for Nusa Penida and visit Broken Beach, Angel’s Billabong and Kelingking Beach. Enjoy lunch at a local restaurant, then return to the hotel for dinner.",
+                            "meals": "BREAKFAST · LUNCH · DINNER"
+                        },
+                        {
+                            "title": "Depart from Bali",
+                            "body": "Have breakfast and transfer to the airport.",
+                            "meals": "BREAKFAST"
+                        }
+                    ],
+                    "cta_label": "Enquire about Nusa Penida",
+                    "cta_url": "https://wa.me/60165500590?text=Hi%2C%20I%27d%20like%20to%20enquire%20about%20the%205D4N%20Bali%20Nusa%20Penida%20package."
+                }
+            ],
+            "gallery_eyebrow": "A GLIMPSE OF THE ISLAND",
+            "gallery_headline": "Bali highlights slideshow",
+            "gallery_body": "Explore the temples, beaches and island scenery featured in your tour.",
+            "gallery": [
+                {
+                    "image": "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1800&q=85",
+                    "alt": "Temple architecture amid Bali’s tropical landscape",
+                    "eyebrow": "ISLAND HERITAGE",
+                    "title": "Discover Bali"
+                },
+                {
+                    "image": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1800&q=85",
+                    "alt": "Tropical beach and clear blue water",
+                    "eyebrow": "TIME BY THE SEA",
+                    "title": "Bali’s beaches"
+                },
+                {
+                    "image": "https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?auto=format&fit=crop&w=1800&q=85",
+                    "alt": "Green island scenery and tropical water",
+                    "eyebrow": "GREEN ISLAND SCENERY",
+                    "title": "A change of pace"
+                },
+                {
+                    "image": "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1800&q=85",
+                    "alt": "Mountain landscape beneath the clouds",
+                    "eyebrow": "HIGHLAND VIEWS",
+                    "title": "Explore beyond the coast"
+                }
+            ],
+            "details_eyebrow": "GOOD TO KNOW",
+            "details_headline": "What’s included in your Bali tour.",
+            "details_body": "Contact our team for pricing, travel dates and availability.",
+            "inclusions": [
+                "Transportation throughout the trip",
+                "Hotel accommodation with breakfast",
+                "Private tours and entrance fees",
+                "One bottle of mineral water during the tour",
+                "Welcome flower garland upon arrival",
+                "Full meals: breakfast, lunch and dinner as listed"
+            ],
+            "exclusions": [
+                "Airfare",
+                "Travel insurance",
+                "Visa, if required",
+                "Peak season surcharge",
+                "Optional tours and activities",
+                "Personal expenses, laundry and souvenirs"
+            ],
+            "accommodation_eyebrow": "YOUR STAY IN BALI",
+            "accommodation_headline": "Settle in at Bintang Bali Resort.",
+            "accommodation_body": "Hotel accommodation with breakfast is included in the package.",
+            "hotels": [
+                {
+                    "label": "KUTA · BALI",
+                    "name": "Bintang Bali Resort",
+                    "address": "Jl. Kartika Plaza, Kuta, Kec. Kuta, Kabupaten Badung, Bali 80361, Indonesia",
+                    "phone": "+62 361 753292"
+                }
+            ]
+        }
+    },
+    "aceh": {
+        "meta_title": "4D3N Aceh Tour Package | Smart Muslim by Roystar Travel & Tours",
+        "meta_description": "Explore Aceh or combine it with Sabang Island on a private 4D3N tour from Kuala Lumpur, with local meals, guided visits and hotel accommodation.",
+        "hero_eyebrow": "4D3N ACEH TOUR PACKAGE · PRIVATE TOUR",
+        "hero_headline": "Discover Aceh.",
+        "hero_highlight": "Add an island escape.",
+        "hero_body": "Explore Aceh’s history, culture and coastal beauty, or travel by ferry to Sabang and discover the beaches of Weh Island on a private 4D3N journey.",
+        "hero_cta_label": "Explore the itineraries",
+        "hero_note": "KUALA LUMPUR · ACEH · OPTIONAL SABANG ISLAND",
+        "hero_image": "https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=2000&q=90",
+        "intro_eyebrow": "A 4D3N JOURNEY THROUGH ACEH",
+        "intro_headline": "History, heritage and",
+        "intro_highlight": "the Indian Ocean.",
+        "intro_body": "Begin in Banda Aceh with meaningful historical sites, mosques and local culture. Choose the Aceh city and beach tour, or add an overnight stay on Sabang Island with its beaches and Indonesia’s Kilometer 0 Monument. Both itineraries include local meals and a private guided tour.",
+        "intro_link_label": "Compare the two itineraries",
+        "intro_image": "https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1000&q=85",
+        "intro_image_alt": "Mosque architecture in Aceh",
+        "intro_image_caption": "Two routes. One memorable journey.",
+        "highlights_eyebrow": "CHOOSE YOUR ACEH EXPERIENCE",
+        "highlights_headline": "Four days, thoughtfully planned.",
+        "highlights_body": "Both private itineraries include accommodation, guided visits, transportation and meals.",
+        "highlights": [
+            {
+                "title": "Aceh city & coast",
+                "body": "Visit tsunami landmarks, museums, Gunongan Historical Park, Pasar Atjeh and the beaches of Lhoknga and Lampuuk."
+            },
+            {
+                "title": "Aceh + Sabang",
+                "body": "Take a ferry to Sabang and explore Sumur Tiga, Gapang and Iboih beaches, plus the Kilometer 0 Monument."
+            },
+            {
+                "title": "Local meals & stays",
+                "body": "Enjoy full meals on tour days, hotel breakfasts, and overnight stays in Aceh or Sabang according to your route."
+            }
+        ],
+        "contact_eyebrow": "READY TO DISCOVER ACEH?",
+        "contact_headline": "Tell us which 4D3N journey sounds right for you.",
+        "contact_body": "Ask our team about the Aceh City & Beach itinerary or the Aceh + Sabang island journey. Contact us for current pricing and flight options.",
+        "contact_cta_label": "Enquire on WhatsApp",
+        "contact_href": "https://wa.me/60165500590?text=Hi%2C%20I%27d%20like%20to%20enquire%20about%20the%204D3N%20Aceh%20tour%20packages.",
+        "package_data": {
+            "itineraries_eyebrow": "YOUR 4-DAY ITINERARY",
+            "itineraries_headline": "Choose your route.",
+            "itineraries_body": "Arrival and departure are through Sultan Iskandar Muda International Airport (BTJ). Daily activities may be arranged with your local guide.",
+            "itineraries": [
+                {
+                    "duration": "4 DAYS · 3 NIGHTS",
+                    "title": "Aceh City & Beach",
+                    "summary": "History, local culture and the coast around Banda Aceh.",
+                    "featured": false,
+                    "days": [
+                        {
+                            "title": "Kuala Lumpur → Aceh",
+                            "body": "Arrive at Sultan Iskandar Muda International Airport (BTJ) and meet your local guide. Visit the Tsunami Mass Grave at Siro Village, Baiturrahim Mosque and PLTD Apung (Floating Power Ship), then transfer to your hotel to check in.",
+                            "meals": "LUNCH · DINNER"
+                        },
+                        {
+                            "title": "Aceh City Tour",
+                            "body": "Visit Gunongan Historical Park and Kapal di Atas Rumah (Boat on the House), followed by the Aceh Tsunami Museum and Aceh Museum. Enjoy shopping time at Pasar Atjeh before returning to the hotel.",
+                            "meals": "BREAKFAST · LUNCH · DINNER"
+                        },
+                        {
+                            "title": "Aceh Culture & Beaches",
+                            "body": "Explore Cut Nyak Dien House, the former residence of Aceh’s national heroine. Continue to Lhoknga Beach and Lampuuk Beach, where lunch features grilled fish (ikan bakar). Enjoy leisure time or shopping at Pasar Atjeh.",
+                            "meals": "BREAKFAST · LUNCH · DINNER"
+                        },
+                        {
+                            "title": "Aceh → Kuala Lumpur",
+                            "body": "After breakfast, check out and transfer to the airport for your departure flight to Kuala Lumpur. Your tour concludes here.",
+                            "meals": "BREAKFAST"
+                        }
+                    ],
+                    "cta_label": "Enquire about Aceh City & Beach",
+                    "cta_url": "https://wa.me/60165500590?text=Hi%2C%20I%27d%20like%20to%20enquire%20about%20the%204D3N%20Aceh%20City%20%26%20Beach%20tour."
+                },
+                {
+                    "duration": "4 DAYS · 3 NIGHTS",
+                    "title": "Aceh + Sabang",
+                    "summary": "Add a ferry crossing and an island stay on Sabang (Weh Island).",
+                    "featured": true,
+                    "days": [
+                        {
+                            "title": "Kuala Lumpur → Aceh",
+                            "body": "Arrive at Sultan Iskandar Muda International Airport (BTJ) and meet your guide. Visit the Tsunami Mass Grave at Siro Village, Baiturrahim Mosque and the Aceh Tsunami Museum, then check in to your hotel.",
+                            "meals": "LUNCH · DINNER"
+                        },
+                        {
+                            "title": "Aceh → Sabang Island",
+                            "body": "Transfer to Ulee Lheue Port and take the approximately one-hour ferry to Balohan Port, Sabang. Explore Sumur Tiga, Gapang and Iboih beaches and the Kilometer 0 Monument of Indonesia. Check in to your Sabang hotel. Optional activities such as snorkeling, diving, and glass boat rides are available at own expense.",
+                            "meals": "BREAKFAST · LUNCH · DINNER"
+                        },
+                        {
+                            "title": "Sabang → Aceh",
+                            "body": "Return to Aceh by ferry. Visit PLTD Apung, a local pesantren (Islamic boarding school) and an orphanage. Enjoy shopping at Pasar Atjeh before returning to your hotel.",
+                            "meals": "BREAKFAST · LUNCH · DINNER"
+                        },
+                        {
+                            "title": "Aceh → Kuala Lumpur",
+                            "body": "After breakfast, check out and transfer to the airport for your return flight. The tour ends with wonderful memories of Aceh and Sabang.",
+                            "meals": "BREAKFAST"
+                        }
+                    ],
+                    "cta_label": "Enquire about Aceh + Sabang",
+                    "cta_url": "https://wa.me/60165500590?text=Hi%2C%20I%27d%20like%20to%20enquire%20about%20the%204D3N%20Aceh%20%2B%20Sabang%20tour."
+                }
+            ],
+            "gallery_eyebrow": "A GLIMPSE OF THE JOURNEY",
+            "gallery_headline": "Aceh attractions slideshow",
+            "gallery_body": "From Banda Aceh’s landmarks to Sabang’s island shores.",
+            "gallery": [
+                {
+                    "image": "https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1800&q=85",
+                    "alt": "Mosque architecture in Aceh",
+                    "eyebrow": "FAITH & ARCHITECTURE",
+                    "title": "Baiturrahim Mosque"
+                },
+                {
+                    "image": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1800&q=85",
+                    "alt": "Scenic green landscape near Aceh",
+                    "eyebrow": "REMEMBERING THE PAST",
+                    "title": "Aceh Tsunami Museum"
+                },
+                {
+                    "image": "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=1800&q=85",
+                    "alt": "Open sea and coastal scenery",
+                    "eyebrow": "AN EXTRAORDINARY STORY",
+                    "title": "PLTD Apung"
+                },
+                {
+                    "image": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1800&q=85",
+                    "alt": "Tropical shore with clear water",
+                    "eyebrow": "ACEH’S COAST",
+                    "title": "Lhoknga & Lampuuk Beaches"
+                },
+                {
+                    "image": "https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?auto=format&fit=crop&w=1800&q=85",
+                    "alt": "Island scenery and tropical waters",
+                    "eyebrow": "ISLAND TIME",
+                    "title": "Sabang’s beaches"
+                },
+                {
+                    "image": "https://images.unsplash.com/photo-1528181304800-259b08848526?auto=format&fit=crop&w=1800&q=85",
+                    "alt": "Tropical green landscape",
+                    "eyebrow": "THE WESTERN EDGE OF INDONESIA",
+                    "title": "Kilometer 0 Monument"
+                }
+            ],
+            "details_eyebrow": "GOOD TO KNOW",
+            "details_headline": "What’s included in your tour.",
+            "details_body": "Flights are not included. Contact our team for package pricing and availability.",
+            "inclusions": [
+                "Transportation throughout the trip",
+                "Hotel accommodation with breakfast",
+                "Private tours and entrance tickets",
+                "One bottle of mineral water during tours",
+                "Full meals: breakfast, lunch and dinner"
+            ],
+            "exclusions": [
+                "Flight tickets",
+                "Travel insurance",
+                "Visa, if required",
+                "Peak season surcharge",
+                "Optional tours and activities",
+                "Personal expenses, laundry and souvenirs"
+            ],
+            "accommodation_eyebrow": "YOUR STAYS",
+            "accommodation_headline": "Accommodation in Aceh & Sabang.",
+            "accommodation_body": "Hotel stays are included with breakfast. The Sabang property is for the Aceh + Sabang itinerary.",
+            "hotels": [
+                {
+                    "label": "ACEH · BANDA ACEH",
+                    "name": "Portola Grand Arabia Hotel",
+                    "address": "Jl. Prof. A. Majid Ibrahim II No.3, Kp. Baru, Kec. Baiturrahman, Banda Aceh, Aceh 23246, Indonesia",
+                    "phone": "+62 811-6505-200"
+                },
+                {
+                    "label": "SABANG ISLAND · PULAU WEH",
+                    "name": "Casa Nemo Beach Resort & Spa",
+                    "address": "Jl. K.H. Agus Salim, Kel Ie Meulee, Pulau Weh, Sabang 23521, Indonesia",
+                    "phone": "+62 651 6300123"
+                }
+            ]
+        }
+    }
+}
