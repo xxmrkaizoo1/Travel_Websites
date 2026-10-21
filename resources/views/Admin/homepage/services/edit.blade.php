@@ -63,7 +63,7 @@
                 </div>
             @endif
 
-            <form class="homepage-campaign-form" method="POST" action="{{ route('admin.homepage.services.update', $service) }}" enctype="multipart/form-data">
+            <form class="homepage-campaign-form" data-form-slideshow method="POST" action="{{ route('admin.homepage.services.update', $service) }}" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
 

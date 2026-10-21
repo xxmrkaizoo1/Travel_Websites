@@ -20,20 +20,21 @@
                 <span><strong>SMART</strong><small>HOLIDAYS ADMIN</small></span>
             </a>
 
+            <div class="admin-sidebar-body">
             <span class="admin-nav-label">WORKSPACE</span>
             <nav class="admin-navigation">
-                <a class="admin-nav-link is-active" href="#overview" aria-current="page">
-                    <span class="admin-nav-icon" aria-hidden="true">⌂</span> Overview
-                </a>
-                <a class="admin-nav-link" href="#bookings">
-                    <span class="admin-nav-icon" aria-hidden="true">▤</span> Bookings <span class="admin-nav-count">8</span>
-                </a>
-                <a class="admin-nav-link" href="#destinations">
-                    <span class="admin-nav-icon" aria-hidden="true">◎</span> Destinations
-                </a>
-                <a class="admin-nav-link" href="#reports">
-                    <span class="admin-nav-icon" aria-hidden="true">▥</span> Reports
-                </a>
+                <span class="admin-nav-link admin-nav-link-disabled" aria-disabled="true">
+                    <span class="admin-nav-icon" aria-hidden="true">⌂</span> Overview <small>Coming soon</small>
+                </span>
+                <span class="admin-nav-link admin-nav-link-disabled" aria-disabled="true">
+                    <span class="admin-nav-icon" aria-hidden="true">▤</span> Bookings <small>Coming soon</small>
+                </span>
+                <span class="admin-nav-link admin-nav-link-disabled" aria-disabled="true">
+                    <span class="admin-nav-icon" aria-hidden="true">◎</span> Destinations <small>Coming soon</small>
+                </span>
+                <span class="admin-nav-link admin-nav-link-disabled" aria-disabled="true">
+                    <span class="admin-nav-icon" aria-hidden="true">▥</span> Reports <small>Coming soon</small>
+                </span>
             </nav>
 
             <span class="admin-nav-label admin-tools-label">MANAGEMENT</span>
@@ -55,7 +56,7 @@
                     <span class="admin-nav-icon" aria-hidden="true">▧</span> Smart Muslim Homepage content
                 </a>
                 <details class="admin-nav-group" open>
-                    <summary class="admin-nav-link admin-nav-parent" data-context-menu="tour-package-menu" title="Right-click to create a new page">
+                    <summary class="admin-nav-link admin-nav-parent" data-context-menu="tour-package-menu" data-navigation-parent-target="" data-navigation-parent-name="Tour Package (Private)" title="Right-click to create a new page">
                         <span class="admin-nav-icon" aria-hidden="true">◇</span> Tour Package (Private)
                         <span class="admin-nav-chevron" aria-hidden="true">
                             <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7.5 5 5 5-5"/></svg>
@@ -63,29 +64,33 @@
                     </summary>
                     <nav class="admin-subnav" aria-label="Tour Package (Private)">
                         <a class="admin-nav-link admin-subnav-link" href="{{ route('tour-package-private') }}">Introduction</a>
-                        <a class="admin-nav-link admin-subnav-link" data-context-menu="tour-package-menu" data-page-name="Island &amp; Honeymoon" data-page-slug="island-honeymoon" data-edit-url="{{ route('admin.island-honeymoon') }}" data-view-url="{{ route('island-honeymoon') }}" href="{{ route('admin.island-honeymoon') }}">Island &amp; Honeymoon</a>
+                        <a class="admin-nav-link admin-subnav-link" data-context-menu="tour-package-menu" data-page-name="Island &amp; Honeymoon" data-page-slug="island-honeymoon" data-navigation-parent-target="island-honeymoon" data-navigation-parent-name="Island &amp; Honeymoon" data-edit-url="{{ route('admin.island-honeymoon') }}" data-view-url="{{ route('island-honeymoon') }}" href="{{ route('admin.island-honeymoon') }}">Island &amp; Honeymoon</a>
                                                                                                                                                                          @include('Admin.partials.tour-page-children', ['parentSlug' => 'island-honeymoon', 'depth' => 1])
-                                                <a class="admin-nav-link admin-subnav-link" data-context-menu="tour-package-menu" data-page-name="Indonesia" data-page-slug="indonesia" data-edit-url="{{ route('admin.tour-packages.edit', 'indonesia') }}" data-view-url="{{ route('indonesia') }}" href="{{ route('admin.tour-packages.edit', 'indonesia') }}">Indonesia</a>
+                                                <a class="admin-nav-link admin-subnav-link" data-context-menu="tour-package-menu" data-page-name="Indonesia" data-page-slug="indonesia" data-navigation-parent-target="indonesia" data-navigation-parent-name="Indonesia" data-edit-url="{{ route('admin.tour-packages.edit', 'indonesia') }}" data-view-url="{{ route('indonesia') }}" href="{{ route('admin.tour-packages.edit', 'indonesia') }}">Indonesia</a>
                         @include('Admin.partials.tour-page-children', ['parentSlug' => 'indonesia', 'depth' => 1])
-                                                <a class="admin-nav-link admin-subnav-link" data-context-menu="tour-package-menu" data-page-name="Thailand" data-page-slug="thailand" data-edit-url="{{ route('admin.tour-packages.edit', 'thailand') }}" data-view-url="{{ route('thailand') }}" href="{{ route('admin.tour-packages.edit', 'thailand') }}">Thailand</a>
+                                                <a class="admin-nav-link admin-subnav-link" data-context-menu="tour-package-menu" data-page-name="Thailand" data-page-slug="thailand" data-navigation-parent-target="thailand" data-navigation-parent-name="Thailand" data-edit-url="{{ route('admin.tour-packages.edit', 'thailand') }}" data-view-url="{{ route('thailand') }}" href="{{ route('admin.tour-packages.edit', 'thailand') }}">Thailand</a>
                         @include('Admin.partials.tour-page-children', ['parentSlug' => 'thailand', 'depth' => 1])
-                                                <a class="admin-nav-link admin-subnav-link" data-context-menu="tour-package-menu" data-page-name="Vietnam" data-page-slug="vietnam" data-edit-url="{{ route('admin.tour-packages.edit', 'vietnam') }}" data-view-url="{{ route('vietnam') }}" href="{{ route('admin.tour-packages.edit', 'vietnam') }}">Vietnam</a>
+                                                <a class="admin-nav-link admin-subnav-link" data-context-menu="tour-package-menu" data-page-name="Vietnam" data-page-slug="vietnam" data-navigation-parent-target="vietnam" data-navigation-parent-name="Vietnam" data-edit-url="{{ route('admin.tour-packages.edit', 'vietnam') }}" data-view-url="{{ route('vietnam') }}" href="{{ route('admin.tour-packages.edit', 'vietnam') }}">Vietnam</a>
                         @include('Admin.partials.tour-page-children', ['parentSlug' => 'vietnam', 'depth' => 1])
-                                                @foreach ($fixedDestinationsByCountry['vietnam'] as $destination)
-                                                    <a class="admin-nav-link admin-subnav-link admin-subnav-child" href="{{ route('vietnam') }}#destinations">{{ $destination }}</a>
-                                                @endforeach
-                                                                        <a class="admin-nav-link admin-subnav-link" data-context-menu="tour-package-menu" data-page-name="Philippines" data-page-slug="philippines" data-edit-url="{{ route('admin.tour-packages.edit', 'philippines') }}" data-view-url="{{ route('philippines') }}" href="{{ route('admin.tour-packages.edit', 'philippines') }}">Philippines</a>
-                                                @include('Admin.partials.tour-page-children', ['parentSlug' => 'philippines', 'depth' => 1])
-                                                @foreach ($fixedDestinationsByCountry['philippines'] as $destination)
-                                                    <a class="admin-nav-link admin-subnav-link admin-subnav-child" href="{{ route('philippines') }}#destinations">{{ $destination }}</a>
-                                                @endforeach
+                        <a class="admin-nav-link admin-subnav-link" data-context-menu="tour-package-menu" data-page-name="Philippines" data-page-slug="philippines" data-navigation-parent-target="philippines" data-navigation-parent-name="Philippines" data-edit-url="{{ route('admin.tour-packages.edit', 'philippines') }}" data-view-url="{{ route('philippines') }}" href="{{ route('admin.tour-packages.edit', 'philippines') }}">Philippines</a>
+                        @include('Admin.partials.tour-page-children', ['parentSlug' => 'philippines', 'depth' => 1])
                         @include('Admin.partials.tour-page-children', ['parentSlug' => '', 'depth' => 0])
                                                                         <a class="admin-nav-link admin-subnav-link admin-subnav-new" href="{{ route('admin.tour-packages.create') }}">＋ New page</a>
                                                                     </nav>
                                                                 </details>
-                <span class="admin-nav-link admin-nav-link-disabled" aria-disabled="true">
-                    <span class="admin-nav-icon" aria-hidden="true">▤</span> Tour Package (Series) <small>Coming soon</small>
-                </span>
+                <details class="admin-nav-group" open>
+                    <summary class="admin-nav-link admin-nav-parent" data-context-menu="tour-package-menu" data-navigation-parent-target="series-departures-2026" data-navigation-parent-name="Tour Package (Series)" title="Right-click to create a new page">
+                        <span class="admin-nav-icon" aria-hidden="true">▤</span> Tour Package (Series)
+                        <span class="admin-nav-chevron" aria-hidden="true">
+                            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7.5 5 5 5-5"/></svg>
+                        </span>
+                    </summary>
+                    <nav class="admin-subnav" aria-label="Tour Package (Series)">
+                        <a class="admin-nav-link admin-subnav-link" data-context-menu="tour-package-menu" data-page-name="Series Departures 2026" data-page-slug="series-departures-2026" data-navigation-parent-target="series-departures-2026" data-navigation-parent-name="Tour Package (Series)" data-edit-url="{{ route('admin.tour-packages.edit', 'series-departures-2026') }}" data-view-url="{{ route('tour-package.show', 'series-departures-2026') }}" href="{{ route('admin.tour-packages.edit', 'series-departures-2026') }}">Introduction <small>Series Departures 2026</small></a>
+                        @include('Admin.partials.tour-page-children', ['parentSlug' => 'series-departures-2026', 'depth' => 2])
+                        <a class="admin-nav-link admin-subnav-link admin-subnav-new" href="{{ route('admin.tour-packages.create', ['parent' => 'series-departures-2026']) }}">＋ New page</a>
+                    </nav>
+                </details>
                 <span class="admin-nav-link admin-nav-link-disabled" aria-disabled="true">
                     <span class="admin-nav-icon" aria-hidden="true">◎</span> China Muslim <small>Coming soon</small>
                 </span>
@@ -96,6 +101,7 @@
                     <span class="admin-nav-icon" aria-hidden="true">✉</span> Contact Us <small>Coming soon</small>
                 </span>
             </nav>
+            </div>
 
             <div class="admin-sidebar-bottom">
                 <div class="admin-help-card">
@@ -128,6 +134,13 @@
                     @method('DELETE')
                     <button class="admin-context-danger" role="menuitem" type="submit">Delete page</button>
                 </form>
+                <hr class="admin-context-divider">
+            </div>
+            <div data-navigation-move-actions hidden>
+                <label class="admin-context-move-label" for="navigation-parent-select">Move into</label>
+                <select id="navigation-parent-select" data-navigation-parent-select></select>
+                <button class="admin-context-move-button" type="button" data-navigation-move>Move page</button>
+                <span data-navigation-status role="status" aria-live="polite"></span>
                 <hr class="admin-context-divider">
             </div>
             <span class="admin-context-title" data-context-create-title>Create new page</span>

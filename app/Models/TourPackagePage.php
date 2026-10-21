@@ -70,6 +70,16 @@ class TourPackagePage extends Model
         return $this->kind === self::KIND_PACKAGE;
     }
 
+    public function isSeries(): bool
+    {
+        return ! $this->isPackage() && ! empty($this->package_data['series']);
+    }
+
+    public function sectionLabel(): string
+    {
+        return $this->isSeries() ? 'Tour Package (Series)' : 'Tour Package (Private)';
+    }
+
     public function publicUrl(): string
     {
         return $this->is_custom ? route('tour-package.show', $this->slug) : route($this->slug);
@@ -79,6 +89,10 @@ class TourPackagePage extends Model
     {
         if (in_array(parse_url($path, PHP_URL_SCHEME), ['http', 'https'], true)) {
             return $path;
+        }
+
+        if (str_starts_with($path, 'images/')) {
+            return asset($path);
         }
 
         return Storage::disk('public')->url($path);
@@ -101,9 +115,17 @@ class TourPackagePage extends Model
             $paths[] = $slide['image'] ?? '';
         }
 
+        foreach ($this->package_data['series'] ?? [] as $destination) {
+            $paths[] = $destination['flag'] ?? '';
+
+            foreach ($destination['gallery'] ?? [] as $photo) {
+                $paths[] = $photo['image'] ?? '';
+            }
+        }
+
         return array_values(array_unique(array_filter(
             $paths,
-            fn (string $path): bool => $path !== '' && parse_url($path, PHP_URL_SCHEME) === null,
+            fn (string $path): bool => $path !== '' && parse_url($path, PHP_URL_SCHEME) === null && ! str_starts_with($path, 'images/'),
         )));
     }
 
@@ -112,8 +134,25 @@ class TourPackagePage extends Model
      *
      * @return array<string, mixed>
      */
-    public static function starterContent(string $kind, string $name): array
+    public const TEMPLATES = [
+        self::KIND_INTRODUCTION => [
+            'slideshow' => ['Destination slideshow', 'Hero, introduction, three highlights, a sliding destination carousel and contact — like Thailand or Vietnam.'],
+            'series' => ['Series destinations', 'Country tabs with an advantages grid, flag card and five-photo gallery per destination — like Series Departures 2026.'],
+        ],
+        self::KIND_PACKAGE => [
+            'standard' => ['Full itinerary', 'Itinerary cards with the day-by-day plan, gallery, inclusions, exclusions and hotels — like Bali or Aceh.'],
+            'compact' => ['Compact packages', 'Same sections, but itinerary cards show only the title and summary without the day-by-day list.'],
+        ],
+    ];
+
+    public static function defaultTemplate(string $kind): string
     {
+        return array_key_first(self::TEMPLATES[$kind]);
+    }
+
+    public static function starterContent(string $kind, string $name, ?string $template = null): array
+    {
+        $template = array_key_exists((string) $template, self::TEMPLATES[$kind] ?? []) ? $template : self::defaultTemplate($kind);
         $whatsapp = 'https://wa.me/60165500590?text='.rawurlencode("Hi, I'd like to plan a private trip to {$name}.");
         $beach = 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=85';
         $coast = 'https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?auto=format&fit=crop&w=1000&q=85';
@@ -160,6 +199,28 @@ class TourPackagePage extends Model
         ];
 
         if (! $isPackage) {
+            if ($template === 'series') {
+                $content['destinations_eyebrow'] = 'PICK YOUR DESTINATION';
+                $content['destinations_headline'] = "Where will {$name} take you?";
+                $content['destinations_body'] = 'Choose a destination to see its advantages and photos.';
+                $content['package_data'] = ['series' => [[
+                    'name' => 'First destination',
+                    'country' => 'Country',
+                    'flag' => '',
+                    'tagline' => 'A short tagline for this destination.',
+                    'intro' => 'Describe this destination here.',
+                    'advantages' => [
+                        ['icon' => '💰', 'title' => 'First advantage', 'body' => 'Describe the advantage here.'],
+                        ['icon' => '🧳', 'title' => 'Second advantage', 'body' => 'Describe the advantage here.'],
+                        ['icon' => '👥', 'title' => 'Third advantage', 'body' => 'Describe the advantage here.'],
+                        ['icon' => '🛡️', 'title' => 'Fourth advantage', 'body' => 'Describe the advantage here.'],
+                    ],
+                    'gallery' => [],
+                ]]];
+
+                return $content;
+            }
+
             $content['destinations_eyebrow'] = 'A FEW PLACES TO BEGIN';
             $content['destinations_headline'] = "Where will {$name} take you?";
             $content['destinations_body'] = 'Start with a place that speaks to you. We can help you explore the details.';
@@ -173,6 +234,7 @@ class TourPackagePage extends Model
         }
 
         $content['package_data'] = [
+            'template' => $template,
             'itineraries_eyebrow' => "CHOOSE YOUR {$name} PACKAGE",
             'itineraries_headline' => "Ways to experience {$name}.",
             'itineraries_body' => 'All tours include private transport, accommodation, guided visits and meals as listed.',

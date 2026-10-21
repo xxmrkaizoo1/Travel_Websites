@@ -60,7 +60,7 @@
                     : route('admin.island-honeymoon.destinations.store');
             @endphp
 
-            <form class="homepage-campaign-form" method="POST" action="{{ $formAction }}" enctype="multipart/form-data">
+            <form class="homepage-campaign-form" data-form-slideshow method="POST" action="{{ $formAction }}" enctype="multipart/form-data">
                 @csrf
                 @if ($destination) @method('PUT') @endif
 

@@ -32,19 +32,25 @@ class ExampleTest extends TestCase
         $this->get(route('smart-muslim'))
             ->assertOk()
             ->assertSee(route('island-honeymoon'))
-            ->assertDontSee('Show Island &amp; Honeymoon destinations', false)
-            ->assertSee('>Bali</a>', false)
-            ->assertSee('>Krabi</a>', false)
-            ->assertSee('>Lombok</a>', false)
-            ->assertSee('>Maldives</a>', false);
+            ->assertSeeInOrder([
+                'id="island-destination-menu"',
+                'href="'.route('tour-package.show', 'bali').'"',
+                'href="'.route('tour-package.show', 'krabi').'"',
+                'href="'.route('tour-package.show', 'lombok').'"',
+                'href="'.route('tour-package.show', 'maldives').'"',
+                'id="indonesia-destination-menu"',
+            ], false);
 
         $this->get(route('island-honeymoon'))
             ->assertOk()
-            ->assertDontSee('Show Island &amp; Honeymoon destinations', false)
-            ->assertSee('>Bali</a>', false)
-            ->assertSee('>Krabi</a>', false)
-            ->assertSee('>Lombok</a>', false)
-            ->assertSee('>Maldives</a>', false)
+            ->assertSeeInOrder([
+                'id="island-destination-menu"',
+                'href="'.route('tour-package.show', 'bali').'"',
+                'href="'.route('tour-package.show', 'krabi').'"',
+                'href="'.route('tour-package.show', 'lombok').'"',
+                'href="'.route('tour-package.show', 'maldives').'"',
+                'id="indonesia-destination-menu"',
+            ], false)
             ->assertSee('Island escapes')
             ->assertSee('honeymoon moments')
             ->assertSee('Bali Island,')

@@ -29,40 +29,40 @@ Route::get('/smart-muslim', static function (): View {
 })->name('smart-muslim');
 
 Route::get('/island-honeymoon', function () {
-    return view('Tour-Package(private).island-honeymoon.island-honeymoon', [
+    return view('Smart-Muslim.Tour-Package(private).island-honeymoon.island-honeymoon', [
         'page' => IslandHoneymoonSetting::query()->firstOrFail(),
         'destinations' => IslandDestination::query()->orderBy('position')->get(),
     ]);
 })->name('island-honeymoon');
 
-Route::view('/tour-package-private', 'Tour-Package(private).introduction')
+Route::view('/tour-package-private', 'Smart-Muslim.Tour-Package(private).introduction')
     ->name('tour-package-private');
 
-Route::get('/indonesia', fn (): View => view('Tour-Package(private).indonesia.indonesia', [
+Route::get('/indonesia', fn (): View => view('Smart-Muslim.Tour-Package(private).indonesia.indonesia', [
     'page' => TourPackagePage::forSlug('indonesia'),
 ]))->name('indonesia');
 
-Route::get('/indonesia/aceh', fn (): View => view('Tour-Package(private).custom.show', [
+Route::get('/indonesia/aceh', fn (): View => view('Smart-Muslim.Tour-Package(private).custom.show', [
     'page' => TourPackagePage::query()->where('is_custom', true)->where('slug', 'aceh')->firstOrFail(),
 ]))->name('indonesia.aceh');
 
-Route::get('/bali', fn (): View => view('Tour-Package(private).custom.show', [
+Route::get('/bali', fn (): View => view('Smart-Muslim.Tour-Package(private).custom.show', [
     'page' => TourPackagePage::query()->where('is_custom', true)->where('slug', 'bali')->firstOrFail(),
 ]))->name('bali');
 
-Route::get('/thailand', fn (): View => view('Tour-Package(private).thailand.thailand', [
+Route::get('/thailand', fn (): View => view('Smart-Muslim.Tour-Package(private).thailand.thailand', [
     'page' => TourPackagePage::forSlug('thailand'),
 ]))->name('thailand');
 
-Route::get('/vietnam', fn (): View => view('Tour-Package(private).vietnam.vietnam', [
+Route::get('/vietnam', fn (): View => view('Smart-Muslim.Tour-Package(private).vietnam.vietnam', [
     'page' => TourPackagePage::forSlug('vietnam'),
 ]))->name('vietnam');
 
-Route::get('/philippines', fn (): View => view('Tour-Package(private).philippines.philippines', [
+Route::get('/philippines', fn (): View => view('Smart-Muslim.Tour-Package(private).philippines.philippines', [
     'page' => TourPackagePage::forSlug('philippines'),
 ]))->name('philippines');
 
-Route::get('/tour/{slug}', fn (string $slug): View => view('Tour-Package(private).custom.show', [
+Route::get('/tour/{slug}', fn (string $slug): View => view('Smart-Muslim.Tour-Package(private).custom.show', [
     'page' => TourPackagePage::query()->where('is_custom', true)->where('slug', $slug)->firstOrFail(),
 ]))->where('slug', '[a-z0-9-]+')->name('tour-package.show');
 
@@ -118,6 +118,8 @@ Route::middleware(['auth', EnsureAdmin::class])->group(function () {
         ->name('admin.tour-packages.create');
     Route::post('/admin/tour-packages', [TourPackagePageController::class, 'store'])
         ->name('admin.tour-packages.store');
+    Route::put('/admin/tour-packages/{page:slug}/move', [TourPackagePageController::class, 'move'])
+        ->name('admin.tour-packages.move');
     Route::get('/admin/tour-packages/{page:slug}/edit', [TourPackagePageController::class, 'edit'])
         ->name('admin.tour-packages.edit');
     Route::put('/admin/tour-packages/{page:slug}', [TourPackagePageController::class, 'update'])

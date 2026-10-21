@@ -46,22 +46,58 @@
                 @if ($parent)
                     <input type="hidden" name="parent_slug" value="{{ $parent->slug }}">
                 @endif
-                <section class="homepage-form-panel">
-                    <div class="homepage-form-grid">
-                        <label class="homepage-form-field homepage-form-field-wide"><span>Page name</span><input name="name" value="{{ old('name') }}" required maxlength="60" autofocus placeholder="e.g. Malaysia"></label>
+                <section class="homepage-form-panel create-page-panel">
+                    <div class="create-step">
+                        <span class="create-step-number" aria-hidden="true">1</span>
+                        <div class="create-step-body">
+                            <h2>Name your page</h2>
+                            <label class="homepage-form-field"><span class="visually-hidden">Page name</span><input name="name" value="{{ old('name') }}" required maxlength="60" autofocus placeholder="e.g. Malaysia"></label>
+                        </div>
                     </div>
+
                     @php($selectedKind = old('kind', $kind))
-                    <fieldset class="tour-package-kind-options">
-                        <legend>Page type</legend>
-                        <label class="tour-package-kind-option">
-                            <input type="radio" name="kind" value="introduction" @checked($selectedKind === 'introduction')>
-                            <span><strong>Introduction page</strong><small>Hero, introduction, three highlights, destination slideshow and contact — like Thailand or Vietnam.</small></span>
-                        </label>
-                        <label class="tour-package-kind-option">
-                            <input type="radio" name="kind" value="package" @checked($selectedKind === 'package')>
-                            <span><strong>Package page</strong><small>Hero, itineraries with day-by-day plans, gallery, inclusions, exclusions and hotels — like Bali or Aceh.</small></span>
-                        </label>
-                    </fieldset>
+                    <div class="create-step">
+                        <span class="create-step-number" aria-hidden="true">2</span>
+                        <div class="create-step-body">
+                            <h2>Choose the page type</h2>
+                            <div class="create-type-grid">
+                                <label class="create-type-card">
+                                    <input type="radio" name="kind" value="introduction" @checked($selectedKind === 'introduction')>
+                                    <span class="create-type-icon" aria-hidden="true">🏝️</span>
+                                    <strong>Introduction page</strong>
+                                    <small>A landing page for a destination or group: hero, introduction, highlights, destinations and contact.</small>
+                                    <span class="create-type-check" aria-hidden="true">✓</span>
+                                </label>
+                                <label class="create-type-card">
+                                    <input type="radio" name="kind" value="package" @checked($selectedKind === 'package')>
+                                    <span class="create-type-icon" aria-hidden="true">🧳</span>
+                                    <strong>Package page</strong>
+                                    <small>A sellable package: hero, itineraries, gallery, inclusions, exclusions and hotels.</small>
+                                    <span class="create-type-check" aria-hidden="true">✓</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="create-step">
+                        <span class="create-step-number" aria-hidden="true">3</span>
+                        <div class="create-step-body">
+                            <h2>Pick a template</h2>
+                            @foreach (\App\Models\TourPackagePage::TEMPLATES as $templateKind => $templates)
+                                <div class="create-template-grid" data-template-group="{{ $templateKind }}" @if ($selectedKind !== $templateKind) hidden @endif>
+                                    @foreach ($templates as $templateKey => [$templateName, $templateDescription])
+                                        <label class="create-template-card">
+                                            <input type="radio" name="template" value="{{ $templateKey }}" @checked(old('template', \App\Models\TourPackagePage::defaultTemplate($templateKind)) === $templateKey) @disabled($selectedKind !== $templateKind)>
+                                            @include('Admin.tour-packages.partials.template-preview', ['key' => $templateKey, 'name' => $templateName])
+                                            <strong>{{ $templateName }}</strong>
+                                            <small>{{ $templateDescription }}</small>
+                                            <span class="create-type-check" aria-hidden="true">✓</span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
                 </section>
 
                 <div class="island-admin-form-actions">

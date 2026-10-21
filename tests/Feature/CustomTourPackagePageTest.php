@@ -28,6 +28,22 @@ class CustomTourPackagePageTest extends TestCase
         $this->assertDatabaseMissing('tour_package_pages', ['name' => 'Malaysia']);
     }
 
+    public function test_only_admins_can_move_custom_pages(): void
+    {
+        $page = $this->createCustomPage('Malaysia', 'package');
+
+        $this->put(route('admin.tour-packages.move', $page), ['parent_slug' => 'thailand'])
+            ->assertRedirect(route('login'));
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->put(route('admin.tour-packages.move', $page), ['parent_slug' => 'thailand'])
+            ->assertForbidden();
+
+        $this->assertSame(null, $page->fresh()->parent_slug);
+    }
+
     public function test_create_form_preselects_the_requested_kind(): void
     {
         $admin = $this->createAdmin();
@@ -358,26 +374,152 @@ class CustomTourPackagePageTest extends TestCase
         ]);
     }
 
-    public function test_admin_sidebar_and_public_navbar_share_fixed_country_destinations(): void
+    public function test_vietnam_has_english_da_nang_and_hanoi_package_pages(): void
+    {
+        $this->artisan('migrate:refresh', ['--path' => 'database/migrations/2026_10_21_141903_convert_fixed_country_destinations_to_pages.php', '--no-interaction' => true]);
+        $fillMigration = require base_path('database/migrations/2026_10_21_142858_fill_vietnam_package_pages.php');
+        $fillMigration->up();
+        $fillMigration->up();
+
+        $this->get(route('tour-package.show', 'da-nang'))->assertOk()
+            ->assertSee('Ba Na Hills Full-Day Tour')
+            ->assertSee('Sea Front Hotel')
+            ->assertDontSee('HARI 1');
+        $this->get(route('tour-package.show', 'hanoi'))->assertOk()
+            ->assertSee('Fansipan Legend')
+            ->assertSee('Bora Hotel')
+            ->assertDontSee('HARI 1');
+        $this->assertSame(1, TourPackagePage::query()->where('slug', 'hanoi')->count());
+    }
+
+    public function test_series_departures_page_shows_each_destination_and_appears_in_the_navbar(): void
+    {
+        $migration = require base_path('database/migrations/2026_10_21_152732_add_series_departures_2026_page.php');
+        $migration->up();
+        $migration->up();
+
+        $this->assertSame(1, TourPackagePage::query()->where('slug', 'series-departures-2026')->count());
+
+        $this->get(route('tour-package.show', 'series-departures-2026'))->assertOk()
+            ->assertSee('Series Departures 2026')
+            ->assertSee('Gyeongbokgung')
+            ->assertSee('City of Eternal Spring', false)
+            ->assertSee('Lake Toba')
+            ->assertSee('href="#series-kunming"', false);
+
+        $this->actingAs($this->createAdmin())->get(route('admin.dashboard'))->assertOk()
+            ->assertSee('aria-label="Tour Package (Series)"', false)
+            ->assertDontSee('Tour Package (Series) <small>Coming soon', false);
+
+        $this->get(route('home'))->assertOk()
+            ->assertSee('id="series-tour-menu"', false)
+            ->assertSee(route('tour-package.show', 'series-departures-2026').'#series-medan', false);
+    }
+
+    public function test_create_form_lets_admin_pick_a_template_for_each_page_kind(): void
     {
         $admin = $this->createAdmin();
-        $expectedLinks = [
-            'href="'.route('vietnam').'#destinations">Hanoi</a>',
-            'href="'.route('vietnam').'#destinations">Da Nang</a>',
-            'href="'.route('vietnam').'#destinations">Ho Chi Minh</a>',
-            'href="'.route('vietnam').'#destinations">Hoi An</a>',
-            'href="'.route('philippines').'#destinations">Manila</a>',
-            'href="'.route('philippines').'#destinations">Boracay</a>',
-            'href="'.route('philippines').'#destinations">Palawan</a>',
-            'href="'.route('philippines').'#destinations">Cebu</a>',
+
+        $this->actingAs($admin)->get(route('admin.tour-packages.create'))->assertOk()
+            ->assertSee('Series destinations')
+            ->assertSee('Compact packages');
+
+        $this->actingAs($admin)->post(route('admin.tour-packages.store'), ['name' => 'Japan Series', 'kind' => 'introduction', 'template' => 'series'])
+            ->assertRedirect();
+
+        $series = TourPackagePage::query()->where('slug', 'japan-series')->firstOrFail();
+        $this->assertTrue($series->isSeries());
+        $this->get(route('tour-package.show', 'japan-series'))->assertOk()->assertSee('series-section', false);
+
+        $this->actingAs($admin)->post(route('admin.tour-packages.store'), ['name' => 'Short Trip', 'kind' => 'package', 'template' => 'compact'])
+            ->assertRedirect();
+
+        $compact = TourPackagePage::query()->where('slug', 'short-trip')->firstOrFail();
+        $this->assertSame('compact', $compact->package_data['template']);
+        $this->get(route('tour-package.show', 'short-trip'))->assertOk()
+            ->assertSee('Signature package')
+            ->assertDontSee('aceh-day-list', false);
+
+        $this->actingAs($admin)->post(route('admin.tour-packages.store'), ['name' => 'Bad Template', 'kind' => 'package', 'template' => 'series'])
+            ->assertSessionHasErrors('template');
+    }
+
+    public function test_series_page_editor_shows_destinations_and_saves_without_slides(): void
+    {
+        $migration = require base_path('database/migrations/2026_10_21_152732_add_series_departures_2026_page.php');
+        $migration->up();
+
+        $page = TourPackagePage::query()->where('slug', 'series-departures-2026')->firstOrFail();
+        $admin = $this->createAdmin();
+
+        $this->actingAs($admin)->get(route('admin.tour-packages.edit', $page))->assertOk()
+            ->assertSee('TOUR PACKAGE (SERIES)', false)
+            ->assertSee('3 destinations')
+            ->assertSee('series[0][tagline]', false)
+            ->assertDontSee('Destination slideshow');
+
+        $payload = $page->only([
+            'intro_eyebrow', 'intro_headline', 'intro_highlight', 'intro_link_label', 'intro_body', 'intro_image_alt',
+            'intro_image_caption', 'highlights_eyebrow', 'highlights_headline', 'highlights_body', 'highlights',
+            'contact_eyebrow', 'contact_headline', 'contact_body', 'contact_cta_label', 'contact_href',
+            'meta_title', 'meta_description', 'destinations_eyebrow', 'destinations_headline', 'destinations_body',
+            'hero_eyebrow', 'hero_headline', 'hero_highlight', 'hero_body', 'hero_cta_label', 'hero_note', 'hero_image_alt', 'name', 'parent_slug',
+        ]);
+        $payload['series'] = $page->package_data['series'];
+        $payload['series'][0]['tagline'] = 'Edited tagline';
+
+        $this->actingAs($admin)->put(route('admin.tour-packages.update', $page), $payload)
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('admin.tour-packages.edit', $page));
+
+        $series = $page->fresh()->package_data['series'];
+        $this->assertCount(3, $series);
+        $this->assertSame('Edited tagline', $series[0]['tagline']);
+        $this->assertCount(5, $series[0]['gallery']);
+        $this->assertSame('images/series/flag-kr.png', $series[0]['flag']);
+
+        $payload['series'][3] = [
+            'name' => 'Tokyo', 'country' => 'Japan', 'tagline' => 'Neon and temples.', 'intro' => 'Tokyo intro.', 'flag' => '',
+            'advantages' => [['icon' => '', 'title' => 'Easy', 'body' => 'Everything arranged.'], ['icon' => '', 'title' => '', 'body' => '']],
+            'gallery' => [['image' => '', 'alt' => '', 'caption' => '']],
         ];
+        $payload['series'][4] = ['name' => '', 'country' => '', 'tagline' => '', 'intro' => '', 'flag' => ''];
+
+        $this->actingAs($admin)->put(route('admin.tour-packages.update', $page), $payload)
+            ->assertSessionHasNoErrors();
+
+        $series = $page->fresh()->package_data['series'];
+        $this->assertCount(4, $series);
+        $this->assertSame('Tokyo', $series[3]['name']);
+        $this->assertCount(1, $series[3]['advantages']);
+
+        $this->get(route('home'))->assertSee('#series-tokyo', false);
+
+        $payload['series'][3]['name'] = '';
+        $payload['series'][3]['country'] = '';
+
+        $this->actingAs($admin)->put(route('admin.tour-packages.update', $page), $payload)
+            ->assertSessionHasNoErrors();
+
+        $this->assertCount(3, $page->fresh()->package_data['series']);
+        $this->get(route('home'))->assertDontSee('#series-tokyo', false);
+        $this->get(route('tour-package.show', $page->slug))->assertDontSee('Tokyo intro.');
+    }
+
+    public function test_country_destinations_are_editable_pages_shared_by_admin_sidebar_and_public_navbar(): void
+    {
+        $this->artisan('migrate:refresh', ['--path' => 'database/migrations/2026_10_21_141903_convert_fixed_country_destinations_to_pages.php', '--no-interaction' => true]);
+        $admin = $this->createAdmin();
+        $expected = ['hanoi', 'da-nang', 'ho-chi-minh', 'hoi-an', 'manila', 'boracay', 'palawan', 'cebu'];
 
         $publicNavigation = $this->get(route('home'))->assertOk();
         $adminSidebar = $this->actingAs($admin)->get(route('admin.dashboard'))->assertOk();
 
-        foreach ($expectedLinks as $link) {
-            $publicNavigation->assertSee($link, false);
-            $adminSidebar->assertSee($link, false);
+        foreach ($expected as $slug) {
+            $this->assertDatabaseHas('tour_package_pages', ['slug' => $slug, 'is_custom' => true]);
+            $publicNavigation->assertSee('href="'.route('tour-package.show', $slug).'"', false);
+            $adminSidebar->assertSee('href="'.route('admin.tour-packages.edit', $slug).'"', false);
+            $adminSidebar->assertSee('data-navigation-draggable="'.$slug.'"', false);
         }
     }
 
@@ -433,28 +575,34 @@ class CustomTourPackagePageTest extends TestCase
         $legacyDestinationsMigration->up();
         $countryDestinationsMigration = require base_path('database/migrations/2026_10_21_090830_move_island_destinations_under_their_countries.php');
         $countryDestinationsMigration->up();
+        $islandHoneymoonDestinationsMigration = require base_path('database/migrations/2026_10_21_112700_move_island_destinations_to_island_honeymoon.php');
+        $islandHoneymoonDestinationsMigration->up();
 
         $this->assertDatabaseHas('tour_package_pages', ['slug' => 'aceh', 'parent_slug' => 'indonesia']);
-        $this->assertDatabaseHas('tour_package_pages', ['slug' => 'bali', 'parent_slug' => 'indonesia']);
+        $this->assertDatabaseHas('tour_package_pages', ['slug' => 'bali', 'parent_slug' => 'island-honeymoon']);
         $this->assertDatabaseHas('tour_package_pages', ['slug' => 'bangkok', 'parent_slug' => 'thailand']);
-        $this->assertDatabaseHas('tour_package_pages', ['slug' => 'krabi', 'parent_slug' => 'thailand']);
-        $this->assertDatabaseHas('tour_package_pages', ['slug' => 'lombok', 'parent_slug' => 'indonesia']);
-        $this->assertDatabaseHas('tour_package_pages', ['slug' => 'maldives', 'parent_slug' => null]);
+        $this->assertDatabaseHas('tour_package_pages', ['slug' => 'krabi', 'parent_slug' => 'island-honeymoon']);
+        $this->assertDatabaseHas('tour_package_pages', ['slug' => 'lombok', 'parent_slug' => 'island-honeymoon']);
+        $this->assertDatabaseHas('tour_package_pages', ['slug' => 'maldives', 'parent_slug' => 'island-honeymoon']);
 
         $homeNavigation = $this->get(route('home'))
             ->assertOk()
             ->assertSeeInOrder([
+                'id="island-destination-menu"',
+                'href="'.route('tour-package.show', 'bali').'"',
+                'href="'.route('tour-package.show', 'krabi').'"',
+                'href="'.route('tour-package.show', 'lombok').'"',
+                'href="'.route('tour-package.show', 'maldives').'"',
                 'id="indonesia-destination-menu"',
                 'href="'.route('tour-package.show', 'aceh').'"',
-                'href="'.route('tour-package.show', 'bali').'"',
-                'href="'.route('tour-package.show', 'lombok').'"',
                 'id="thailand-destination-menu"',
                 'href="'.route('tour-package.show', 'bangkok').'"',
-                'href="'.route('tour-package.show', 'krabi').'"',
-                'href="'.route('tour-package.show', 'maldives').'"',
             ], false);
 
-        $this->assertSame(1, substr_count($homeNavigation->getContent(), 'href="'.route('tour-package.show', 'maldives').'"'));
+        foreach (['bali', 'krabi', 'lombok', 'maldives'] as $slug) {
+            $this->assertSame(1, substr_count($homeNavigation->getContent(), 'href="'.route('tour-package.show', $slug).'"'));
+        }
+
         $this->assertStringNotContainsString('id="maldives-destination-menu"', $homeNavigation->getContent());
     }
 

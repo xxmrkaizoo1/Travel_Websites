@@ -44,6 +44,9 @@
         </div>
     </section>
 
+    @if (! empty($page->package_data['series']))
+        @include('partials.tour-package-series', ['page' => $page, 'series' => $page->package_data['series']])
+    @else
     <section class="destination-section {{ $slug }}-destinations" id="destinations" aria-labelledby="{{ $slug }}-destinations-title">
         <div class="island-section-heading">
             <span class="island-section-label">{{ $page->destinations_eyebrow }}</span>
@@ -70,6 +73,7 @@
             </div>
         </div>
     </section>
+    @endif
 
     <section class="island-contact {{ $slug }}-contact" id="contact" aria-labelledby="{{ $slug }}-contact-title">
         <div>

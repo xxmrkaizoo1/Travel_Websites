@@ -59,9 +59,6 @@
                                     <span class="submenu-arrow" aria-hidden="true">›</span>
                                 </button>
                                 <div class="submenu-menu" id="vietnam-destination-menu">
-                                    @foreach ($fixedDestinationsByCountry['vietnam'] as $destination)
-                                        <a href="{{ route('vietnam') }}#destinations">{{ $destination }}</a>
-                                    @endforeach
                                     @include('partials.tour-package-submenu', ['parentSlug' => 'vietnam'])
                                 </div>
                             </div>
@@ -71,13 +68,10 @@
                                     <span class="submenu-arrow" aria-hidden="true">›</span>
                                 </button>
                                 <div class="submenu-menu" id="philippines-destination-menu">
-                                    @foreach ($fixedDestinationsByCountry['philippines'] as $destination)
-                                        <a href="{{ route('philippines') }}#destinations">{{ $destination }}</a>
-                                    @endforeach
                                     @include('partials.tour-package-submenu', ['parentSlug' => 'philippines'])
                                 </div>
                             </div>
-                            @foreach ($customTourPagesByParent->get('', collect()) as $customTourPage)
+                            @foreach ($customTourPagesByParent->get('', collect())->reject(fn ($customPage) => $customPage->slug === 'series-departures-2026') as $customTourPage)
                                 @php($customChildren = $customTourPagesByParent->get($customTourPage->slug, collect()))
                                 @if ($customChildren->isEmpty())
                                     <a class="{{ request()->is('tour/'.$customTourPage->slug) ? 'is-current' : '' }}" href="{{ route('tour-package.show', $customTourPage->slug) }}">{{ $customTourPage->name }}</a>
@@ -95,7 +89,34 @@
                             @endforeach
                         </div>
                     </div>
-                    <a href="https://wa.me/60165500590?text=Hi%2C%20I%27d%20like%20to%20ask%20about%20Muslim%20tour%20series%20packages." target="_blank" rel="noreferrer">Tour Package (Series)</a>
+                    @if ($customTourPages->contains('slug', 'series-departures-2026'))
+                        <div class="nav-subitem has-submenu">
+                            <button class="submenu-trigger" type="button" aria-expanded="false" aria-controls="series-tour-menu">
+                                Tour Package (Series)
+                                <span class="submenu-arrow" aria-hidden="true">›</span>
+                            </button>
+                            <div class="submenu-menu" id="series-tour-menu">
+                                @if ($customTourPagesByParent->get('series-departures-2026', collect())->isEmpty())
+                                    <a class="{{ request()->is('tour/series-departures-2026') ? 'is-current' : '' }}" href="{{ route('tour-package.show', 'series-departures-2026') }}">Introduction</a>
+                                @else
+                                    <div class="nav-subitem has-submenu destination-nav">
+                                        <a class="destination-link{{ request()->is('tour/series-departures-2026') ? ' is-current' : '' }}" href="{{ route('tour-package.show', 'series-departures-2026') }}">Introduction</a>
+                                        <button class="submenu-trigger destination-toggle" type="button" aria-label="Show Introduction pages" aria-expanded="false" aria-controls="series-introduction-menu">
+                                            <span class="submenu-arrow" aria-hidden="true">›</span>
+                                        </button>
+                                        <div class="submenu-menu" id="series-introduction-menu">
+                                            @include('partials.tour-package-submenu', ['parentSlug' => 'series-departures-2026'])
+                                        </div>
+                                    </div>
+                                @endif
+                                @foreach ($seriesDestinations as $seriesDestination)
+                                    <a href="{{ route('tour-package.show', 'series-departures-2026') }}#series-{{ \Illuminate\Support\Str::slug($seriesDestination['name']) }}">{{ $seriesDestination['name'] }} · {{ $seriesDestination['country'] }}</a>
+                                @endforeach
+                            </div>
+                        </div>
+                    @else
+                        <a href="https://wa.me/60165500590?text=Hi%2C%20I%27d%20like%20to%20ask%20about%20Muslim%20tour%20series%20packages." target="_blank" rel="noreferrer">Tour Package (Series)</a>
+                    @endif
                     <a href="{{ route('smart-muslim') }}#service-china">China Muslim</a>
                     <a href="{{ route('smart-muslim') }}#service-company">Company Trip (MICE)</a>
                     <a href="#contact">Contact Us</a>

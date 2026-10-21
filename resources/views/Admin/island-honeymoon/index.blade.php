@@ -60,7 +60,7 @@
                 </div>
             @endif
 
-            <form class="homepage-campaign-form" method="POST" action="{{ route('admin.island-honeymoon.update') }}" enctype="multipart/form-data">
+            <form class="homepage-campaign-form" data-form-slideshow method="POST" action="{{ route('admin.island-honeymoon.update') }}" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
 

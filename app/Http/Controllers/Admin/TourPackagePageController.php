@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\TourPackagePage;
 use Closure;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -58,6 +59,7 @@ class TourPackagePageController extends Controller
             'name' => ['required', 'string', 'max:60'],
             'kind' => ['required', Rule::in([TourPackagePage::KIND_INTRODUCTION, TourPackagePage::KIND_PACKAGE])],
             'parent_slug' => ['nullable', 'string', $this->parentSlugRule()],
+            'template' => ['nullable', 'string', Rule::in(array_keys(TourPackagePage::TEMPLATES[$request->input('kind')] ?? []))],
         ]);
 
         $page = DB::transaction(function () use ($validated): TourPackagePage {
@@ -69,7 +71,7 @@ class TourPackagePageController extends Controller
                 $slug = $baseSlug.'-'.$suffix++;
             }
 
-            $page = new TourPackagePage(TourPackagePage::starterContent($validated['kind'], trim($validated['name'])));
+            $page = new TourPackagePage(TourPackagePage::starterContent($validated['kind'], trim($validated['name']), $validated['template'] ?? null));
             $page->slug = $slug;
             $page->parent_slug = $validated['parent_slug'] ?? null;
             $page->is_custom = true;
@@ -93,6 +95,19 @@ class TourPackagePageController extends Controller
         ]);
     }
 
+    public function move(Request $request, TourPackagePage $page): JsonResponse
+    {
+        abort_unless($page->is_custom, 404);
+
+        $validated = $request->validate([
+            'parent_slug' => ['present', 'nullable', 'string', $this->parentSlugRule($page)],
+        ]);
+
+        $page->update(['parent_slug' => $validated['parent_slug']]);
+
+        return response()->json(['parent_slug' => $page->parent_slug]);
+    }
+
     public function update(Request $request, TourPackagePage $page): RedirectResponse
     {
         $this->prepareInput($request, $page);
@@ -112,7 +127,12 @@ class TourPackagePageController extends Controller
 
             if ($page->isPackage()) {
                 $validated['package_data'] = $this->normalisePackage($request, $validated['package'], $newPaths);
+                $validated['package_data']['template'] = $page->package_data['template'] ?? TourPackagePage::defaultTemplate(TourPackagePage::KIND_PACKAGE);
                 unset($validated['package']);
+            } elseif ($page->isSeries()) {
+                $validated['package_data'] = ['series' => $this->normaliseSeries($request, $validated['series'], $newPaths)];
+                $validated['slides'] = [];
+                unset($validated['series']);
             } else {
                 $validated['slides'] = $this->resolveImageRows($request, $validated['slides'], 'slides', $newPaths, [
                     'alt', 'eyebrow', 'title', 'body', 'link_label', 'link_url',
@@ -256,8 +276,59 @@ class TourPackagePageController extends Controller
         ];
     }
 
+    /**
+     * @param  array<int, array<string, mixed>>  $series
+     * @param  array<int, string>  $newPaths
+     * @return array<int, array<string, mixed>>
+     */
+    private function normaliseSeries(Request $request, array $series, array &$newPaths): array
+    {
+        $destinations = [];
+
+        foreach ($series as $index => $destination) {
+            $flagFile = $request->file("series.$index.flag_file");
+
+            $destinations[] = [
+                'name' => $destination['name'],
+                'country' => $destination['country'],
+                'flag' => $flagFile instanceof UploadedFile ? $newPaths[] = $this->storeImage($flagFile) : ($destination['flag'] ?? ''),
+                'tagline' => $destination['tagline'],
+                'intro' => $destination['intro'],
+                'advantages' => array_values(array_map(fn (array $advantage): array => [
+                    'icon' => $advantage['icon'] ?? '',
+                    'title' => $advantage['title'],
+                    'body' => $advantage['body'],
+                ], $destination['advantages'])),
+                'gallery' => $this->resolveImageRows($request, $destination['gallery'] ?? [], "series.$index.gallery", $newPaths, ['alt', 'caption']),
+            ];
+        }
+
+        return $destinations;
+    }
+
     private function prepareInput(Request $request, TourPackagePage $page): void
     {
+        if ($page->isSeries()) {
+            $series = $request->input('series');
+
+            if (is_array($series)) {
+                foreach ($series as $index => $destination) {
+                    if (! is_array($destination) || trim((string) ($destination['name'] ?? '')) === '' && trim((string) ($destination['country'] ?? '')) === '') {
+                        unset($series[$index]);
+
+                        continue;
+                    }
+
+                    $series[$index]['advantages'] = $this->pruneRows($request, $destination['advantages'] ?? [], "series.$index.advantages");
+                    $series[$index]['gallery'] = $this->pruneRows($request, $destination['gallery'] ?? [], "series.$index.gallery");
+                }
+
+                $request->merge(['series' => $series]);
+            }
+
+            return;
+        }
+
         if (! $page->isPackage()) {
             $request->merge(['slides' => $this->pruneRows($request, $request->input('slides'), 'slides')]);
 
@@ -402,6 +473,41 @@ class TourPackagePageController extends Controller
             "$prefix.*.link_label" => $withLink ? ['nullable', 'string', 'max:120', "required_with:$prefix.*.link_url"] : null,
             "$prefix.*.link_url" => $withLink ? ['nullable', 'string', 'max:2048', "required_with:$prefix.*.link_label", $linkTarget] : null,
         ]);
+
+        if ($page->isSeries()) {
+            $seriesImage = function (string $attribute, mixed $value, Closure $fail) use ($storedPaths, $isHttpUrl): void {
+                $isBundled = preg_match('#^images/[A-Za-z0-9/_.-]+$#', (string) $value) === 1 && ! str_contains((string) $value, '..');
+
+                if (! $isHttpUrl($value) && ! $isBundled && ! in_array($value, $storedPaths, true)) {
+                    $fail('The image must be a valid http(s) URL or an uploaded image.');
+                }
+            };
+
+            $rules['highlights'] = ['required', 'array', 'min:3', 'max:6'];
+            $rules += [
+                'destinations_eyebrow' => ['required', 'string', 'max:120'],
+                'destinations_headline' => ['required', 'string', 'max:160'],
+                'destinations_body' => ['required', 'string', 'max:255'],
+                'series' => ['required', 'array', 'min:1', 'max:6'],
+                'series.*.name' => ['required', 'string', 'max:60'],
+                'series.*.country' => ['required', 'string', 'max:60'],
+                'series.*.tagline' => ['required', 'string', 'max:255'],
+                'series.*.intro' => ['required', 'string', 'max:600'],
+                'series.*.flag' => ['nullable', 'string', 'max:2048', $seriesImage],
+                'series.*.flag_file' => $imageUpload,
+                'series.*.advantages' => ['required', 'array', 'min:1', 'max:6'],
+                'series.*.advantages.*.icon' => ['nullable', 'string', 'max:16'],
+                'series.*.advantages.*.title' => ['required', 'string', 'max:120'],
+                'series.*.advantages.*.body' => ['required', 'string', 'max:500'],
+                'series.*.gallery' => ['nullable', 'array', 'max:8'],
+                'series.*.gallery.*.image' => ['nullable', 'string', 'max:2048', 'required_without:series.*.gallery.*.image_file', $seriesImage],
+                'series.*.gallery.*.image_file' => $imageUpload,
+                'series.*.gallery.*.alt' => ['required', 'string', 'max:255'],
+                'series.*.gallery.*.caption' => ['required', 'string', 'max:120'],
+            ];
+
+            return $request->validate($rules);
+        }
 
         if (! $page->isPackage()) {
             $rules += [

@@ -64,11 +64,13 @@
                         <h3>{{ $itinerary['title'] }}</h3>
                         <p>{{ $itinerary['summary'] }}</p>
                     </header>
+                    @if (($data['template'] ?? 'standard') !== 'compact')
                     <ol class="aceh-day-list">
                         @foreach ($itinerary['days'] as $day)
                             <li class="aceh-day"><span class="aceh-day-number">D{{ $loop->iteration }}</span><div><h4>{{ $day['title'] }}</h4><p>{{ $day['body'] }}</p>@if (! empty($day['meals']))<span class="aceh-meals">{{ $day['meals'] }}</span>@endif</div></li>
                         @endforeach
                     </ol>
+                    @endif
                     <a class="aceh-itinerary-cta" href="{{ $itinerary['cta_url'] }}" target="_blank" rel="noreferrer">{{ $itinerary['cta_label'] }} <span aria-hidden="true">↗</span></a>
                 </article>
             @endforeach

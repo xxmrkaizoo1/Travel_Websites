@@ -33,18 +33,18 @@
             <div class="admin-breadcrumb homepage-editor-breadcrumb">
                 <a href="{{ route('admin.dashboard') }}">Workspace</a>
                 <span aria-hidden="true">/</span>
-                <span>Tour Package (Private)</span>
+                <span>{{ $page->sectionLabel() }}</span>
                 <span aria-hidden="true">/</span>
                 <strong>{{ $page->name }}</strong>
             </div>
 
             <section class="homepage-editor-heading">
                 <div>
-                    <span class="admin-eyebrow">TOUR PACKAGE (PRIVATE)</span>
+                    <span class="admin-eyebrow">{{ strtoupper($page->sectionLabel()) }}</span>
                     <h1>{{ $page->name }}</h1>
-                    <p>{{ $page->isPackage() ? 'Update the page text, itineraries, gallery, inclusions and hotels.' : 'Update the page text, images and destination slideshow.' }}</p>
+                    <p>{{ $page->isPackage() ? 'Update the page text, itineraries, gallery, inclusions and hotels.' : ($page->isSeries() ? 'Update the page text, destinations, advantages, flags and photos.' : 'Update the page text, images and destination slideshow.') }}</p>
                 </div>
-                <span class="homepage-editor-count">{{ $page->isPackage() ? 'Package page' : count($slides).' slides' }}</span>
+                <span class="homepage-editor-count">{{ $page->isPackage() ? 'Package page' : ($page->isSeries() ? count($page->package_data['series']).' destinations' : count($slides).' slides') }}</span>
             </section>
 
             @if (session('status'))
@@ -62,7 +62,7 @@
                 </div>
             @endif
 
-            <form class="homepage-campaign-form" method="POST" action="{{ route('admin.tour-packages.update', $page) }}" enctype="multipart/form-data">
+            <form class="homepage-campaign-form" data-form-slideshow method="POST" action="{{ route('admin.tour-packages.update', $page) }}" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
 
@@ -151,6 +151,8 @@
 
                 @if ($page->isPackage())
                     @include('Admin.tour-packages.partials.package-fields')
+                @elseif ($page->isSeries())
+                    @include('Admin.tour-packages.partials.series-fields')
                 @else
                 <section class="homepage-form-panel">
                     <div class="homepage-form-panel-heading">

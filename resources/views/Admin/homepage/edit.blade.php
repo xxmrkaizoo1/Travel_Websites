@@ -60,7 +60,7 @@
                 </div>
             @endif
 
-            <form class="homepage-campaign-form" method="POST" action="{{ $campaign ? route('admin.homepage.update', $campaign) : route('admin.homepage.store') }}" enctype="multipart/form-data">
+            <form class="homepage-campaign-form" data-form-slideshow method="POST" action="{{ $campaign ? route('admin.homepage.update', $campaign) : route('admin.homepage.store') }}" enctype="multipart/form-data">
                 @csrf
                 @if ($campaign) @method('PUT') @endif
 

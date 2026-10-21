@@ -371,69 +371,524 @@ document.addEventListener('click', (event) => {
     }
 });
 
+const revealTargets = document.querySelectorAll([
+    '.welcome-section h2', '.welcome-subtitle', '.value-card', '.services-section h2', '.service-card', '.footer-inner > *',
+    '.island-intro-copy', '.island-photo-stack', '.island-section-heading', '.island-highlight', '.destination-carousel',
+    '.aceh-itinerary-heading', '.aceh-day', '.bali-gallery', '.aceh-details-card', '.aceh-hotel-card', '.island-contact > *',
+    '.series-head', '.series-advantage', '.series-flag', '.series-photo',
+].join(', '));
+
+if (revealTargets.length && 'IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('is-revealed');
+                revealObserver.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+
+    revealTargets.forEach((target) => {
+        const siblings = [...target.parentElement.children].filter((child) => child.className === target.className);
+
+        target.style.setProperty('--reveal-delay', `${Math.max(siblings.indexOf(target), 0) * 110}ms`);
+        target.classList.add('js-reveal');
+        revealObserver.observe(target);
+    });
+}
+
+const campaignTrack = document.querySelector('.homepage-campaign-grid');
+
+if (campaignTrack && campaignTrack.children.length > 1) {
+    const cards = [...campaignTrack.children];
+    const campaignNav = document.createElement('div');
+
+    campaignNav.className = 'repeater-slider-nav campaign-slider-nav';
+    campaignNav.innerHTML = `<button type="button" class="repeater-slider-arrow" data-campaign-step="-1" aria-label="Previous campaign">‹</button>
+        <div class="campaign-slider-dots">${cards.map((_, index) => `<button type="button" class="campaign-slider-dot" data-campaign-go="${index}" aria-label="Campaign ${index + 1}"></button>`).join('')}</div>
+        <button type="button" class="repeater-slider-arrow" data-campaign-step="1" aria-label="Next campaign">›</button>`;
+    campaignTrack.before(campaignNav);
+
+    const stepSize = () => cards[0].offsetWidth + 18;
+    const activeIndex = () => Math.min(Math.round(campaignTrack.scrollLeft / stepSize()), cards.length - 1);
+
+    const syncCampaignNav = () => {
+        const index = activeIndex();
+        const maxScroll = campaignTrack.scrollWidth - campaignTrack.clientWidth;
+
+        campaignNav.querySelectorAll('[data-campaign-go]').forEach((dot, dotIndex) => dot.classList.toggle('is-active', dotIndex === index));
+        campaignNav.querySelector('[data-campaign-step="-1"]').disabled = campaignTrack.scrollLeft <= 1;
+        campaignNav.querySelector('[data-campaign-step="1"]').disabled = campaignTrack.scrollLeft >= maxScroll - 1;
+    };
+
+    campaignNav.addEventListener('click', (event) => {
+        const control = event.target.closest('[data-campaign-go], [data-campaign-step]');
+
+        if (!control) {
+            return;
+        }
+
+        const target = control.dataset.campaignGo !== undefined ? Number(control.dataset.campaignGo) : activeIndex() + Number(control.dataset.campaignStep);
+
+        campaignTrack.scrollTo({ left: Math.max(target, 0) * stepSize() });
+    });
+
+    campaignTrack.addEventListener('scroll', syncCampaignNav, { passive: true });
+    window.addEventListener('resize', syncCampaignNav);
+    syncCampaignNav();
+}
+
+const slideshowForm = document.querySelector('form[data-form-slideshow]');
+
+if (slideshowForm) {
+    const panels = [...slideshowForm.querySelectorAll(':scope > .homepage-form-panel')];
+    const viewport = document.createElement('div');
+    const track = document.createElement('div');
+    const nav = document.createElement('div');
+    let current = 0;
+
+    viewport.className = 'form-slideshow-viewport';
+    track.className = 'form-slideshow-track';
+    nav.className = 'repeater-slider-nav form-slideshow-nav';
+    panels[0].before(nav, viewport);
+    viewport.append(track);
+    panels.forEach((panel) => track.append(panel));
+
+    const firstNumber = Number.parseInt(panels[0].querySelector('.homepage-form-icon')?.textContent ?? '', 10) || 0;
+
+    panels.forEach((panel, index) => {
+        const icon = panel.querySelector('.homepage-form-icon');
+
+        if (icon) {
+            icon.textContent = String(firstNumber + index).padStart(2, '0');
+        }
+    });
+
+    const titles = panels.map((panel) => panel.querySelector('.homepage-form-icon')?.textContent.trim() ?? '');
+    const heading = (panel) => panel.querySelector('h2')?.textContent.trim() ?? '';
+
+    nav.innerHTML = `<button type="button" class="repeater-slider-arrow" data-slide-step="-1" aria-label="Previous section">‹</button>
+        <div class="repeater-slider-tabs">${panels.map((panel, index) => `<button type="button" class="repeater-slider-tab" data-slide-go="${index}" title="${heading(panel)}" aria-label="${heading(panel)}">${titles[index]}</button>`).join('')}</div>
+        <span class="form-slideshow-count" data-slide-count></span>
+        <button type="button" class="repeater-slider-arrow" data-slide-step="1" aria-label="Next section">›</button>`;
+
+    const resizeViewport = () => {
+        viewport.style.height = `${panels[current].offsetHeight}px`;
+    };
+
+    const showSlide = (index) => {
+        current = Math.min(Math.max(index, 0), panels.length - 1);
+        track.style.transform = `translateX(-${current * 100}%)`;
+        panels.forEach((panel, panelIndex) => {
+            panel.classList.toggle('is-current', panelIndex === current);
+            panel.toggleAttribute('inert', panelIndex !== current);
+        });
+        nav.querySelectorAll('[data-slide-go]').forEach((tab, tabIndex) => {
+            tab.classList.toggle('is-active', tabIndex === current);
+            tab.setAttribute('aria-current', String(tabIndex === current));
+        });
+        nav.querySelector('[data-slide-step="-1"]').disabled = current === 0;
+        nav.querySelector('[data-slide-step="1"]').disabled = current === panels.length - 1;
+        nav.querySelector('[data-slide-count]').textContent = `${current + 1} / ${panels.length} · ${heading(panels[current])}`;
+        resizeViewport();
+    };
+
+    nav.addEventListener('click', (event) => {
+        const control = event.target.closest('[data-slide-go], [data-slide-step]');
+
+        if (!control) {
+            return;
+        }
+
+        showSlide(control.dataset.slideGo !== undefined ? Number(control.dataset.slideGo) : current + Number(control.dataset.slideStep));
+    });
+
+    const resizeObserver = new ResizeObserver(resizeViewport);
+
+    panels.forEach((panel) => resizeObserver.observe(panel));
+
+    slideshowForm.addEventListener('invalid', (event) => {
+        const panelIndex = panels.findIndex((panel) => panel.contains(event.target));
+
+        if (panelIndex !== -1 && panelIndex !== current) {
+            panels[panelIndex].removeAttribute('inert');
+            showSlide(panelIndex);
+        }
+    }, true);
+
+    const firstErrorPanel = panels.findIndex((panel) => panel.querySelector('[aria-invalid="true"], .is-invalid'));
+
+    showSlide(firstErrorPanel === -1 ? 0 : firstErrorPanel);
+}
+
+document.querySelectorAll('input[name="kind"]').forEach((kindInput) => {
+    kindInput.addEventListener('change', () => {
+        document.querySelectorAll('[data-template-group]').forEach((group) => {
+            const isActive = group.dataset.templateGroup === kindInput.value && kindInput.checked;
+
+            group.hidden = !isActive;
+            group.querySelectorAll('input').forEach((input) => {
+                input.disabled = !isActive;
+            });
+        });
+    });
+});
+
+const previewForm = document.querySelector('form[data-form-slideshow]');
+
+document.addEventListener('click', (event) => {
+    const clearButton = event.target.closest('[data-clear-destination]');
+
+    if (!clearButton) {
+        return;
+    }
+
+    if (!window.confirm('Clear this destination? It will be removed from the page when you save.')) {
+        return;
+    }
+
+    clearButton.closest('.homepage-form-panel').querySelectorAll('input:not([type="file"]):not([type="hidden"]), textarea').forEach((field) => {
+        field.value = '';
+    });
+    clearButton.remove();
+});
+
+document.addEventListener('click', (event) => {
+    const option = event.target.closest('.emoji-picker-option');
+
+    if (!option) {
+        return;
+    }
+
+    const field = option.closest('.emoji-field');
+    const input = field.querySelector('.emoji-field-input');
+
+    input.value = option.dataset.emoji;
+    field.querySelectorAll('.emoji-picker-option').forEach((button) => button.classList.toggle('is-selected', button === option));
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+});
+
+if (previewForm) {
+    const isPackagePage = previewForm.querySelector('[name^="package["]') !== null;
+    const isSeriesPage = previewForm.querySelector('[name^="series["]') !== null;
+    const sections = [
+        ['hero', 'Hero banner', 'Top of the page: headline, intro text, button and background image'],
+        ['intro', 'Introduction', 'Welcome text with a photo and caption'],
+        ['highlights', 'Highlights', 'Three highlight cards'],
+        ...(isPackagePage
+            ? [
+                ['itineraries', 'Itinerary cards', 'Package cards with the day-by-day plan'],
+                ['gallery', 'Photo gallery', 'Slideshow of photos'],
+                ['details', 'Includes / excludes', 'Price includes and does not include lists'],
+                ['accommodation', 'Accommodation', 'Hotel cards'],
+            ]
+            : isSeriesPage
+                ? [['series', 'Series destinations', 'Destination tabs with advantages, flag and five photos']]
+                : [['destinations', 'Destination slideshow', 'Sliding destination cards']]),
+        ['contact', 'Contact section', 'Enquiry text and WhatsApp button'],
+    ];
+    const rules = [
+        [/^(name|parent_slug)$/, 'navbar'],
+        [/^hero_/, 'hero'],
+        [/^intro_/, 'intro'],
+        [/^highlights/, 'highlights'],
+        [/^series\[/, 'series'],
+        [/^(destinations_|slides)/, isSeriesPage ? 'series' : 'destinations'],
+        [/^package\[itineraries/, 'itineraries'],
+        [/^package\[gallery/, 'gallery'],
+        [/^package\[(details_|inclusions|exclusions)/, 'details'],
+        [/^package\[(accommodation_|hotels)/, 'accommodation'],
+        [/^contact_/, 'contact'],
+        [/^meta_/, 'meta'],
+    ];
+    const preview = document.createElement('aside');
+
+    preview.className = 'field-preview';
+    preview.setAttribute('role', 'tooltip');
+    preview.hidden = true;
+    document.body.append(preview);
+
+    const sectionFor = (field) => rules.find(([pattern]) => pattern.test(field.name))?.[1] ?? null;
+
+    const renderPreview = (key) => {
+        if (key === 'navbar' || key === 'meta') {
+            const text = key === 'navbar'
+                ? ['Website navbar & admin sidebar', 'The page name and its menu position appear in the top navigation.']
+                : ['Browser tab & search results', 'The browser title and description shown in the tab and on Google.'];
+
+            const shot = key === 'navbar' ? `<img class="field-preview-shot" src="/images/admin-preview/navbar.jpg" alt="Website navbar" onerror="this.remove()">` : `<div class="field-preview-page"><span class="field-preview-block is-active">Page title — description</span></div>`;
+
+            preview.innerHTML = `<strong class="field-preview-title">Shown in: ${text[0]}</strong>${shot}<p>${text[1]}</p>`;
+
+            return;
+        }
+
+        const active = sections.find(([sectionKey]) => sectionKey === key);
+
+        const image = new Image();
+        image.className = 'field-preview-shot';
+        image.alt = active[1];
+        image.src = `/images/admin-preview/${key}.jpg`;
+
+        preview.innerHTML = `<strong class="field-preview-title">Shown in: ${active[1]}</strong><p>${active[2]}</p>`;
+        preview.insertBefore(image, preview.querySelector('p'));
+        image.onerror = () => image.remove();
+    };
+
+    const showPreview = (event) => {
+        const field = event.target instanceof Element ? event.target.closest('input, textarea, select') : null;
+        const key = field && field.name ? sectionFor(field) : null;
+
+        if (!key) {
+            preview.hidden = true;
+
+            return;
+        }
+
+        renderPreview(key);
+        preview.hidden = false;
+    };
+
+    previewForm.addEventListener('focusin', showPreview);
+    previewForm.addEventListener('mouseover', showPreview);
+    previewForm.addEventListener('focusout', () => {
+        preview.hidden = true;
+    });
+    previewForm.addEventListener('mouseleave', () => {
+        if (!previewForm.contains(document.activeElement)) {
+            preview.hidden = true;
+        }
+    });
+}
+
 const contextTriggers = document.querySelectorAll('[data-context-menu]');
 const contextMenu = contextTriggers.length ? document.getElementById(contextTriggers[0].dataset.contextMenu) : null;
 
 if (contextMenu) {
     const pageTitle = contextMenu.querySelector('[data-context-page-title]');
     const pageActions = contextMenu.querySelector('[data-context-page-actions]');
+    const moveActions = contextMenu.querySelector('[data-navigation-move-actions]');
+    const moveParentSelect = contextMenu.querySelector('[data-navigation-parent-select]');
+    const moveButton = contextMenu.querySelector('[data-navigation-move]');
+    const moveStatus = contextMenu.querySelector('[data-navigation-status]');
     const deleteForm = contextMenu.querySelector('[data-context-delete]');
+    const navigationTargets = [...document.querySelectorAll('[data-navigation-parent-target]')];
     let activeTrigger = null;
 
     const closeMenu = () => {
         contextMenu.hidden = true;
     };
 
+    const populateParentOptions = (trigger) => {
+        moveParentSelect.replaceChildren();
+
+        const excludedSlugs = new Set([trigger.dataset.pageSlug]);
+        const pendingSlugs = [trigger.dataset.pageSlug];
+
+        while (pendingSlugs.length > 0) {
+            const parentSlug = pendingSlugs.pop();
+
+            navigationTargets.forEach((target) => {
+                const childSlug = target.dataset.navigationParentTarget;
+
+                if (target.dataset.navigationParent === parentSlug && childSlug && !excludedSlugs.has(childSlug)) {
+                    excludedSlugs.add(childSlug);
+                    pendingSlugs.push(childSlug);
+                }
+            });
+        }
+
+        navigationTargets.forEach((target) => {
+            const parentSlug = target.dataset.navigationParentTarget;
+
+            if (parentSlug && excludedSlugs.has(parentSlug)) {
+                return;
+            }
+
+            const option = document.createElement('option');
+            option.value = parentSlug;
+            option.textContent = target.dataset.navigationParentName || target.dataset.pageName || target.textContent.trim();
+            moveParentSelect.append(option);
+        });
+
+        moveParentSelect.value = trigger.dataset.navigationParent || '';
+    };
+
+    const openMenu = (trigger, event, focusMove = false) => {
+        activeTrigger = trigger;
+
+        const hasPage = Boolean(trigger.dataset.editUrl);
+
+        pageTitle.hidden = !hasPage;
+        pageActions.hidden = !hasPage;
+        pageTitle.textContent = trigger.dataset.pageName || '';
+        moveActions.hidden = !trigger.dataset.moveUrl;
+        moveStatus.textContent = '';
+
+        const parentSlug = trigger.dataset.pageSlug || trigger.dataset.navigationParentTarget || '';
+        const parentName = trigger.dataset.pageName || trigger.dataset.navigationParentName;
+
+        contextMenu.querySelector('[data-context-create-title]').textContent = parentSlug
+            ? `Create new page inside ${parentName}`
+            : 'Create new page';
+
+        contextMenu.querySelectorAll('[data-context-create]').forEach((link) => {
+            const url = new URL(link.href, window.location.origin);
+
+            url.searchParams.delete('parent');
+
+            if (parentSlug) {
+                url.searchParams.set('parent', parentSlug);
+            }
+
+            link.href = url.toString();
+        });
+
+        if (hasPage) {
+            contextMenu.querySelector('[data-context-edit]').href = trigger.dataset.editUrl;
+            contextMenu.querySelector('[data-context-view]').href = trigger.dataset.viewUrl;
+            deleteForm.hidden = !trigger.dataset.deleteUrl;
+            deleteForm.action = trigger.dataset.deleteUrl || '#';
+        }
+
+        if (trigger.dataset.moveUrl) {
+            populateParentOptions(trigger);
+        }
+
+        const rect = trigger.getBoundingClientRect();
+        const fromKeyboard = event.clientX === 0 && event.clientY === 0;
+
+        contextMenu.hidden = false;
+        contextMenu.style.left = `${Math.max(8, Math.min(fromKeyboard ? rect.left + 24 : event.clientX, window.innerWidth - contextMenu.offsetWidth - 8))}px`;
+        contextMenu.style.top = `${Math.max(8, Math.min(fromKeyboard ? rect.bottom : event.clientY, window.innerHeight - contextMenu.offsetHeight - 8))}px`;
+        (focusMove ? moveParentSelect : contextMenu.querySelector('a:not([hidden])'))?.focus();
+    };
+
     contextTriggers.forEach((trigger) => {
         trigger.addEventListener('contextmenu', (event) => {
             event.preventDefault();
-            activeTrigger = trigger;
-
-            const hasPage = Boolean(trigger.dataset.editUrl);
-
-            pageTitle.hidden = !hasPage;
-            pageActions.hidden = !hasPage;
-            pageTitle.textContent = trigger.dataset.pageName || '';
-
-            const parentSlug = trigger.dataset.pageSlug || '';
-
-            contextMenu.querySelector('[data-context-create-title]').textContent = parentSlug
-                ? `Create new page inside ${trigger.dataset.pageName}`
-                : 'Create new page';
-
-            contextMenu.querySelectorAll('[data-context-create]').forEach((link) => {
-                const url = new URL(link.href, window.location.origin);
-
-                url.searchParams.delete('parent');
-
-                if (parentSlug) {
-                    url.searchParams.set('parent', parentSlug);
-                }
-
-                link.href = url.toString();
-            });
-
-            if (hasPage) {
-                contextMenu.querySelector('[data-context-edit]').href = trigger.dataset.editUrl;
-                contextMenu.querySelector('[data-context-view]').href = trigger.dataset.viewUrl;
-                deleteForm.hidden = !trigger.dataset.deleteUrl;
-                deleteForm.action = trigger.dataset.deleteUrl || '#';
-            }
-
-            const rect = trigger.getBoundingClientRect();
-            const fromKeyboard = event.clientX === 0 && event.clientY === 0;
-
-            contextMenu.hidden = false;
-            contextMenu.style.left = `${Math.max(8, Math.min(fromKeyboard ? rect.left + 24 : event.clientX, window.innerWidth - contextMenu.offsetWidth - 8))}px`;
-            contextMenu.style.top = `${Math.max(8, Math.min(fromKeyboard ? rect.bottom : event.clientY, window.innerHeight - contextMenu.offsetHeight - 8))}px`;
-            contextMenu.querySelector('a:not([hidden])')?.focus();
+            openMenu(trigger, event);
         });
     });
 
     document.addEventListener('click', (event) => {
-        if (!contextMenu.contains(event.target)) {
-            closeMenu();
+        const moveTrigger = event.target.closest('[data-navigation-select]');
+
+        if (moveTrigger) {
+            event.preventDefault();
+            const pageTrigger = moveTrigger.closest('.admin-subnav-entry')?.querySelector('[data-context-menu][data-move-url]');
+
+            if (pageTrigger) {
+                openMenu(pageTrigger, event, true);
+            }
+
+            return;
         }
+
+        if (contextMenu.contains(event.target)) {
+            return;
+        }
+
+        closeMenu();
+    });
+
+    const submitMove = async (trigger, parentSlug) => {
+        activeTrigger = trigger;
+        moveStatus.textContent = 'Moving page…';
+        moveButton.disabled = true;
+
+        try {
+            const response = await fetch(trigger.dataset.moveUrl, {
+                method: 'PUT',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': contextMenu.querySelector('input[name="_token"]').value,
+                },
+                body: JSON.stringify({ parent_slug: parentSlug }),
+            });
+            const payload = await response.json();
+
+            if (!response.ok) {
+                moveStatus.textContent = Object.values(payload.errors || {}).flat().join(' ')
+                    || payload.message
+                    || `Could not move this page (HTTP ${response.status}).`;
+
+                return;
+            }
+
+            moveStatus.textContent = 'Page moved. Updating navigation…';
+            window.setTimeout(() => window.location.reload(), 500);
+        } catch (error) {
+            console.error('Unable to move the tour package page.', error);
+            moveStatus.textContent = error instanceof Error
+                ? `Move failed: ${error.message}`
+                : 'Move failed. Please try again.';
+        } finally {
+            moveButton.disabled = false;
+        }
+    };
+
+    moveButton.addEventListener('click', () => {
+        if (activeTrigger) {
+            submitMove(activeTrigger, moveParentSelect.value);
+        }
+    });
+
+    document.addEventListener('dragstart', (event) => {
+        const trigger = event.target.closest('[data-navigation-draggable]');
+
+        if (!trigger || !event.dataTransfer) {
+            return;
+        }
+
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', trigger.dataset.navigationDraggable);
+    });
+
+    document.addEventListener('dragover', (event) => {
+        const target = event.target.closest('[data-navigation-parent-target]');
+
+        if (!target) {
+            return;
+        }
+
+        event.preventDefault();
+        target.classList.add('is-drop-target');
+
+        if (event.dataTransfer) {
+            event.dataTransfer.dropEffect = 'move';
+        }
+    });
+
+    document.addEventListener('dragleave', (event) => {
+        const target = event.target.closest('[data-navigation-parent-target]');
+
+        if (target && !target.contains(event.relatedTarget)) {
+            target.classList.remove('is-drop-target');
+        }
+    });
+
+    document.addEventListener('drop', (event) => {
+        const target = event.target.closest('[data-navigation-parent-target]');
+
+        if (!target || !event.dataTransfer) {
+            return;
+        }
+
+        event.preventDefault();
+        navigationTargets.forEach((navigationTarget) => navigationTarget.classList.remove('is-drop-target'));
+
+        const pageSlug = event.dataTransfer.getData('text/plain');
+        const source = [...document.querySelectorAll('[data-navigation-draggable]')]
+            .find((trigger) => trigger.dataset.navigationDraggable === pageSlug);
+
+        if (!source || source.dataset.navigationDraggable === target.dataset.navigationParentTarget) {
+            return;
+        }
+
+        openMenu(source, event, true);
+        submitMove(source, target.dataset.navigationParentTarget);
     });
 
     document.addEventListener('keydown', (event) => {
