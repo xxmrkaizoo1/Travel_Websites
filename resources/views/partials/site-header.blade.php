@@ -1,4 +1,4 @@
-<header class="site-header smart-holidays-header">
+    <header class="site-header smart-holidays-header">
     <div class="header-inner">
         <a class="brand" href="{{ route('home') }}" aria-label="Smart Holidays home">
             <img class="brand-logo" src="{{ asset('images/smart-holidays-logo.png') }}" alt="Smart Holidays">

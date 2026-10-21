@@ -27,7 +27,6 @@
             <span class="island-photo-caption">{{ $page->intro_image_caption }}</span>
         </div>
     </section>
-
     <section class="island-highlights" aria-labelledby="{{ $slug }}-highlights-title">
         <div class="island-section-heading">
             <span class="island-section-label">{{ $page->highlights_eyebrow }}</span>
