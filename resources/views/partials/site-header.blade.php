@@ -23,38 +23,25 @@
                         </button>
                         <div class="submenu-menu" id="private-tour-menu">
                             <a class="{{ request()->routeIs('tour-package-private') ? 'is-current' : '' }}" href="{{ route('tour-package-private') }}">Introduction</a>
+                            @php($islandHoneymoonPages = $customTourPagesByParent->get('island-honeymoon', collect()))
                             <div class="nav-subitem has-submenu destination-nav">
-                                <a class="destination-link{{ request()->routeIs('island-honeymoon', 'bali') ? ' is-current' : '' }}" href="{{ route('island-honeymoon') }}">Island &amp; Honeymoon</a>
-                                <button class="submenu-trigger destination-toggle" type="button" aria-label="Show Island &amp; Honeymoon destinations" aria-expanded="false" aria-controls="island-destination-menu">
-                                    <span class="submenu-arrow" aria-hidden="true">›</span>
-                                </button>
-                                <div class="submenu-menu" id="island-destination-menu">
-                                    @foreach ($customTourPagesByParent->get('island-honeymoon', collect()) as $child)
-                                        <a class="{{ request()->is('tour/'.$child->slug) ? 'is-current' : '' }}" href="{{ route('tour-package.show', $child->slug) }}">{{ $child->name }}</a>
-                                    @endforeach
-                                </div>
+                                <a class="destination-link{{ request()->routeIs('island-honeymoon') ? ' is-current' : '' }}" href="{{ route('island-honeymoon') }}">Island &amp; Honeymoon</a>
+                                @if ($islandHoneymoonPages->isNotEmpty())
+                                    <button class="submenu-trigger destination-toggle" type="button" aria-label="Show Island &amp; Honeymoon destinations" aria-expanded="false" aria-controls="island-destination-menu">
+                                        <span class="submenu-arrow" aria-hidden="true">›</span>
+                                    </button>
+                                    <div class="submenu-menu" id="island-destination-menu">
+                                        @include('partials.tour-package-submenu', ['parentSlug' => 'island-honeymoon'])
+                                    </div>
+                                @endif
                             </div>
-                            @php
-                                $tourDescendants = function (string $slug) use (&$tourDescendants, $customTourPagesByParent): array {
-                                    $found = [];
-
-                                    foreach ($customTourPagesByParent->get($slug, collect()) as $child) {
-                                        $found[] = $child;
-                                        array_push($found, ...$tourDescendants($child->slug));
-                                    }
-
-                                    return $found;
-                                };
-                            @endphp
                             <div class="nav-subitem has-submenu destination-nav">
                                 <a class="destination-link{{ request()->routeIs('indonesia') ? ' is-current' : '' }}" href="{{ route('indonesia') }}">Indonesia</a>
                                 <button class="submenu-trigger destination-toggle" type="button" aria-label="Show Indonesia destinations" aria-expanded="false" aria-controls="indonesia-destination-menu">
                                     <span class="submenu-arrow" aria-hidden="true">›</span>
                                 </button>
                                 <div class="submenu-menu" id="indonesia-destination-menu">
-                                    @foreach ($tourDescendants('indonesia') as $child)
-                                        <a class="{{ request()->is('tour/'.$child->slug) ? 'is-current' : '' }}" href="{{ route('tour-package.show', $child->slug) }}">{{ $child->name }}</a>
-                                    @endforeach
+                                    @include('partials.tour-package-submenu', ['parentSlug' => 'indonesia'])
                                 </div>
                             </div>
                             <div class="nav-subitem has-submenu destination-nav">
@@ -63,9 +50,7 @@
                                     <span class="submenu-arrow" aria-hidden="true">›</span>
                                 </button>
                                 <div class="submenu-menu" id="thailand-destination-menu">
-                                    @foreach ($tourDescendants('thailand') as $child)
-                                        <a class="{{ request()->is('tour/'.$child->slug) ? 'is-current' : '' }}" href="{{ route('tour-package.show', $child->slug) }}">{{ $child->name }}</a>
-                                    @endforeach
+                                    @include('partials.tour-package-submenu', ['parentSlug' => 'thailand'])
                                 </div>
                             </div>
                             <div class="nav-subitem has-submenu destination-nav">
@@ -74,13 +59,10 @@
                                     <span class="submenu-arrow" aria-hidden="true">›</span>
                                 </button>
                                 <div class="submenu-menu" id="vietnam-destination-menu">
-                                    <a href="{{ route('vietnam') }}#destinations">Hanoi</a>
-                                    <a href="{{ route('vietnam') }}#destinations">Da Nang</a>
-                                    <a href="{{ route('vietnam') }}#destinations">Ho Chi Minh</a>
-                                    <a href="{{ route('vietnam') }}#destinations">Hoi An</a>
-                                    @foreach ($tourDescendants('vietnam') as $child)
-                                        <a class="{{ request()->is('tour/'.$child->slug) ? 'is-current' : '' }}" href="{{ route('tour-package.show', $child->slug) }}">{{ $child->name }}</a>
+                                    @foreach ($fixedDestinationsByCountry['vietnam'] as $destination)
+                                        <a href="{{ route('vietnam') }}#destinations">{{ $destination }}</a>
                                     @endforeach
+                                    @include('partials.tour-package-submenu', ['parentSlug' => 'vietnam'])
                                 </div>
                             </div>
                             <div class="nav-subitem has-submenu destination-nav">
@@ -89,18 +71,15 @@
                                     <span class="submenu-arrow" aria-hidden="true">›</span>
                                 </button>
                                 <div class="submenu-menu" id="philippines-destination-menu">
-                                    <a href="{{ route('philippines') }}#destinations">Manila</a>
-                                    <a href="{{ route('philippines') }}#destinations">Boracay</a>
-                                    <a href="{{ route('philippines') }}#destinations">Palawan</a>
-                                    <a href="{{ route('philippines') }}#destinations">Cebu</a>
-                                    @foreach ($tourDescendants('philippines') as $child)
-                                        <a class="{{ request()->is('tour/'.$child->slug) ? 'is-current' : '' }}" href="{{ route('tour-package.show', $child->slug) }}">{{ $child->name }}</a>
+                                    @foreach ($fixedDestinationsByCountry['philippines'] as $destination)
+                                        <a href="{{ route('philippines') }}#destinations">{{ $destination }}</a>
                                     @endforeach
+                                    @include('partials.tour-package-submenu', ['parentSlug' => 'philippines'])
                                 </div>
                             </div>
                             @foreach ($customTourPagesByParent->get('', collect()) as $customTourPage)
-                                @php($customChildren = $tourDescendants($customTourPage->slug))
-                                @if ($customChildren === [])
+                                @php($customChildren = $customTourPagesByParent->get($customTourPage->slug, collect()))
+                                @if ($customChildren->isEmpty())
                                     <a class="{{ request()->is('tour/'.$customTourPage->slug) ? 'is-current' : '' }}" href="{{ route('tour-package.show', $customTourPage->slug) }}">{{ $customTourPage->name }}</a>
                                 @else
                                     <div class="nav-subitem has-submenu destination-nav">
@@ -109,15 +88,11 @@
                                             <span class="submenu-arrow" aria-hidden="true">›</span>
                                         </button>
                                         <div class="submenu-menu" id="{{ $customTourPage->slug }}-destination-menu">
-                                            @foreach ($customChildren as $child)
-                                                <a class="{{ request()->is('tour/'.$child->slug) ? 'is-current' : '' }}" href="{{ route('tour-package.show', $child->slug) }}">{{ $child->name }}</a>
-                                            @endforeach
+                                            @include('partials.tour-package-submenu', ['parentSlug' => $customTourPage->slug])
                                         </div>
                                     </div>
                                 @endif
                             @endforeach
-                            <a href="https://wa.me/60165500590?text=Hi%2C%20I%27d%20like%20to%20ask%20about%20Egypt%20tours." target="_blank" rel="noreferrer">Egypt</a>
-                            <a href="https://wa.me/60165500590?text=Hi%2C%20I%27d%20like%20to%20ask%20about%20Turkiye%20tours." target="_blank" rel="noreferrer">Turkiye</a>
                         </div>
                     </div>
                     <a href="https://wa.me/60165500590?text=Hi%2C%20I%27d%20like%20to%20ask%20about%20Muslim%20tour%20series%20packages." target="_blank" rel="noreferrer">Tour Package (Series)</a>

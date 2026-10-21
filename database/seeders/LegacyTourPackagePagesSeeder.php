@@ -8,7 +8,7 @@ use Illuminate\Database\Seeder;
 class LegacyTourPackagePagesSeeder extends Seeder
 {
     private const PAGES = [
-        'bali' => ['name' => 'Bali', 'parent' => 'island-honeymoon'],
+        'bali' => ['name' => 'Bali', 'parent' => 'indonesia'],
         'aceh' => ['name' => 'Aceh', 'parent' => 'indonesia'],
     ];
 

@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\TourPackagePage;
 use App\Models\User;
 use Database\Seeders\IndonesiaTourPackagePagesSeeder;
+use Database\Seeders\IslandHoneymoonPackagePagesSeeder;
+use Database\Seeders\LegacyTourPackagePagesSeeder;
 use Database\Seeders\ThailandTourPackagePagesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -199,6 +201,293 @@ class CustomTourPackagePageTest extends TestCase
 
         $this->get(route('home'))
             ->assertSeeInOrder(['id="indonesia-destination-menu"', route('tour-package.show', 'lombok'), 'id="thailand-destination-menu"'], false);
+    }
+
+    public function test_admin_can_create_a_page_under_island_and_honeymoon(): void
+    {
+        $admin = $this->createAdmin();
+
+        $this->actingAs($admin)
+            ->get(route('admin.tour-packages.create', ['parent' => 'island-honeymoon']))
+            ->assertOk()
+            ->assertSee('name="parent_slug" value="island-honeymoon"', false)
+            ->assertSee('inside Island &amp; Honeymoon', false);
+
+        $this->actingAs($admin)
+            ->post(route('admin.tour-packages.store'), [
+                'name' => 'Seychelles',
+                'kind' => 'package',
+                'parent_slug' => 'island-honeymoon',
+            ])
+            ->assertRedirect(route('admin.tour-packages.edit', 'seychelles'));
+
+        $this->assertDatabaseHas('tour_package_pages', [
+            'slug' => 'seychelles',
+            'parent_slug' => 'island-honeymoon',
+        ]);
+
+        $this->actingAs($admin)->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSeeInOrder([
+                'data-page-name="Island &amp; Honeymoon"',
+                'data-page-slug="seychelles"',
+            ], false);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSeeInOrder([
+                'id="island-destination-menu"',
+                'href="'.route('tour-package.show', 'seychelles').'"',
+                'id="indonesia-destination-menu"',
+            ], false);
+    }
+
+    public function test_admin_can_move_a_page_and_both_navigation_menus_follow_its_new_parent(): void
+    {
+        $admin = $this->createAdmin();
+        $page = $this->createCustomPage('Yogyakarta', 'package');
+        $payload = $this->packagePayload($page);
+        $payload['parent_slug'] = 'indonesia';
+
+        $this->actingAs($admin)
+            ->get(route('admin.tour-packages.edit', $page))
+            ->assertOk()
+            ->assertSee('name="parent_slug"', false)
+            ->assertSee('<option value="indonesia"', false);
+
+        $this->actingAs($admin)
+            ->put(route('admin.tour-packages.update', $page), $payload)
+            ->assertRedirect(route('admin.tour-packages.edit', $page));
+
+        $this->assertDatabaseHas('tour_package_pages', [
+            'slug' => 'yogyakarta',
+            'parent_slug' => 'indonesia',
+        ]);
+
+        $this->actingAs($admin)->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSeeInOrder([
+                'data-page-slug="indonesia"',
+                'data-page-slug="yogyakarta"',
+                'data-page-slug="thailand"',
+            ], false);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSeeInOrder([
+                'id="indonesia-destination-menu"',
+                'href="'.route('tour-package.show', 'yogyakarta').'"',
+                'id="thailand-destination-menu"',
+            ], false);
+    }
+
+    public function test_admin_can_move_a_page_from_the_sidebar_move_endpoint(): void
+    {
+        $admin = $this->createAdmin();
+        $page = $this->createCustomPage('Yogyakarta', 'package');
+
+        $this->actingAs($admin)
+            ->putJson(route('admin.tour-packages.move', $page), ['parent_slug' => 'thailand'])
+            ->assertOk()
+            ->assertJsonPath('parent_slug', 'thailand');
+
+        $this->assertDatabaseHas('tour_package_pages', [
+            'slug' => 'yogyakarta',
+            'parent_slug' => 'thailand',
+        ]);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSeeInOrder([
+                'id="thailand-destination-menu"',
+                'href="'.route('tour-package.show', 'yogyakarta').'"',
+                'id="vietnam-destination-menu"',
+            ], false);
+    }
+
+    public function test_sidebar_move_endpoint_rejects_cycles_without_changing_the_page(): void
+    {
+        $admin = $this->createAdmin();
+        $parent = $this->createCustomPage('Central Java', 'package');
+        $parent->forceFill(['parent_slug' => 'indonesia'])->save();
+        $child = $this->createCustomPage('Yogyakarta', 'package');
+        $child->forceFill(['parent_slug' => $parent->slug])->save();
+
+        $this->actingAs($admin)
+            ->putJson(route('admin.tour-packages.move', $parent), ['parent_slug' => $child->slug])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('parent_slug');
+
+        $this->assertDatabaseHas('tour_package_pages', [
+            'slug' => $parent->slug,
+            'parent_slug' => 'indonesia',
+        ]);
+    }
+
+    public function test_admin_sidebar_exposes_drag_and_tap_move_controls_for_custom_pages(): void
+    {
+        $page = $this->createCustomPage('Yogyakarta', 'package');
+
+        $this->actingAs($this->createAdmin())->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('data-navigation-draggable="'.$page->slug.'"', false)
+            ->assertSee('data-navigation-select="'.$page->slug.'"', false)
+            ->assertSee('data-navigation-parent-target="indonesia"', false)
+            ->assertSee('data-navigation-parent-target="island-honeymoon"', false)
+            ->assertSee('data-navigation-parent-target=""', false)
+            ->assertSee('data-navigation-status', false);
+    }
+
+    public function test_admin_cannot_move_a_page_inside_its_own_descendant(): void
+    {
+        $admin = $this->createAdmin();
+        $parent = $this->createCustomPage('Central Java', 'package');
+        $parent->forceFill(['parent_slug' => 'indonesia'])->save();
+        $child = $this->createCustomPage('Yogyakarta', 'package');
+        $child->forceFill(['parent_slug' => $parent->slug])->save();
+        $payload = $this->packagePayload($parent);
+        $payload['parent_slug'] = $child->slug;
+
+        $this->actingAs($admin)
+            ->put(route('admin.tour-packages.update', $parent), $payload)
+            ->assertSessionHasErrors('parent_slug');
+
+        $this->assertDatabaseHas('tour_package_pages', [
+            'slug' => $parent->slug,
+            'parent_slug' => 'indonesia',
+        ]);
+    }
+
+    public function test_admin_sidebar_and_public_navbar_share_fixed_country_destinations(): void
+    {
+        $admin = $this->createAdmin();
+        $expectedLinks = [
+            'href="'.route('vietnam').'#destinations">Hanoi</a>',
+            'href="'.route('vietnam').'#destinations">Da Nang</a>',
+            'href="'.route('vietnam').'#destinations">Ho Chi Minh</a>',
+            'href="'.route('vietnam').'#destinations">Hoi An</a>',
+            'href="'.route('philippines').'#destinations">Manila</a>',
+            'href="'.route('philippines').'#destinations">Boracay</a>',
+            'href="'.route('philippines').'#destinations">Palawan</a>',
+            'href="'.route('philippines').'#destinations">Cebu</a>',
+        ];
+
+        $publicNavigation = $this->get(route('home'))->assertOk();
+        $adminSidebar = $this->actingAs($admin)->get(route('admin.dashboard'))->assertOk();
+
+        foreach ($expectedLinks as $link) {
+            $publicNavigation->assertSee($link, false);
+            $adminSidebar->assertSee($link, false);
+        }
+    }
+
+    public function test_public_tour_list_stays_in_sync_with_admin_managed_pages(): void
+    {
+        $pages = [
+            $this->createCustomPage('Egypt', 'introduction'),
+            $this->createCustomPage('Turkiye', 'introduction'),
+        ];
+        $admin = $this->createAdmin();
+
+        $publicNavigation = $this->get(route('home'))->assertOk();
+        $adminSidebar = $this->actingAs($admin)->get(route('admin.dashboard'))->assertOk();
+
+        foreach ($pages as $page) {
+            $publicLink = 'href="'.route('tour-package.show', $page->slug).'"';
+
+            $publicNavigation->assertSee($publicLink, false);
+            $adminSidebar->assertSee('data-page-name="'.$page->name.'"', false)
+                ->assertSee('data-view-url="'.route('tour-package.show', $page->slug).'"', false);
+
+            $this->assertSame(1, substr_count($publicNavigation->getContent(), $publicLink));
+        }
+    }
+
+    public function test_navigation_nests_locations_under_their_country_and_parent_destination(): void
+    {
+        $region = $this->createCustomPage('Central Java', 'introduction');
+        $region->forceFill(['parent_slug' => 'indonesia'])->save();
+
+        $city = $this->createCustomPage('Yogyakarta', 'package');
+        $city->forceFill(['parent_slug' => $region->slug])->save();
+
+        $navigation = $this->get(route('home'))->assertOk();
+
+        $navigation->assertSeeInOrder([
+            'id="indonesia-destination-menu"',
+            'href="'.route('tour-package.show', $region->slug).'"',
+            'id="'.$region->slug.'-destination-menu"',
+            'href="'.route('tour-package.show', $city->slug).'"',
+            'id="thailand-destination-menu"',
+        ], false);
+        $this->assertSame(1, substr_count($navigation->getContent(), 'href="'.route('tour-package.show', $city->slug).'"'));
+    }
+
+    public function test_legacy_destinations_appear_under_their_parent_in_navigation(): void
+    {
+        foreach (['Aceh', 'Bali', 'Bangkok', 'Krabi', 'Lombok', 'Maldives'] as $destination) {
+            $this->createCustomPage($destination, 'package');
+        }
+
+        $legacyDestinationsMigration = require base_path('database/migrations/2026_10_21_090633_assign_legacy_tour_destinations_to_their_parents.php');
+        $legacyDestinationsMigration->up();
+        $countryDestinationsMigration = require base_path('database/migrations/2026_10_21_090830_move_island_destinations_under_their_countries.php');
+        $countryDestinationsMigration->up();
+
+        $this->assertDatabaseHas('tour_package_pages', ['slug' => 'aceh', 'parent_slug' => 'indonesia']);
+        $this->assertDatabaseHas('tour_package_pages', ['slug' => 'bali', 'parent_slug' => 'indonesia']);
+        $this->assertDatabaseHas('tour_package_pages', ['slug' => 'bangkok', 'parent_slug' => 'thailand']);
+        $this->assertDatabaseHas('tour_package_pages', ['slug' => 'krabi', 'parent_slug' => 'thailand']);
+        $this->assertDatabaseHas('tour_package_pages', ['slug' => 'lombok', 'parent_slug' => 'indonesia']);
+        $this->assertDatabaseHas('tour_package_pages', ['slug' => 'maldives', 'parent_slug' => null]);
+
+        $homeNavigation = $this->get(route('home'))
+            ->assertOk()
+            ->assertSeeInOrder([
+                'id="indonesia-destination-menu"',
+                'href="'.route('tour-package.show', 'aceh').'"',
+                'href="'.route('tour-package.show', 'bali').'"',
+                'href="'.route('tour-package.show', 'lombok').'"',
+                'id="thailand-destination-menu"',
+                'href="'.route('tour-package.show', 'bangkok').'"',
+                'href="'.route('tour-package.show', 'krabi').'"',
+                'href="'.route('tour-package.show', 'maldives').'"',
+            ], false);
+
+        $this->assertSame(1, substr_count($homeNavigation->getContent(), 'href="'.route('tour-package.show', 'maldives').'"'));
+        $this->assertStringNotContainsString('id="maldives-destination-menu"', $homeNavigation->getContent());
+    }
+
+    public function test_shared_navigation_renders_on_all_public_tour_pages(): void
+    {
+        $this->seed([
+            LegacyTourPackagePagesSeeder::class,
+            IslandHoneymoonPackagePagesSeeder::class,
+            IndonesiaTourPackagePagesSeeder::class,
+            ThailandTourPackagePagesSeeder::class,
+        ]);
+
+        $pages = [
+            route('home'),
+            route('smart-muslim'),
+            route('tour-package-private'),
+            route('island-honeymoon'),
+            route('indonesia'),
+            route('indonesia.aceh'),
+            route('bali'),
+            route('thailand'),
+            route('vietnam'),
+            route('philippines'),
+            route('tour-package.show', 'bangkok'),
+        ];
+
+        foreach ($pages as $page) {
+            $this->get($page)
+                ->assertOk()
+                ->assertSee('id="primary-nav"', false)
+                ->assertSee(route('smart-muslim'))
+                ->assertSee(route('tour-package-private'));
+        }
     }
 
     public function test_store_rejects_an_unknown_parent(): void

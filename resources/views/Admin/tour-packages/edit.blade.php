@@ -74,6 +74,13 @@
                         </div>
                         <div class="homepage-form-grid">
                             <label class="homepage-form-field"><span>Name</span><input name="name" value="{{ old('name', $page->name) }}" required maxlength="60"></label>
+                            <label class="homepage-form-field"><span>Navigation parent</span>
+                                <select name="parent_slug">
+                                    @foreach ($parentOptions as $parentSlug => $parentName)
+                                        <option value="{{ $parentSlug }}" @selected((string) old('parent_slug', $page->parent_slug) === (string) $parentSlug)>{{ $parentName }}</option>
+                                    @endforeach
+                                </select>
+                            </label>
                         </div>
                     </section>
                 @endif

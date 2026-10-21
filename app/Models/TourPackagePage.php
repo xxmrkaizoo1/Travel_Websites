@@ -16,6 +16,7 @@ class TourPackagePage extends Model
     protected $fillable = [
         'name',
         'kind',
+        'parent_slug',
         'meta_title',
         'meta_description',
         'hero_eyebrow',

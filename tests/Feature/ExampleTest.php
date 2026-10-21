@@ -32,8 +32,7 @@ class ExampleTest extends TestCase
         $this->get(route('smart-muslim'))
             ->assertOk()
             ->assertSee(route('island-honeymoon'))
-            ->assertSee('Show Island &amp; Honeymoon destinations', false)
-            ->assertSee('aria-controls="island-destination-menu"', false)
+            ->assertDontSee('Show Island &amp; Honeymoon destinations', false)
             ->assertSee('>Bali</a>', false)
             ->assertSee('>Krabi</a>', false)
             ->assertSee('>Lombok</a>', false)
@@ -41,7 +40,7 @@ class ExampleTest extends TestCase
 
         $this->get(route('island-honeymoon'))
             ->assertOk()
-            ->assertSee('Show Island &amp; Honeymoon destinations', false)
+            ->assertDontSee('Show Island &amp; Honeymoon destinations', false)
             ->assertSee('>Bali</a>', false)
             ->assertSee('>Krabi</a>', false)
             ->assertSee('>Lombok</a>', false)

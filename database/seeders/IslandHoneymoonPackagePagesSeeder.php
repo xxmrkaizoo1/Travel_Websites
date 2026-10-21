@@ -35,7 +35,12 @@ class IslandHoneymoonPackagePagesSeeder extends Seeder
 
             $page->fill($content);
             $page->slug = $slug;
-            $page->parent_slug = 'island-honeymoon';
+            $page->parent_slug = match ($slug) {
+                'bali', 'lombok' => 'indonesia',
+                'krabi' => 'thailand',
+                'maldives' => null,
+                default => 'island-honeymoon',
+            };
             $page->is_custom = true;
             $page->save();
         }

@@ -21,6 +21,10 @@ class TourPackagePageController extends Controller
 {
     public const MAX_SLIDES = 12;
 
+    private const VIRTUAL_PARENT_PAGES = [
+        'island-honeymoon' => 'Island & Honeymoon',
+    ];
+
     public function create(Request $request): View
     {
         $kind = $request->query('kind');
@@ -36,6 +40,13 @@ class TourPackagePageController extends Controller
 
     private function findParent(mixed $slug): ?TourPackagePage
     {
+        if (is_string($slug) && isset(self::VIRTUAL_PARENT_PAGES[$slug])) {
+            return (new TourPackagePage)->forceFill([
+                'slug' => $slug,
+                'name' => self::VIRTUAL_PARENT_PAGES[$slug],
+            ]);
+        }
+
         return is_string($slug) && $slug !== ''
             ? TourPackagePage::query()->where('slug', $slug)->first()
             : null;
@@ -46,7 +57,7 @@ class TourPackagePageController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:60'],
             'kind' => ['required', Rule::in([TourPackagePage::KIND_INTRODUCTION, TourPackagePage::KIND_PACKAGE])],
-            'parent_slug' => ['nullable', 'string', Rule::exists('tour_package_pages', 'slug')],
+            'parent_slug' => ['nullable', 'string', $this->parentSlugRule()],
         ]);
 
         $page = DB::transaction(function () use ($validated): TourPackagePage {
@@ -78,6 +89,7 @@ class TourPackagePageController extends Controller
             'slides' => $page->slides ?? [],
             'package' => $page->package_data ?? [],
             'maxSlides' => self::MAX_SLIDES,
+            'parentOptions' => $page->is_custom ? $this->parentOptions($page) : [],
         ]);
     }
 
@@ -377,6 +389,7 @@ class TourPackagePageController extends Controller
 
         if ($page->is_custom) {
             $rules['name'] = ['required', 'string', 'max:60'];
+            $rules['parent_slug'] = ['nullable', 'string', $this->parentSlugRule($page)];
         }
 
         $slideRules = fn (string $prefix, bool $withBody, bool $withLink): array => array_filter([
@@ -441,5 +454,88 @@ class TourPackagePageController extends Controller
         ];
 
         return $request->validate($rules);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function parentOptions(TourPackagePage $page): array
+    {
+        $excludedSlugs = [$page->slug, ...$this->descendantSlugs($page)];
+        $pages = TourPackagePage::query()
+            ->where(function ($query): void {
+                $query->where('is_custom', true)
+                    ->orWhereIn('slug', TourPackagePage::SLUGS);
+            })
+            ->whereNotIn('slug', $excludedSlugs)
+            ->orderBy('name')
+            ->get(['slug', 'name', 'parent_slug']);
+        $namesBySlug = $pages->pluck('name', 'slug')->all();
+        $options = ['' => 'Top-level destination', ...self::VIRTUAL_PARENT_PAGES];
+
+        foreach ($pages as $candidate) {
+            $parentName = $candidate->parent_slug === 'island-honeymoon'
+                ? self::VIRTUAL_PARENT_PAGES['island-honeymoon']
+                : ($namesBySlug[$candidate->parent_slug] ?? null);
+            $options[$candidate->slug] = $parentName
+                ? "{$parentName} / {$candidate->name}"
+                : $candidate->name;
+        }
+
+        return $options;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function descendantSlugs(TourPackagePage $page): array
+    {
+        $pages = TourPackagePage::query()->get(['slug', 'parent_slug']);
+        $descendants = collect();
+        $parentSlugs = collect([$page->slug]);
+
+        while ($parentSlugs->isNotEmpty()) {
+            $children = $pages->whereIn('parent_slug', $parentSlugs)
+                ->pluck('slug')
+                ->diff([$page->slug, ...$descendants->all()])
+                ->values();
+
+            $descendants = $descendants->merge($children);
+            $parentSlugs = $children;
+        }
+
+        return $descendants->all();
+    }
+
+    private function parentSlugRule(?TourPackagePage $page = null): Closure
+    {
+        $excludedSlugs = $page
+            ? [$page->slug, ...$this->descendantSlugs($page)]
+            : [];
+
+        return function (string $attribute, mixed $value, Closure $fail) use ($excludedSlugs): void {
+            if ($value === null || $value === '') {
+                return;
+            }
+
+            if (! is_string($value)) {
+                $fail('The selected parent page is invalid.');
+
+                return;
+            }
+
+            $isVirtualParent = array_key_exists($value, self::VIRTUAL_PARENT_PAGES);
+            $parentExists = $isVirtualParent || TourPackagePage::query()->where('slug', $value)->exists();
+
+            if (! $parentExists) {
+                $fail('The selected parent page is invalid.');
+
+                return;
+            }
+
+            if (in_array($value, $excludedSlugs, true)) {
+                $fail('A page cannot be placed inside itself or one of its own destinations.');
+            }
+        };
     }
 }

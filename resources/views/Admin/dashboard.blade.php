@@ -63,7 +63,7 @@
                     </summary>
                     <nav class="admin-subnav" aria-label="Tour Package (Private)">
                         <a class="admin-nav-link admin-subnav-link" href="{{ route('tour-package-private') }}">Introduction</a>
-                        <a class="admin-nav-link admin-subnav-link" data-context-menu="tour-package-menu" data-page-name="Island &amp; Honeymoon" data-edit-url="{{ route('admin.island-honeymoon') }}" data-view-url="{{ route('island-honeymoon') }}" href="{{ route('admin.island-honeymoon') }}">Island &amp; Honeymoon</a>
+                        <a class="admin-nav-link admin-subnav-link" data-context-menu="tour-package-menu" data-page-name="Island &amp; Honeymoon" data-page-slug="island-honeymoon" data-edit-url="{{ route('admin.island-honeymoon') }}" data-view-url="{{ route('island-honeymoon') }}" href="{{ route('admin.island-honeymoon') }}">Island &amp; Honeymoon</a>
                                                                                                                                                                          @include('Admin.partials.tour-page-children', ['parentSlug' => 'island-honeymoon', 'depth' => 1])
                                                 <a class="admin-nav-link admin-subnav-link" data-context-menu="tour-package-menu" data-page-name="Indonesia" data-page-slug="indonesia" data-edit-url="{{ route('admin.tour-packages.edit', 'indonesia') }}" data-view-url="{{ route('indonesia') }}" href="{{ route('admin.tour-packages.edit', 'indonesia') }}">Indonesia</a>
                         @include('Admin.partials.tour-page-children', ['parentSlug' => 'indonesia', 'depth' => 1])
@@ -71,8 +71,14 @@
                         @include('Admin.partials.tour-page-children', ['parentSlug' => 'thailand', 'depth' => 1])
                                                 <a class="admin-nav-link admin-subnav-link" data-context-menu="tour-package-menu" data-page-name="Vietnam" data-page-slug="vietnam" data-edit-url="{{ route('admin.tour-packages.edit', 'vietnam') }}" data-view-url="{{ route('vietnam') }}" href="{{ route('admin.tour-packages.edit', 'vietnam') }}">Vietnam</a>
                         @include('Admin.partials.tour-page-children', ['parentSlug' => 'vietnam', 'depth' => 1])
-                                                <a class="admin-nav-link admin-subnav-link" data-context-menu="tour-package-menu" data-page-name="Philippines" data-page-slug="philippines" data-edit-url="{{ route('admin.tour-packages.edit', 'philippines') }}" data-view-url="{{ route('philippines') }}" href="{{ route('admin.tour-packages.edit', 'philippines') }}">Philippines</a>
-                        @include('Admin.partials.tour-page-children', ['parentSlug' => 'philippines', 'depth' => 1])
+                                                @foreach ($fixedDestinationsByCountry['vietnam'] as $destination)
+                                                    <a class="admin-nav-link admin-subnav-link admin-subnav-child" href="{{ route('vietnam') }}#destinations">{{ $destination }}</a>
+                                                @endforeach
+                                                                        <a class="admin-nav-link admin-subnav-link" data-context-menu="tour-package-menu" data-page-name="Philippines" data-page-slug="philippines" data-edit-url="{{ route('admin.tour-packages.edit', 'philippines') }}" data-view-url="{{ route('philippines') }}" href="{{ route('admin.tour-packages.edit', 'philippines') }}">Philippines</a>
+                                                @include('Admin.partials.tour-page-children', ['parentSlug' => 'philippines', 'depth' => 1])
+                                                @foreach ($fixedDestinationsByCountry['philippines'] as $destination)
+                                                    <a class="admin-nav-link admin-subnav-link admin-subnav-child" href="{{ route('philippines') }}#destinations">{{ $destination }}</a>
+                                                @endforeach
                         @include('Admin.partials.tour-page-children', ['parentSlug' => '', 'depth' => 0])
                                                                         <a class="admin-nav-link admin-subnav-link admin-subnav-new" href="{{ route('admin.tour-packages.create') }}">＋ New page</a>
                                                                     </nav>

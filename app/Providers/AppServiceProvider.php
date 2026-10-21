@@ -13,6 +13,11 @@ use Illuminate\Support\Str;
 
 class AppServiceProvider extends ServiceProvider
 {
+    private const FIXED_DESTINATIONS_BY_COUNTRY = [
+        'vietnam' => ['Hanoi', 'Da Nang', 'Ho Chi Minh', 'Hoi An'],
+        'philippines' => ['Manila', 'Boracay', 'Palawan', 'Cebu'],
+    ];
+
     /**
      * Register any application services.
      */
@@ -33,7 +38,8 @@ class AppServiceProvider extends ServiceProvider
                 ->get(['slug', 'name', 'kind', 'parent_slug']);
 
             $view->with('customTourPages', $pages)
-                ->with('customTourPagesByParent', $pages->groupBy(fn (TourPackagePage $page): string => (string) $page->parent_slug));
+                ->with('customTourPagesByParent', $pages->groupBy(fn (TourPackagePage $page): string => (string) $page->parent_slug))
+                ->with('fixedDestinationsByCountry', self::FIXED_DESTINATIONS_BY_COUNTRY);
         });
 
         RateLimiter::for('admin-login', function (Request $request) {

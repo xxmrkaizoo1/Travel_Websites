@@ -18,7 +18,6 @@
             <path d="M4 20V7.5L12 4l8 3.5V20H4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
             <path d="M9 20v-5a3 3 0 0 1 6 0v5M8 9h.01M12 9h.01M16 9h.01" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
         </svg>
-        <span>Admin</span>
     </a>
 
     <main id="main">
@@ -43,31 +42,67 @@
         </section>
 
         <section class="sh-services" aria-labelledby="sh-services-title">
-            <div class="island-section-heading">
-                <span class="island-section-label">WHAT WE DO</span>
-                <h2 id="sh-services-title">Everything for your next escape.</h2>
-            </div>
-            <div class="sh-service-grid">
-                <article class="sh-service">
-                    <span class="sh-service-icon" aria-hidden="true">🌍</span>
-                    <h3>Group Tours</h3>
-                    <p>Join curated escorted journeys across Asia, Europe and beyond.</p>
-                </article>
-                <article class="sh-service">
-                    <span class="sh-service-icon" aria-hidden="true">🧭</span>
-                    <h3>Ground Tours</h3>
-                    <p>Transfers, guides and stays arranged seamlessly at your destination.</p>
-                </article>
-                <article class="sh-service">
-                    <span class="sh-service-icon" aria-hidden="true">🏝️</span>
-                    <h3>Domestic Tours</h3>
-                    <p>Discover Malaysia with easy, well-paced local getaways.</p>
-                </article>
-                <article class="sh-service">
-                    <span class="sh-service-icon" aria-hidden="true">✈️</span>
-                    <h3>Ticketing</h3>
-                    <p>Flights and travel tickets handled by our friendly team.</p>
-                </article>
+            <div class="sh-services-inner">
+                <div class="island-section-heading">
+                    <span class="island-section-label">WHAT WE DO</span>
+                    <h2 id="sh-services-title">Everything for your next escape.</h2>
+                </div>
+                <div class="sh-service-grid">
+                    <article class="sh-service">
+                        <div class="sh-service-topline">
+                            <span class="sh-service-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24">
+                                    <circle cx="12" cy="12" r="9"/>
+                                    <path d="M3.5 9h17M3.5 15h17M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>
+                                </svg>
+                            </span>
+                            <span class="sh-service-number" aria-hidden="true">01</span>
+                        </div>
+                        <h3>Group Tours</h3>
+                        <p>Join curated escorted journeys across Asia, Europe and beyond.</p>
+                    </article>
+                    <article class="sh-service">
+                        <div class="sh-service-topline">
+                            <span class="sh-service-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24">
+                                    <circle cx="12" cy="12" r="9"/>
+                                    <path d="m15.8 8.2-2.5 5.1-5.1 2.5 2.5-5.1 5.1-2.5Z"/>
+                                    <circle cx="12" cy="12" r="1"/>
+                                </svg>
+                            </span>
+                            <span class="sh-service-number" aria-hidden="true">02</span>
+                        </div>
+                        <h3>Ground Tours</h3>
+                        <p>Transfers, guides and stays arranged seamlessly at your destination.</p>
+                    </article>
+                    <article class="sh-service">
+                        <div class="sh-service-topline">
+                            <span class="sh-service-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M12 20v-8"/>
+                                    <path d="M12 12c-1-3-3.5-4.5-6.5-4.5 1 3 3.3 4.5 6.5 4.5ZM12 12c1-3 3.5-4.5 6.5-4.5-1 3-3.3 4.5-6.5 4.5ZM12 12c0-3.5 1.5-6 4-7.5.5 3.3-.8 6-4 7.5Z"/>
+                                    <path d="M5 20c2-1.2 4.3-1.2 7 0 2.7-1.2 5-1.2 7 0"/>
+                                </svg>
+                            </span>
+                            <span class="sh-service-number" aria-hidden="true">03</span>
+                        </div>
+                        <h3>Domestic Tours</h3>
+                        <p>Discover Malaysia with easy, well-paced local getaways.</p>
+                    </article>
+                    <article class="sh-service">
+                        <div class="sh-service-topline">
+                            <span class="sh-service-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="m21 3-7.2 18-3.4-7.4L3 10.2 21 3Z"/>
+                                    <path d="m10.4 13.6 4.4-4.4"/>
+                                </svg>
+                            </span>
+                            <span class="sh-service-number" aria-hidden="true">04</span>
+                        </div>
+                        <h3>Ticketing</h3>
+                        <p>Flights and travel tickets handled by our friendly team.</p>
+                    </article>
+                </div>
             </div>
         </section>
 
