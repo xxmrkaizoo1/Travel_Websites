@@ -108,6 +108,7 @@
                 <a href="{{ route('indonesia') }}">Indonesia</a>
                 <a href="{{ route('thailand') }}">Thailand</a>
                 <a href="#destinations">Private tour destinations</a>
+                <a href="{{ route('privacy-policy') }}">Privacy Policy</a>
             </div>
             <div class="footer-brands" aria-label="Our travel brands">
                 <h2>Our brands</h2>

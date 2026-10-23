@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\SmartMuslimMenu;
 use App\Models\TourPackagePage;
 use Closure;
 use Illuminate\Http\JsonResponse;
@@ -33,9 +34,21 @@ class TourPackagePageController extends Controller
 
         return view('Admin.tour-packages.create', [
             'parent' => $parent,
+            'smartMuslimMenu' => null,
             'kind' => in_array($kind, [TourPackagePage::KIND_INTRODUCTION, TourPackagePage::KIND_PACKAGE], true)
                 ? $kind
                 : TourPackagePage::KIND_INTRODUCTION,
+        ]);
+    }
+
+    public function createForSmartMuslimMenu(SmartMuslimMenu $menu): View
+    {
+        abort_if($menu->parent_id !== null, 404);
+
+        return view('Admin.tour-packages.create', [
+            'parent' => null,
+            'smartMuslimMenu' => $menu,
+            'kind' => TourPackagePage::KIND_INTRODUCTION,
         ]);
     }
 
@@ -55,14 +68,28 @@ class TourPackagePageController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        return $this->storePage($request);
+    }
+
+    public function storeForSmartMuslimMenu(Request $request, SmartMuslimMenu $menu): RedirectResponse
+    {
+        abort_if($menu->parent_id !== null, 404);
+
+        return $this->storePage($request, $menu);
+    }
+
+    private function storePage(Request $request, ?SmartMuslimMenu $menu = null): RedirectResponse
+    {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:60'],
             'kind' => ['required', Rule::in([TourPackagePage::KIND_INTRODUCTION, TourPackagePage::KIND_PACKAGE])],
-            'parent_slug' => ['nullable', 'string', $this->parentSlugRule()],
+            'parent_slug' => $menu !== null
+                ? ['prohibited']
+                : ['nullable', 'string', $this->parentSlugRule()],
             'template' => ['nullable', 'string', Rule::in(array_keys(TourPackagePage::TEMPLATES[$request->input('kind')] ?? []))],
         ]);
 
-        $page = DB::transaction(function () use ($validated): TourPackagePage {
+        $page = DB::transaction(function () use ($validated, $menu): TourPackagePage {
             $baseSlug = Str::slug($validated['name']) ?: 'tour';
             $slug = $baseSlug;
             $suffix = 2;
@@ -74,6 +101,7 @@ class TourPackagePageController extends Controller
             $page = new TourPackagePage(TourPackagePage::starterContent($validated['kind'], trim($validated['name']), $validated['template'] ?? null));
             $page->slug = $slug;
             $page->parent_slug = $validated['parent_slug'] ?? null;
+            $page->smart_muslim_menu_id = $menu?->id;
             $page->is_custom = true;
             $page->save();
 
@@ -86,18 +114,20 @@ class TourPackagePageController extends Controller
 
     public function edit(TourPackagePage $page): View
     {
+        $page->loadMissing('smartMuslimMenu');
+
         return view('Admin.tour-packages.edit', [
             'page' => $page,
             'slides' => $page->slides ?? [],
             'package' => $page->package_data ?? [],
             'maxSlides' => self::MAX_SLIDES,
-            'parentOptions' => $page->is_custom ? $this->parentOptions($page) : [],
+            'parentOptions' => $page->is_custom && $page->smart_muslim_menu_id === null ? $this->parentOptions($page) : [],
         ]);
     }
 
     public function move(Request $request, TourPackagePage $page): JsonResponse
     {
-        abort_unless($page->is_custom, 404);
+        abort_unless($page->is_custom && $page->smart_muslim_menu_id === null, 404);
 
         $validated = $request->validate([
             'parent_slug' => ['present', 'nullable', 'string', $this->parentSlugRule($page)],
@@ -288,7 +318,7 @@ class TourPackagePageController extends Controller
         foreach ($series as $index => $destination) {
             $flagFile = $request->file("series.$index.flag_file");
 
-            $destinations[] = [
+            $normalisedDestination = [
                 'name' => $destination['name'],
                 'country' => $destination['country'],
                 'flag' => $flagFile instanceof UploadedFile ? $newPaths[] = $this->storeImage($flagFile) : ($destination['flag'] ?? ''),
@@ -301,9 +331,66 @@ class TourPackagePageController extends Controller
                 ], $destination['advantages'])),
                 'gallery' => $this->resolveImageRows($request, $destination['gallery'] ?? [], "series.$index.gallery", $newPaths, ['alt', 'caption']),
             ];
+
+            $details = $destination['package_details'] ?? [];
+
+            if (in_array($destination['name'] ?? '', ['Seoul', 'Kunming', 'Da Nang'], true) && is_array($details)) {
+                $normalisedDestination['package_details'] = [
+                    'duration' => $details['duration'] ?? '',
+                    'headline' => $details['headline'] ?? '',
+                    'travel_dates' => $details['travel_dates'] ?? '',
+                    'price_from' => $details['price_from'] ?? '',
+                    'tour_code' => $details['tour_code'] ?? '',
+                    'note' => $details['note'] ?? '',
+                    'itinerary_note' => $details['itinerary_note'] ?? '',
+                    'departures' => array_values($details['departures'] ?? []),
+                    'itinerary' => array_values($details['itinerary'] ?? []),
+                    'includes' => $this->listFromText($details['includes_text'] ?? ''),
+                    'excludes' => $this->listFromText($details['excludes_text'] ?? ''),
+                    'outbound' => [
+                        'flight' => $details['outbound']['flight'] ?? '',
+                        'route' => $details['outbound']['route'] ?? '',
+                        'time' => $details['outbound']['time'] ?? '',
+                        'duration' => $details['outbound']['duration'] ?? '',
+                    ],
+                    'return' => [
+                        'flight' => $details['return']['flight'] ?? '',
+                        'route' => $details['return']['route'] ?? '',
+                        'time' => $details['return']['time'] ?? '',
+                        'duration' => $details['return']['duration'] ?? '',
+                    ],
+                    'hotels' => array_values(array_map(fn (array $hotel): array => [
+                        'name' => $hotel['name'] ?? '',
+                        'room' => $hotel['room'] ?? '',
+                        'location' => $hotel['location'] ?? '',
+                        'note' => $hotel['note'] ?? '',
+                    ], $details['hotels'] ?? [])),
+                    'essentials' => [
+                        'visa' => $details['essentials']['visa'] ?? '',
+                        'arrival_card' => $details['essentials']['arrival_card'] ?? '',
+                        'currency' => $details['essentials']['currency'] ?? '',
+                        'time' => $details['essentials']['time'] ?? '',
+                        'language' => $details['essentials']['language'] ?? '',
+                    ],
+                    'weather' => array_values($details['weather'] ?? []),
+                ];
+            }
+
+            $destinations[] = $normalisedDestination;
         }
 
         return $destinations;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function listFromText(string $text): array
+    {
+        return array_values(array_filter(
+            array_map('trim', preg_split('/\R/', $text) ?: []),
+            fn (string $line): bool => $line !== '',
+        ));
     }
 
     private function prepareInput(Request $request, TourPackagePage $page): void
@@ -321,6 +408,10 @@ class TourPackagePageController extends Controller
 
                     $series[$index]['advantages'] = $this->pruneRows($request, $destination['advantages'] ?? [], "series.$index.advantages");
                     $series[$index]['gallery'] = $this->pruneRows($request, $destination['gallery'] ?? [], "series.$index.gallery");
+                    $series[$index]['package_details']['departures'] = $this->pruneRows($request, $destination['package_details']['departures'] ?? [], "series.$index.package_details.departures");
+                    $series[$index]['package_details']['itinerary'] = $this->pruneRows($request, $destination['package_details']['itinerary'] ?? [], "series.$index.package_details.itinerary");
+                    $series[$index]['package_details']['hotels'] = $this->pruneRows($request, $destination['package_details']['hotels'] ?? [], "series.$index.package_details.hotels");
+                    $series[$index]['package_details']['weather'] = $this->pruneRows($request, $destination['package_details']['weather'] ?? [], "series.$index.package_details.weather");
                 }
 
                 $request->merge(['series' => $series]);
@@ -460,7 +551,9 @@ class TourPackagePageController extends Controller
 
         if ($page->is_custom) {
             $rules['name'] = ['required', 'string', 'max:60'];
-            $rules['parent_slug'] = ['nullable', 'string', $this->parentSlugRule($page)];
+            $rules['parent_slug'] = $page->smart_muslim_menu_id !== null
+                ? ['prohibited']
+                : ['nullable', 'string', $this->parentSlugRule($page)];
         }
 
         $slideRules = fn (string $prefix, bool $withBody, bool $withLink): array => array_filter([
@@ -504,6 +597,47 @@ class TourPackagePageController extends Controller
                 'series.*.gallery.*.image_file' => $imageUpload,
                 'series.*.gallery.*.alt' => ['required', 'string', 'max:255'],
                 'series.*.gallery.*.caption' => ['required', 'string', 'max:120'],
+                'series.*.package_details' => ['nullable', 'array'],
+                'series.*.package_details.duration' => ['nullable', 'string', 'max:80'],
+                'series.*.package_details.headline' => ['nullable', 'string', 'max:160'],
+                'series.*.package_details.travel_dates' => ['nullable', 'string', 'max:120'],
+                'series.*.package_details.price_from' => ['nullable', 'string', 'max:80'],
+                'series.*.package_details.tour_code' => ['nullable', 'string', 'max:60'],
+                'series.*.package_details.note' => ['nullable', 'string', 'max:500'],
+                'series.*.package_details.itinerary_note' => ['nullable', 'string', 'max:500'],
+                'series.*.package_details.departures' => ['nullable', 'array', 'max:10'],
+                'series.*.package_details.departures.*.date' => ['required', 'string', 'max:80'],
+                'series.*.package_details.departures.*.price' => ['required', 'string', 'max:80'],
+                'series.*.package_details.departures.*.availability' => ['required', 'string', 'max:80'],
+                'series.*.package_details.itinerary' => ['nullable', 'array', 'max:12'],
+                'series.*.package_details.itinerary.*.day' => ['required', 'string', 'max:30'],
+                'series.*.package_details.itinerary.*.title' => ['required', 'string', 'max:120'],
+                'series.*.package_details.itinerary.*.places' => ['required', 'string', 'max:700'],
+                'series.*.package_details.itinerary.*.meals' => ['nullable', 'string', 'max:160'],
+                'series.*.package_details.itinerary.*.transfer' => ['nullable', 'string', 'max:160'],
+                'series.*.package_details.includes_text' => ['nullable', 'string', 'max:1500'],
+                'series.*.package_details.excludes_text' => ['nullable', 'string', 'max:1500'],
+                'series.*.package_details.outbound' => ['nullable', 'array'],
+                'series.*.package_details.outbound.flight' => ['nullable', 'string', 'max:40'],
+                'series.*.package_details.outbound.route' => ['nullable', 'string', 'max:120'],
+                'series.*.package_details.outbound.time' => ['nullable', 'string', 'max:80'],
+                'series.*.package_details.outbound.duration' => ['nullable', 'string', 'max:80'],
+                'series.*.package_details.return' => ['nullable', 'array'],
+                'series.*.package_details.return.flight' => ['nullable', 'string', 'max:40'],
+                'series.*.package_details.return.route' => ['nullable', 'string', 'max:120'],
+                'series.*.package_details.return.time' => ['nullable', 'string', 'max:80'],
+                'series.*.package_details.return.duration' => ['nullable', 'string', 'max:80'],
+                'series.*.package_details.hotels' => ['nullable', 'array', 'max:10'],
+                'series.*.package_details.hotels.*.name' => ['required', 'string', 'max:120'],
+                'series.*.package_details.hotels.*.room' => ['nullable', 'string', 'max:120'],
+                'series.*.package_details.hotels.*.location' => ['nullable', 'string', 'max:120'],
+                'series.*.package_details.hotels.*.note' => ['nullable', 'string', 'max:500'],
+                'series.*.package_details.essentials' => ['nullable', 'array'],
+                'series.*.package_details.essentials.*' => ['nullable', 'string', 'max:120'],
+                'series.*.package_details.weather' => ['nullable', 'array', 'max:4'],
+                'series.*.package_details.weather.*.season' => ['required', 'string', 'max:80'],
+                'series.*.package_details.weather.*.temperature' => ['required', 'string', 'max:80'],
+                'series.*.package_details.weather.*.description' => ['required', 'string', 'max:100'],
             ];
 
             return $request->validate($rules);

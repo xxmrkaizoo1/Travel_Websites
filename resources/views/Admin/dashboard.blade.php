@@ -52,7 +52,7 @@
 
             <span class="admin-nav-label admin-tools-label">SMART MUSLIM TOUR</span>
             <nav class="admin-navigation" aria-label="Smart Muslim Tour">
-                <a class="admin-nav-link" href="{{ route('admin.homepage') }}">
+                <a class="admin-nav-link" data-context-menu="tour-package-menu" data-page-name="Smart Muslim Homepage content" data-edit-url="{{ route('admin.homepage') }}" data-view-url="{{ route('smart-muslim') }}" data-context-disable-create="true" data-edit-label="Manage homepage content" data-view-label="View homepage" title="Right-click for homepage actions" href="{{ route('admin.homepage') }}">
                     <span class="admin-nav-icon" aria-hidden="true">▧</span> Smart Muslim Homepage content
                 </a>
                 <details class="admin-nav-group" open>
@@ -63,7 +63,7 @@
                         </span>
                     </summary>
                     <nav class="admin-subnav" aria-label="Tour Package (Private)">
-                        <a class="admin-nav-link admin-subnav-link" href="{{ route('tour-package-private') }}">Introduction</a>
+                        <a class="admin-nav-link admin-subnav-link" data-context-menu="tour-package-menu" data-page-name="Private tour introduction" data-view-url="{{ route('tour-package-private') }}" data-view-label="View introduction" title="Right-click for introduction actions" href="{{ route('tour-package-private') }}">Introduction</a>
                         <a class="admin-nav-link admin-subnav-link" data-context-menu="tour-package-menu" data-page-name="Island &amp; Honeymoon" data-page-slug="island-honeymoon" data-navigation-parent-target="island-honeymoon" data-navigation-parent-name="Island &amp; Honeymoon" data-edit-url="{{ route('admin.island-honeymoon') }}" data-view-url="{{ route('island-honeymoon') }}" href="{{ route('admin.island-honeymoon') }}">Island &amp; Honeymoon</a>
                                                                                                                                                                          @include('Admin.partials.tour-page-children', ['parentSlug' => 'island-honeymoon', 'depth' => 1])
                                                 <a class="admin-nav-link admin-subnav-link" data-context-menu="tour-package-menu" data-page-name="Indonesia" data-page-slug="indonesia" data-navigation-parent-target="indonesia" data-navigation-parent-name="Indonesia" data-edit-url="{{ route('admin.tour-packages.edit', 'indonesia') }}" data-view-url="{{ route('indonesia') }}" href="{{ route('admin.tour-packages.edit', 'indonesia') }}">Indonesia</a>
@@ -75,7 +75,7 @@
                         <a class="admin-nav-link admin-subnav-link" data-context-menu="tour-package-menu" data-page-name="Philippines" data-page-slug="philippines" data-navigation-parent-target="philippines" data-navigation-parent-name="Philippines" data-edit-url="{{ route('admin.tour-packages.edit', 'philippines') }}" data-view-url="{{ route('philippines') }}" href="{{ route('admin.tour-packages.edit', 'philippines') }}">Philippines</a>
                         @include('Admin.partials.tour-page-children', ['parentSlug' => 'philippines', 'depth' => 1])
                         @include('Admin.partials.tour-page-children', ['parentSlug' => '', 'depth' => 0])
-                                                                        <a class="admin-nav-link admin-subnav-link admin-subnav-new" href="{{ route('admin.tour-packages.create') }}">＋ New page</a>
+                                                                        <a class="admin-nav-link admin-subnav-link admin-subnav-new" data-context-menu="tour-package-menu" data-navigation-parent-target="" data-navigation-parent-name="Tour Package (Private)" title="Right-click for page actions" href="{{ route('admin.tour-packages.create') }}">＋ New page</a>
                                                                     </nav>
                                                                 </details>
                 <details class="admin-nav-group" open>
@@ -88,15 +88,39 @@
                     <nav class="admin-subnav" aria-label="Tour Package (Series)">
                         <a class="admin-nav-link admin-subnav-link" data-context-menu="tour-package-menu" data-page-name="Series Departures 2026" data-page-slug="series-departures-2026" data-navigation-parent-target="series-departures-2026" data-navigation-parent-name="Tour Package (Series)" data-edit-url="{{ route('admin.tour-packages.edit', 'series-departures-2026') }}" data-view-url="{{ route('tour-package.show', 'series-departures-2026') }}" href="{{ route('admin.tour-packages.edit', 'series-departures-2026') }}">Introduction <small>Series Departures 2026</small></a>
                         @include('Admin.partials.tour-page-children', ['parentSlug' => 'series-departures-2026', 'depth' => 2])
-                        <a class="admin-nav-link admin-subnav-link admin-subnav-new" href="{{ route('admin.tour-packages.create', ['parent' => 'series-departures-2026']) }}">＋ New page</a>
+                        <a class="admin-nav-link admin-subnav-link admin-subnav-new" data-context-menu="tour-package-menu" data-page-slug="series-departures-2026" data-page-name="Series Departures 2026" data-navigation-parent-target="series-departures-2026" data-navigation-parent-name="Tour Package (Series)" title="Right-click for page actions" href="{{ route('admin.tour-packages.create', ['parent' => 'series-departures-2026']) }}">＋ New page</a>
                     </nav>
                 </details>
-                <span class="admin-nav-link admin-nav-link-disabled" aria-disabled="true">
-                    <span class="admin-nav-icon" aria-hidden="true">◎</span> China Muslim <small>Coming soon</small>
-                </span>
-                <span class="admin-nav-link admin-nav-link-disabled" aria-disabled="true">
-                    <span class="admin-nav-icon" aria-hidden="true">▥</span> Company Trip (MICE) <small>Coming soon</small>
-                </span>
+                <a class="admin-nav-link" data-context-menu="tour-package-menu" data-page-name="China Muslim" data-edit-url="{{ route('admin.china-muslim') }}" data-view-url="{{ route('china-muslim') }}" data-context-disable-create="true" data-edit-label="Manage China Muslim" data-view-label="View China Muslim" title="Right-click for China Muslim actions" href="{{ route('admin.china-muslim') }}">
+                    <span class="admin-nav-icon" aria-hidden="true">◎</span> China Muslim
+                </a>
+                <a class="admin-nav-link" data-context-menu="tour-package-menu" data-page-name="Company Trip (MICE)" data-edit-url="{{ route('admin.mice') }}" data-view-url="{{ route('company-trip-mice') }}" data-context-disable-create="true" data-edit-label="Manage MICE content" data-view-label="View MICE page" title="Right-click for MICE actions" href="{{ route('admin.mice') }}">
+                    <span class="admin-nav-icon" aria-hidden="true">▥</span> Company Trip (MICE)
+                </a>
+                @foreach ($smartMuslimMenus as $smartMuslimMenu)
+                    <details class="admin-nav-group">
+                        <summary class="admin-nav-link admin-nav-parent" data-context-menu="tour-package-menu" data-page-name="{{ $smartMuslimMenu->label }}" data-edit-url="{{ route('admin.smart-muslim.menus.index') }}" data-view-url="{{ route('smart-muslim') }}" data-edit-label="Manage dropdowns" data-view-label="View website" data-context-create-url="{{ route('admin.smart-muslim.menus.pages.create', $smartMuslimMenu) }}" data-context-create-title="Create page in {{ $smartMuslimMenu->label }}" data-context-create-label="Create page" title="Right-click for {{ $smartMuslimMenu->label }} actions">
+                            <span class="admin-nav-icon smart-menu-sidebar-icon" aria-hidden="true">
+                                @include('partials.smart-muslim-menu-icon', ['iconName' => $smartMuslimMenu->icon])
+                            </span> {{ $smartMuslimMenu->label }}
+                            <span class="admin-nav-chevron" aria-hidden="true">
+                                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7.5 5 5 5-5"/></svg>
+                            </span>
+                        </summary>
+                        <nav class="admin-subnav" aria-label="{{ $smartMuslimMenu->label }}">
+                            @foreach ($smartMuslimMenu->children as $childMenu)
+                                <span class="admin-nav-link admin-subnav-link" data-context-menu="tour-package-menu" data-page-name="{{ $childMenu->label }}" data-edit-url="{{ route('admin.smart-muslim.menus.index') }}" data-view-url="{{ route('smart-muslim') }}" data-delete-url="{{ route('admin.smart-muslim.menus.destroy', $childMenu) }}" data-context-disable-create="true" data-edit-label="Manage submenu labels" data-view-label="View website" data-delete-label="Remove submenu label" data-delete-confirm="Remove this submenu label? This cannot be undone." title="Right-click for submenu actions">{{ $childMenu->label }}</span>
+                            @endforeach
+                            @foreach ($smartMuslimMenu->pages as $smartMuslimPage)
+                                <a class="admin-nav-link admin-subnav-link" data-context-menu="tour-package-menu" data-page-name="{{ $smartMuslimPage->name }}" data-edit-url="{{ route('admin.tour-packages.edit', $smartMuslimPage) }}" data-view-url="{{ route('tour-package.show', $smartMuslimPage->slug) }}" data-delete-url="{{ route('admin.tour-packages.destroy', $smartMuslimPage) }}" data-edit-label="Edit page" data-view-label="View page" data-delete-label="Delete page" data-context-create-url="{{ route('admin.smart-muslim.menus.pages.create', $smartMuslimMenu) }}" data-context-create-title="Create page in {{ $smartMuslimMenu->label }}" data-context-create-label="Create another page" title="Right-click for {{ $smartMuslimPage->name }} actions" href="{{ route('admin.tour-packages.edit', $smartMuslimPage) }}">{{ $smartMuslimPage->name }} <small>{{ $smartMuslimPage->kind === 'package' ? 'Package' : 'Page' }}</small></a>
+                            @endforeach
+                            <a class="admin-nav-link admin-subnav-link admin-subnav-new" data-context-menu="tour-package-menu" data-page-name="{{ $smartMuslimMenu->label }}" data-context-create-url="{{ route('admin.smart-muslim.menus.pages.create', $smartMuslimMenu) }}" data-context-create-title="Create page in {{ $smartMuslimMenu->label }}" data-context-create-label="Create page" data-edit-url="{{ route('admin.smart-muslim.menus.index') }}" data-edit-label="Manage dropdowns" data-context-disable-create="false" title="Right-click for {{ $smartMuslimMenu->label }} actions" href="{{ route('admin.smart-muslim.menus.pages.create', $smartMuslimMenu) }}">＋ New page</a>
+                        </nav>
+                    </details>
+                @endforeach
+                <a class="admin-nav-link" data-context-menu="tour-package-menu" data-page-name="Smart Muslim content management" data-edit-url="{{ route('admin.smart-muslim.menus.index') }}" data-view-url="{{ route('smart-muslim') }}" data-context-disable-create="true" data-edit-label="Manage Smart Muslim content" data-view-label="View website" title="Right-click for Smart Muslim actions" href="{{ route('admin.smart-muslim.menus.index') }}">
+                    <span class="admin-nav-icon" aria-hidden="true">＋</span> Manage Smart Muslim content
+                </a>
                 <span class="admin-nav-link admin-nav-link-disabled" aria-disabled="true">
                     <span class="admin-nav-icon" aria-hidden="true">✉</span> Contact Us <small>Coming soon</small>
                 </span>
@@ -127,12 +151,12 @@
         <div class="admin-context-menu" id="tour-package-menu" role="menu" hidden>
             <span class="admin-context-title" data-context-page-title hidden></span>
             <div data-context-page-actions hidden>
-                <a role="menuitem" data-context-edit href="#">Edit page</a>
-                <a role="menuitem" data-context-view href="#" target="_blank" rel="noreferrer">View page ↗</a>
-                <form method="POST" action="#" data-context-delete hidden onsubmit="return confirm('Delete this page permanently? This cannot be undone.')">
+                <a role="menuitem" data-context-edit data-default-label="Edit page" href="#">Edit page</a>
+                <a role="menuitem" data-context-view data-default-label="View page ↗" href="#" target="_blank" rel="noreferrer">View page ↗</a>
+                <form method="POST" action="#" data-context-delete hidden onsubmit="return confirm(this.dataset.confirmMessage || 'Delete this page permanently? This cannot be undone.')">
                     @csrf
                     @method('DELETE')
-                    <button class="admin-context-danger" role="menuitem" type="submit">Delete page</button>
+                    <button class="admin-context-danger" data-default-label="Delete page" role="menuitem" type="submit">Delete page</button>
                 </form>
                 <hr class="admin-context-divider">
             </div>
@@ -144,8 +168,10 @@
                 <hr class="admin-context-divider">
             </div>
             <span class="admin-context-title" data-context-create-title>Create new page</span>
-            <a role="menuitem" data-context-create href="{{ route('admin.tour-packages.create', ['kind' => 'introduction']) }}">Introduction page</a>
-            <a role="menuitem" data-context-create href="{{ route('admin.tour-packages.create', ['kind' => 'package']) }}">Package page</a>
+            <div data-context-create-actions>
+                <a role="menuitem" data-context-create data-default-label="Introduction page" href="{{ route('admin.tour-packages.create', ['kind' => 'introduction']) }}">Introduction page</a>
+                <a role="menuitem" data-context-create data-default-label="Package page" href="{{ route('admin.tour-packages.create', ['kind' => 'package']) }}">Package page</a>
+            </div>
         </div>
         <button class="admin-sidebar-backdrop" type="button" aria-label="Close admin navigation" hidden></button>
 

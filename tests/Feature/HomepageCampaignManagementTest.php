@@ -116,6 +116,43 @@ class HomepageCampaignManagementTest extends TestCase
         Storage::disk('public')->assertMissing($campaign->image_bottom);
     }
 
+    public function test_admin_can_create_a_normal_banner_campaign_with_one_image(): void
+    {
+        Storage::fake('public');
+        $admin = $this->createAdmin();
+        $payload = $this->campaignData([
+            'kicker' => 'Simple banner',
+            'layout' => 'banner',
+            'image_main' => UploadedFile::fake()->image('main.jpg', 1200, 800),
+        ]);
+        unset($payload['sticker'], $payload['ribbon'], $payload['brand_top'], $payload['brand_bottom']);
+
+        $this->actingAs($admin)
+            ->post(route('admin.homepage.store'), $payload)
+            ->assertRedirect(route('admin.homepage'));
+
+        $campaign = HomepageCampaign::query()->where('kicker', 'Simple banner')->firstOrFail();
+        $this->assertTrue($campaign->isBanner());
+
+        $this->get(route('smart-muslim'))
+            ->assertOk()
+            ->assertSee('campaign-slide-banner', false)
+            ->assertSee('Simple banner');
+
+        $this->delete(route('admin.homepage.destroy', $campaign))
+            ->assertRedirect(route('admin.homepage'));
+    }
+
+    public function test_collage_campaign_still_requires_collage_images(): void
+    {
+        $this->actingAs($this->createAdmin())
+            ->post(route('admin.homepage.store'), $this->campaignData([
+                'layout' => 'collage',
+                'image_main' => UploadedFile::fake()->image('main.jpg'),
+            ]))
+            ->assertSessionHasErrors(['image_top', 'image_bottom']);
+    }
+
     public function test_admin_cannot_delete_the_last_homepage_campaign(): void
     {
         $admin = $this->createAdmin();

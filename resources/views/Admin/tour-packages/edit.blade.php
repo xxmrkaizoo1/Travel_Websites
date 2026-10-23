@@ -70,17 +70,19 @@
                     <section class="homepage-form-panel">
                         <div class="homepage-form-panel-heading">
                             <span class="homepage-form-icon" aria-hidden="true">00</span>
-                            <div><h2>Page name</h2><p>Shown in the website navbar and this sidebar. The address <code>{{ parse_url($page->publicUrl(), PHP_URL_PATH) }}</code> stays the same.</p></div>
+                            <div><h2>Page name</h2><p>{{ $page->smartMuslimMenu ? 'Shown inside Smart Muslim Tour → '.$page->smartMuslimMenu->label.' in the website navbar and this sidebar.' : 'Shown in the website navbar and this sidebar.' }} The address <code>{{ parse_url($page->publicUrl(), PHP_URL_PATH) }}</code> stays the same.</p></div>
                         </div>
                         <div class="homepage-form-grid">
                             <label class="homepage-form-field"><span>Name</span><input name="name" value="{{ old('name', $page->name) }}" required maxlength="60"></label>
-                            <label class="homepage-form-field"><span>Navigation parent</span>
-                                <select name="parent_slug">
-                                    @foreach ($parentOptions as $parentSlug => $parentName)
-                                        <option value="{{ $parentSlug }}" @selected((string) old('parent_slug', $page->parent_slug) === (string) $parentSlug)>{{ $parentName }}</option>
-                                    @endforeach
-                                </select>
-                            </label>
+                            @unless ($page->smartMuslimMenu)
+                                <label class="homepage-form-field"><span>Navigation parent</span>
+                                    <select name="parent_slug">
+                                        @foreach ($parentOptions as $parentSlug => $parentName)
+                                            <option value="{{ $parentSlug }}" @selected((string) old('parent_slug', $page->parent_slug) === (string) $parentSlug)>{{ $parentName }}</option>
+                                        @endforeach
+                                    </select>
+                                </label>
+                            @endunless
                         </div>
                     </section>
                 @endif

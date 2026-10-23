@@ -154,7 +154,7 @@
                 <a href="{{ route('thailand') }}">Thailand</a>
                 <a href="{{ route('vietnam') }}">Vietnam</a>
                 <a href="{{ route('philippines') }}">Philippines</a>
-                <a href="https://smartholidays.com.my/privacy-policy/" target="_blank" rel="noreferrer">Privacy Policy</a>
+                <a href="{{ route('privacy-policy') }}">Privacy Policy</a>
             </div>
             <div class="footer-brands" aria-label="Our travel brands">
                 <h2>Our brands</h2>

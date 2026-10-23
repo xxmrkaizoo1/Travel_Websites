@@ -24,9 +24,9 @@
         <main class="homepage-editor-main" id="tour-package-create-main">
             <section class="homepage-editor-heading">
                 <div>
-                    <span class="admin-eyebrow">TOUR PACKAGE (PRIVATE)</span>
+                    <span class="admin-eyebrow">{{ $smartMuslimMenu ? 'SMART MUSLIM TOUR · '.$smartMuslimMenu->label : 'TOUR PACKAGE (PRIVATE)' }}</span>
                     <h1>Create new page</h1>
-                    <p>The page is published at <code>/tour/your-page-name</code> and added to the website navbar and this sidebar{{ $parent ? ', inside '.$parent->name : '' }}.</p>
+                    <p>The page is published at <code>/tour/your-page-name</code> and added to the website navbar and this sidebar{{ $smartMuslimMenu ? ', inside '.$smartMuslimMenu->label : ($parent ? ', inside '.$parent->name : '') }}.</p>
                 </div>
             </section>
 
@@ -41,7 +41,7 @@
                 </div>
             @endif
 
-            <form class="homepage-campaign-form" method="POST" action="{{ route('admin.tour-packages.store') }}">
+            <form class="homepage-campaign-form" method="POST" action="{{ $smartMuslimMenu ? route('admin.smart-muslim.menus.pages.store', $smartMuslimMenu) : route('admin.tour-packages.store') }}">
                 @csrf
                 @if ($parent)
                     <input type="hidden" name="parent_slug" value="{{ $parent->slug }}">

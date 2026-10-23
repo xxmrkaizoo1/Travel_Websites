@@ -397,6 +397,10 @@ class CustomTourPackagePageTest extends TestCase
         $migration = require base_path('database/migrations/2026_10_21_152732_add_series_departures_2026_page.php');
         $migration->up();
         $migration->up();
+        $popupMigration = require base_path('database/migrations/2026_10_21_202616_add_da_nang_package_popup_content.php');
+        $popupMigration->up();
+        $kunmingPopupMigration = require base_path('database/migrations/2026_10_21_205604_add_kunming_package_popup_content.php');
+        $kunmingPopupMigration->up();
 
         $this->assertSame(1, TourPackagePage::query()->where('slug', 'series-departures-2026')->count());
 
@@ -404,8 +408,47 @@ class CustomTourPackagePageTest extends TestCase
             ->assertSee('Series Departures 2026')
             ->assertSee('Gyeongbokgung')
             ->assertSee('City of Eternal Spring', false)
-            ->assertSee('Lake Toba')
-            ->assertSee('href="#series-kunming"', false);
+            ->assertSee('Dragon Bridge')
+            ->assertDontSee('Medan')
+            ->assertDontSee('Lake Toba')
+            ->assertSee('Explore the full Da Nang package')
+            ->assertSee('id="da-nang-package-details"', false)
+            ->assertSee('Golden Bridge')
+            ->assertSee('My Khe Beach')
+            ->assertSee('5MDAD-S')
+            ->assertSee('Ba Na Hills')
+            ->assertSee('RM 2,190')
+            ->assertSee('Fully booked')
+            ->assertSee('OD502')
+            ->assertSee('Chill Palace Hotel')
+            ->assertSee('Vietnam Dong (VND)')
+            ->assertSee('Sunny season')
+            ->assertSee('href="#series-kunming"', false)
+            ->assertSee('aria-roledescription="carousel"', false)
+            ->assertSee('aria-label="1 of 3"', false)
+            ->assertSee('aria-label="Next destination"', false)
+            ->assertSee('Destination 1 of 3')
+            ->assertSee('Explore the full Seoul package')
+            ->assertSee('id="seoul-package-details"', false)
+            ->assertSee('6 – 11 Sep 2026')
+            ->assertSee('From RM 3,850')
+            ->assertSee('Nami Island')
+            ->assertSee('20 kg checked baggage')
+            ->assertSee('OD820')
+            ->assertSee('K-ETA for Malaysians')
+            ->assertSee('Please confirm the Seoul hotel details')
+            ->assertSee('Explore the full Kunming package')
+            ->assertSee('id="kunming-package-details"', false)
+            ->assertSee('9MKKMGJ-S')
+            ->assertSee('RM 4,850')
+            ->assertSee('Shuncheng Mosque')
+            ->assertSee('OD670')
+            ->assertSee('Days Inn Select Wyndham Airport')
+            ->assertSee('Required before arrival')
+            ->assertSee('Please confirm Days 8–9 with the tour operator')
+            ->assertSee('Kunming & Yunnan tour package')
+            ->assertSee('Hoi An Ancient Town')
+            ->assertDontSee('Lake Toba');
 
         $this->actingAs($this->createAdmin())->get(route('admin.dashboard'))->assertOk()
             ->assertSee('aria-label="Tour Package (Series)"', false)
@@ -413,7 +456,79 @@ class CustomTourPackagePageTest extends TestCase
 
         $this->get(route('home'))->assertOk()
             ->assertSee('id="series-tour-menu"', false)
-            ->assertSee(route('tour-package.show', 'series-departures-2026').'#series-medan', false);
+            ->assertSee(route('tour-package.show', 'series-departures-2026').'#series-da-nang', false);
+    }
+
+    public function test_added_and_cleared_series_destinations_update_their_package_slides(): void
+    {
+        $migration = require base_path('database/migrations/2026_10_21_152732_add_series_departures_2026_page.php');
+        $migration->up();
+
+        $page = TourPackagePage::query()->where('slug', 'series-departures-2026')->firstOrFail();
+        $kunming = $page->package_data['series'][1];
+        $newDestination = [
+            'name' => 'Osaka',
+            'country' => 'Japan',
+            'tagline' => 'Food, culture and city lights.',
+            'intro' => 'Explore Osaka with your group.',
+            'flag' => '',
+            'advantages' => [
+                ['icon' => '🍜', 'title' => 'Local food', 'body' => 'Discover Osaka street food.'],
+            ],
+            'gallery' => [],
+        ];
+        $page->package_data = ['series' => [$newDestination, $kunming]];
+        $page->save();
+
+        $this->get(route('tour-package.show', 'series-departures-2026'))->assertOk()
+            ->assertSee('Explore the full Osaka package')
+            ->assertSee('id="osaka-package-details"', false)
+            ->assertSee('Discover Osaka street food.')
+            ->assertDontSee('id="seoul-package-details"', false);
+
+        $page->package_data = ['series' => [$kunming]];
+        $page->save();
+
+        $this->get(route('tour-package.show', 'series-departures-2026'))->assertOk()
+            ->assertDontSee('Osaka')
+            ->assertDontSee('id="osaka-package-details"', false)
+            ->assertDontSee('id="seoul-package-details"', false)
+            ->assertSee('Explore the full Kunming package');
+    }
+
+    public function test_existing_medan_series_destination_is_migrated_to_da_nang(): void
+    {
+        $migration = require base_path('database/migrations/2026_10_21_152732_add_series_departures_2026_page.php');
+        $migration->up();
+
+        $page = TourPackagePage::query()->where('slug', 'series-departures-2026')->firstOrFail();
+        $series = $page->package_data['series'];
+        $series[2]['name'] = 'Medan';
+        $series[2]['country'] = 'Indonesia';
+        $page->package_data = ['series' => $series];
+        $page->meta_description = 'Join our 2026 group series departures to Seoul, Kunming and Medan.';
+        $page->hero_note = 'SEOUL · KUNMING · MEDAN';
+        $page->save();
+
+        $migration = require base_path('database/migrations/2026_10_21_194923_replace_medan_series_destination_with_danang.php');
+        $migration->up();
+        $popupMigration = require base_path('database/migrations/2026_10_21_202616_add_da_nang_package_popup_content.php');
+        $popupMigration->up();
+        $kunmingPopupMigration = require base_path('database/migrations/2026_10_21_205604_add_kunming_package_popup_content.php');
+        $kunmingPopupMigration->up();
+        $page->refresh();
+
+        $this->assertSame('Da Nang', $page->package_data['series'][2]['name']);
+        $this->assertSame('Vietnam', $page->package_data['series'][2]['country']);
+        $this->assertSame('images/series/danang-1.jpg', $page->package_data['series'][2]['gallery'][0]['image']);
+        $this->assertSame('5MDAD-S', $page->package_data['series'][2]['package_details']['tour_code']);
+        $this->assertSame('SEOUL · KUNMING · DA NANG', $page->hero_note);
+        $this->assertStringContainsString('Da Nang', $page->meta_description);
+
+        $this->get(route('tour-package.show', $page->slug))->assertOk()
+            ->assertSee('Dragon Bridge')
+            ->assertSee('href="#series-da-nang"', false)
+            ->assertDontSee('Medan');
     }
 
     public function test_create_form_lets_admin_pick_a_template_for_each_page_kind(): void
@@ -448,6 +563,10 @@ class CustomTourPackagePageTest extends TestCase
     {
         $migration = require base_path('database/migrations/2026_10_21_152732_add_series_departures_2026_page.php');
         $migration->up();
+        $popupMigration = require base_path('database/migrations/2026_10_21_202616_add_da_nang_package_popup_content.php');
+        $popupMigration->up();
+        $kunmingPopupMigration = require base_path('database/migrations/2026_10_21_205604_add_kunming_package_popup_content.php');
+        $kunmingPopupMigration->up();
 
         $page = TourPackagePage::query()->where('slug', 'series-departures-2026')->firstOrFail();
         $admin = $this->createAdmin();
@@ -456,6 +575,25 @@ class CustomTourPackagePageTest extends TestCase
             ->assertSee('TOUR PACKAGE (SERIES)', false)
             ->assertSee('3 destinations')
             ->assertSee('series[0][tagline]', false)
+            ->assertSee('series[0][package_details][headline]', false)
+            ->assertSee('series[1][package_details][headline]', false)
+            ->assertSee('series[2][package_details][headline]', false)
+            ->assertSee('Seoul tour package')
+            ->assertSee('Kunming & Yunnan tour package')
+            ->assertSee('Discover Da Nang, Hoi An & Ba Na Hills.')
+            ->assertSee('Please confirm the Seoul hotel details with the tour operator before booking.')
+            ->assertSee('data-name-prefix="series[0][advantages]"', false)
+            ->assertSee('Advantage 1 of 4')
+            ->assertSee('aria-label="Advantage card navigation"', false)
+            ->assertSee('aria-label="Photo card navigation"', false)
+            ->assertSee('aria-label="Departure card navigation"', false)
+            ->assertSee('aria-label="Itinerary day card navigation"', false)
+            ->assertSee('aria-label="Hotel card navigation"', false)
+            ->assertSee('aria-label="Weather season card navigation"', false)
+            ->assertSee('data-series-previous', false)
+            ->assertSee('data-series-next', false)
+            ->assertSee('Add advantage')
+            ->assertSee('Add hotel')
             ->assertDontSee('Destination slideshow');
 
         $payload = $page->only([
@@ -466,7 +604,39 @@ class CustomTourPackagePageTest extends TestCase
             'hero_eyebrow', 'hero_headline', 'hero_highlight', 'hero_body', 'hero_cta_label', 'hero_note', 'hero_image_alt', 'name', 'parent_slug',
         ]);
         $payload['series'] = $page->package_data['series'];
+        $packageDetails = $payload['series'][2]['package_details'];
+        $packageDetails['includes_text'] = implode("\n", $packageDetails['includes']);
+        $packageDetails['excludes_text'] = implode("\n", $packageDetails['excludes']);
+        $packageDetails['hotels'] = [[
+            'name' => $packageDetails['hotel']['name'],
+            'room' => $packageDetails['hotel']['room'],
+            'location' => $packageDetails['hotel']['location'],
+            'note' => $packageDetails['hotel']['note'],
+        ]];
+        unset($packageDetails['hotel']);
+        unset($packageDetails['includes'], $packageDetails['excludes']);
+        $payload['series'][2]['package_details'] = $packageDetails;
+        $packageDetails = $payload['series'][0]['package_details'];
+        $packageDetails['includes_text'] = implode("\n", $packageDetails['includes']);
+        $packageDetails['excludes_text'] = implode("\n", $packageDetails['excludes']);
+        $packageDetails['hotels'] = [[
+            'name' => $packageDetails['hotel']['name'],
+            'room' => $packageDetails['hotel']['room'],
+            'location' => $packageDetails['hotel']['location'],
+            'note' => $packageDetails['hotel']['note'],
+        ]];
+        unset($packageDetails['includes'], $packageDetails['excludes']);
+        unset($packageDetails['hotel']);
+        $payload['series'][0]['package_details'] = $packageDetails;
+        $packageDetails = $payload['series'][1]['package_details'];
+        $packageDetails['includes_text'] = implode("\n", $packageDetails['includes']);
+        $packageDetails['excludes_text'] = implode("\n", $packageDetails['excludes']);
+        unset($packageDetails['includes'], $packageDetails['excludes']);
+        unset($packageDetails['hotel']);
+        $payload['series'][1]['package_details'] = $packageDetails;
         $payload['series'][0]['tagline'] = 'Edited tagline';
+        array_pop($payload['series'][0]['advantages']);
+        $payload['series'][0]['advantages'][] = ['icon' => '✨', 'title' => 'Added advantage', 'body' => 'This repeated card was added from the editor.'];
 
         $this->actingAs($admin)->put(route('admin.tour-packages.update', $page), $payload)
             ->assertSessionHasNoErrors()
@@ -476,8 +646,64 @@ class CustomTourPackagePageTest extends TestCase
         $this->assertCount(3, $series);
         $this->assertSame('Edited tagline', $series[0]['tagline']);
         $this->assertCount(5, $series[0]['gallery']);
+        $this->assertCount(4, $series[0]['advantages']);
+        $this->assertSame('Added advantage', $series[0]['advantages'][3]['title']);
         $this->assertSame('images/series/flag-kr.png', $series[0]['flag']);
+        $this->assertSame('6MICN', $series[0]['package_details']['tour_code']);
+        $this->assertCount(6, $series[0]['package_details']['itinerary']);
+        $this->assertContains('Return Batik Air flight tickets', $series[0]['package_details']['includes']);
+        $this->assertSame('9MKKMGJ-S', $series[1]['package_details']['tour_code']);
+        $this->assertCount(9, $series[1]['package_details']['itinerary']);
+        $this->assertCount(6, $series[1]['package_details']['hotels']);
+        $this->assertContains('Return Batik Air flight tickets', $series[2]['package_details']['includes']);
 
+        $payload['series'][0]['package_details']['headline'] = 'Updated Seoul package';
+        $payload['series'][0]['package_details']['itinerary'][0]['places'] = 'Updated Seoul arrival details.';
+        $payload['series'][1]['package_details']['headline'] = 'Updated Kunming package';
+        $payload['series'][1]['package_details']['departures'][0]['price'] = 'RM 4,999';
+        $payload['series'][1]['package_details']['itinerary'][7]['title'] = 'Updated Kunming Day 8';
+        $payload['series'][1]['package_details']['hotels'][0]['name'] = 'Updated Kunming hotel';
+        $payload['series'][2]['package_details']['headline'] = 'Updated Da Nang package';
+        $payload['series'][2]['package_details']['departures'][0]['price'] = 'RM 1,999';
+        $payload['series'][2]['package_details']['itinerary'][0]['title'] = 'Updated arrival day';
+        $payload['series'][2]['package_details']['includes_text'] = "Return flights\nAirport transfers";
+
+        $this->actingAs($admin)->put(route('admin.tour-packages.update', $page), $payload)
+            ->assertSessionHasNoErrors();
+
+        $seoulDetails = $page->fresh()->package_data['series'][0]['package_details'];
+        $this->assertSame('Updated Seoul package', $seoulDetails['headline']);
+        $this->assertSame('Updated Seoul arrival details.', $seoulDetails['itinerary'][0]['places']);
+        $kunmingDetails = $page->fresh()->package_data['series'][1]['package_details'];
+        $this->assertSame('Updated Kunming package', $kunmingDetails['headline']);
+        $this->assertSame('RM 4,999', $kunmingDetails['departures'][0]['price']);
+        $this->assertSame('Updated Kunming Day 8', $kunmingDetails['itinerary'][7]['title']);
+        $this->assertSame('Updated Kunming hotel', $kunmingDetails['hotels'][0]['name']);
+        $daNangDetails = $page->fresh()->package_data['series'][2]['package_details'];
+        $this->assertSame('Updated Da Nang package', $daNangDetails['headline']);
+        $this->assertSame('RM 1,999', $daNangDetails['departures'][0]['price']);
+        $this->assertSame('Updated arrival day', $daNangDetails['itinerary'][0]['title']);
+        $this->assertSame(['Return flights', 'Airport transfers'], $daNangDetails['includes']);
+        $this->get(route('tour-package.show', $page->slug))
+            ->assertOk()
+            ->assertSee('Updated Seoul package')
+            ->assertSee('Updated Seoul arrival details.')
+            ->assertSee('Added advantage')
+            ->assertDontSee('Shopping Paradise')
+            ->assertSee('Updated Kunming package')
+            ->assertSee('RM 4,999')
+            ->assertSee('Updated Kunming Day 8')
+            ->assertSee('Updated Kunming hotel')
+            ->assertSee('Updated Da Nang package')
+            ->assertSee('RM 1,999')
+            ->assertSee('Updated arrival day')
+            ->assertSee('Airport transfers');
+
+        $payload['series'][2]['package_details']['price_from'] = str_repeat('x', 81);
+        $this->actingAs($admin)->put(route('admin.tour-packages.update', $page), $payload)
+            ->assertSessionHasErrors('series.2.package_details.price_from');
+
+        $payload['series'][2]['package_details']['price_from'] = 'From RM 1,890';
         $payload['series'][3] = [
             'name' => 'Tokyo', 'country' => 'Japan', 'tagline' => 'Neon and temples.', 'intro' => 'Tokyo intro.', 'flag' => '',
             'advantages' => [['icon' => '', 'title' => 'Easy', 'body' => 'Everything arranged.'], ['icon' => '', 'title' => '', 'body' => '']],

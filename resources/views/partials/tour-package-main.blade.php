@@ -45,7 +45,7 @@
     </section>
 
     @if (! empty($page->package_data['series']))
-        @include('partials.tour-package-series', ['page' => $page, 'series' => $page->package_data['series']])
+        @include('Smart-Muslim.Tour-Package(series).tour-package-series', ['page' => $page, 'series' => $page->package_data['series']])
     @else
     <section class="destination-section {{ $slug }}-destinations" id="destinations" aria-labelledby="{{ $slug }}-destinations-title">
         <div class="island-section-heading">

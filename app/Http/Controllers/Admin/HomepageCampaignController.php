@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Throwable;
@@ -47,6 +48,10 @@ class HomepageCampaignController extends Controller
         }
 
         foreach (['image_main', 'image_top', 'image_bottom'] as $field) {
+            if (! $request->hasFile($field)) {
+                continue;
+            }
+
             $path = $request->file($field)->store('homepage-campaigns', 'public');
 
             if (! is_string($path)) {
@@ -58,6 +63,10 @@ class HomepageCampaignController extends Controller
             }
 
             $storedPaths[$field] = $path;
+        }
+
+        foreach (['image_top', 'image_bottom', 'sticker', 'ribbon', 'brand_top', 'brand_bottom'] as $field) {
+            $validated[$field] = $storedPaths[$field] ?? $validated[$field] ?? '';
         }
 
         try {
@@ -105,11 +114,17 @@ class HomepageCampaignController extends Controller
 
     public function update(Request $request, HomepageCampaign $campaign): RedirectResponse
     {
-        $validated = $this->validateCampaign($request, false);
+        $validated = $this->validateCampaign($request, false, $campaign);
         $disk = Storage::disk('public');
         $storedPaths = [];
         $oldPaths = [];
+
+        foreach (['sticker', 'ribbon', 'brand_top', 'brand_bottom'] as $field) {
+            $validated[$field] = $validated[$field] ?? '';
+        }
+
         $updates = Arr::only($validated, [
+            'layout',
             'kicker',
             'headline',
             'headline_highlight',
@@ -152,9 +167,9 @@ class HomepageCampaignController extends Controller
         }
 
         foreach ($oldPaths as $oldPath) {
-            $scheme = parse_url($oldPath, PHP_URL_SCHEME);
+            $scheme = parse_url((string) $oldPath, PHP_URL_SCHEME);
 
-            if ($scheme !== null || ! $disk->exists($oldPath)) {
+            if ($oldPath === '' || $scheme !== null || ! $disk->exists($oldPath)) {
                 continue;
             }
 
@@ -189,7 +204,7 @@ class HomepageCampaignController extends Controller
         $disk = Storage::disk('public');
 
         foreach ($imagePaths as $path) {
-            if (parse_url($path, PHP_URL_SCHEME) !== null || ! $disk->exists($path)) {
+            if ($path === '' || parse_url($path, PHP_URL_SCHEME) !== null || ! $disk->exists($path)) {
                 continue;
             }
 
@@ -208,8 +223,13 @@ class HomepageCampaignController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function validateCampaign(Request $request, bool $creating): array
+    private function validateCampaign(Request $request, bool $creating, ?HomepageCampaign $campaign = null): array
     {
+        $request->mergeIfMissing(['layout' => 'collage']);
+        $isCollage = $request->input('layout') === 'collage';
+        $needsImage = fn (string $field): bool => $isCollage && ($creating || blank($campaign?->{$field}));
+        $collageText = fn (int $max): array => [Rule::requiredIf($isCollage), 'nullable', 'string', 'max:'.$max];
+
         return $request->validate([
             'kicker' => ['required', 'string', 'max:100'],
             'headline' => ['required', 'string', 'max:100'],
@@ -217,14 +237,15 @@ class HomepageCampaignController extends Controller
             'body' => ['required', 'string', 'max:500'],
             'cta_label' => ['required', 'string', 'max:100'],
             'design_key' => ['required', 'in:fair,muslim,group'],
+            'layout' => ['required', 'in:collage,banner'],
             'image_alt' => ['required', 'string', 'max:255'],
-            'sticker' => ['required', 'string', 'max:100'],
-            'ribbon' => ['required', 'string', 'max:100'],
-            'brand_top' => ['required', 'string', 'max:50'],
-            'brand_bottom' => ['required', 'string', 'max:50'],
+            'sticker' => $collageText(100),
+            'ribbon' => $collageText(100),
+            'brand_top' => $collageText(50),
+            'brand_bottom' => $collageText(50),
             'image_main' => [$creating ? 'required' : 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
-            'image_top' => [$creating ? 'required' : 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
-            'image_bottom' => [$creating ? 'required' : 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'image_top' => [Rule::requiredIf($needsImage('image_top')), 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'image_bottom' => [Rule::requiredIf($needsImage('image_bottom')), 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ]);
     }
 }

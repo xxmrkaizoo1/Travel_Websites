@@ -196,6 +196,90 @@ if (destinationCarousel) {
     updateDestinationControls();
 }
 
+const seriesCarousel = document.querySelector('.series-carousel');
+
+if (seriesCarousel) {
+    const viewport = seriesCarousel.querySelector('.series-viewport');
+    const track = seriesCarousel.querySelector('.series-track');
+    const slides = [...track.querySelectorAll('.series-destination')];
+    const previousButton = seriesCarousel.querySelector('.series-prev');
+    const nextButton = seriesCarousel.querySelector('.series-next');
+    const count = seriesCarousel.querySelector('.series-count');
+    const tabs = [...document.querySelectorAll('.series-tabs .series-tab')];
+
+    const slideStride = () => slides[0].getBoundingClientRect().width
+        + Number.parseFloat(window.getComputedStyle(track).gap);
+
+    const updateSeriesControls = () => {
+        const activeIndex = Math.min(slides.length - 1, Math.round(viewport.scrollLeft / slideStride()));
+
+        previousButton.disabled = activeIndex === 0;
+        nextButton.disabled = activeIndex === slides.length - 1;
+        count.textContent = `Destination ${activeIndex + 1} of ${slides.length}`;
+        tabs.forEach((tab, index) => {
+            if (index === activeIndex) {
+                tab.setAttribute('aria-current', 'true');
+            } else {
+                tab.removeAttribute('aria-current');
+            }
+        });
+    };
+
+    previousButton.addEventListener('click', () => {
+        viewport.scrollBy({ left: -slideStride(), behavior: 'smooth' });
+    });
+
+    nextButton.addEventListener('click', () => {
+        viewport.scrollBy({ left: slideStride(), behavior: 'smooth' });
+    });
+
+    tabs.forEach((tab, index) => {
+        tab.addEventListener('click', (event) => {
+            event.preventDefault();
+            viewport.scrollTo({ left: slideStride() * index, behavior: 'smooth' });
+        });
+    });
+
+    viewport.addEventListener('scroll', updateSeriesControls, { passive: true });
+    window.addEventListener('resize', updateSeriesControls);
+    updateSeriesControls();
+}
+
+document.querySelectorAll('.series-details-dialog').forEach((seriesDetailsDialog) => {
+    const openButton = document.querySelector(`[aria-controls="${seriesDetailsDialog.id}"]`);
+    const closeButton = seriesDetailsDialog.querySelector('[data-series-details-close]');
+    const track = seriesDetailsDialog.querySelector('.series-details-track');
+    const slides = [...track.querySelectorAll('.series-details-slide')];
+    const previousButton = seriesDetailsDialog.querySelector('.series-details-prev');
+    const nextButton = seriesDetailsDialog.querySelector('.series-details-next');
+    const count = seriesDetailsDialog.querySelector('.series-details-count');
+    let activeIndex = 0;
+
+    const showDetailsSlide = (index) => {
+        activeIndex = Math.max(0, Math.min(index, slides.length - 1));
+        track.style.transform = `translateX(-${activeIndex * 100}%)`;
+        count.textContent = `Step ${activeIndex + 1} of ${slides.length}`;
+        previousButton.disabled = activeIndex === 0;
+        nextButton.disabled = activeIndex === slides.length - 1;
+
+        slides.forEach((slide, slideIndex) => {
+            slide.setAttribute('aria-hidden', String(slideIndex !== activeIndex));
+            slide.inert = slideIndex !== activeIndex;
+        });
+    };
+
+    openButton.addEventListener('click', () => {
+        showDetailsSlide(0);
+        seriesDetailsDialog.showModal();
+        closeButton.focus();
+    });
+
+    closeButton.addEventListener('click', () => seriesDetailsDialog.close());
+    previousButton.addEventListener('click', () => showDetailsSlide(activeIndex - 1));
+    nextButton.addEventListener('click', () => showDetailsSlide(activeIndex + 1));
+    showDetailsSlide(0);
+});
+
 document.querySelectorAll('.bali-gallery').forEach((baliCarousel) => {
     const slides = [...baliCarousel.querySelectorAll('.bali-slide')];
     const dots = [...baliCarousel.querySelectorAll('.bali-slide-dots button')];
@@ -376,6 +460,7 @@ const revealTargets = document.querySelectorAll([
     '.island-intro-copy', '.island-photo-stack', '.island-section-heading', '.island-highlight', '.destination-carousel',
     '.aceh-itinerary-heading', '.aceh-day', '.bali-gallery', '.aceh-details-card', '.aceh-hotel-card', '.island-contact > *',
     '.series-head', '.series-advantage', '.series-flag', '.series-photo',
+    '.travel-moments__heading', '.travel-moment-card',
 ].join(', '));
 
 if (revealTargets.length && 'IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -534,6 +619,27 @@ document.querySelectorAll('input[name="kind"]').forEach((kindInput) => {
     });
 });
 
+const campaignLayoutSelect = document.querySelector('[data-campaign-layout]');
+
+if (campaignLayoutSelect) {
+    const syncCampaignLayout = () => {
+        const isCollage = campaignLayoutSelect.value === 'collage';
+
+        document.querySelectorAll('[data-collage-only]').forEach((field) => {
+            field.hidden = !isCollage;
+            field.querySelectorAll('input, textarea').forEach((input) => {
+                input.disabled = !isCollage;
+            });
+        });
+        document.querySelectorAll('[data-banner-note]').forEach((note) => {
+            note.hidden = isCollage;
+        });
+    };
+
+    campaignLayoutSelect.addEventListener('change', syncCampaignLayout);
+    syncCampaignLayout();
+}
+
 const previewForm = document.querySelector('form[data-form-slideshow]');
 
 document.addEventListener('click', (event) => {
@@ -547,10 +653,148 @@ document.addEventListener('click', (event) => {
         return;
     }
 
-    clearButton.closest('.homepage-form-panel').querySelectorAll('input:not([type="file"]):not([type="hidden"]), textarea').forEach((field) => {
-        field.value = '';
+    const panel = clearButton.closest('.homepage-form-panel');
+
+    panel.querySelectorAll('input, textarea').forEach((field) => {
+        if (field.type === 'checkbox' || field.type === 'radio') {
+            field.checked = false;
+        } else {
+            field.value = '';
+        }
     });
+    panel.querySelector('[data-series-package-editor]')?.removeAttribute('open');
+    panel.querySelector('[data-series-package-editor]')?.setAttribute('hidden', '');
     clearButton.remove();
+});
+
+document.addEventListener('input', (event) => {
+    const nameField = event.target.closest('[data-series-name]');
+
+    if (!nameField) {
+        return;
+    }
+
+    const editor = nameField.closest('.homepage-form-panel').querySelector('[data-series-package-editor]');
+    const destinationName = nameField.value.trim().toLocaleLowerCase();
+    const hasEditablePackageDetails = ['seoul', 'kunming', 'da nang'].includes(destinationName);
+
+    editor.toggleAttribute('hidden', !hasEditablePackageDetails);
+
+    if (hasEditablePackageDetails) {
+        editor.setAttribute('open', '');
+    } else {
+        editor.removeAttribute('open');
+    }
+});
+
+document.querySelectorAll('[data-series-repeater]').forEach((repeater) => {
+    const rowsContainer = repeater.querySelector('[data-series-repeater-rows]');
+    const addButton = repeater.querySelector('[data-series-add-row]');
+    const rowCount = repeater.querySelector('[data-series-row-count]');
+    const previousButton = repeater.querySelector('[data-series-previous]');
+    const nextButton = repeater.querySelector('[data-series-next]');
+    const template = repeater.querySelector('template[data-series-row-template]');
+    const namePrefix = repeater.dataset.namePrefix;
+    const rowLabel = repeater.dataset.rowLabel;
+    const minimumRows = Number(repeater.dataset.minRows);
+    const maximumRows = Number(repeater.dataset.maxRows);
+
+    if (!rowsContainer || !addButton || !rowCount || !template || !namePrefix || !rowLabel) {
+        return;
+    }
+
+    let activeIndex = 0;
+
+    const showRow = (index) => {
+        const rows = [...rowsContainer.querySelectorAll('[data-series-repeat-row]')];
+        activeIndex = rows.length ? Math.min(Math.max(index, 0), rows.length - 1) : 0;
+        rowsContainer.style.transform = `translateX(-${activeIndex * 100}%)`;
+
+        rows.forEach((row, rowIndex) => {
+            const isActive = rowIndex === activeIndex;
+
+            row.inert = !isActive;
+            row.setAttribute('aria-hidden', String(!isActive));
+        });
+
+        if (previousButton) {
+            previousButton.disabled = activeIndex === 0;
+        }
+
+        if (nextButton) {
+            nextButton.disabled = rows.length === 0 || activeIndex >= rows.length - 1;
+        }
+
+        rowCount.textContent = rows.length
+            ? `${rowLabel} ${activeIndex + 1} of ${rows.length}`
+            : `0 of ${maximumRows} ${rowLabel.toLocaleLowerCase()}${maximumRows === 1 ? '' : 's'}`;
+    };
+
+    const updateRows = () => {
+        const rows = [...rowsContainer.querySelectorAll('[data-series-repeat-row]')];
+
+        rows.forEach((row, index) => {
+            row.querySelector('[data-series-row-label]').textContent = `${rowLabel} ${index + 1}`;
+            row.querySelectorAll('[data-series-field]').forEach((field) => {
+                field.name = `${namePrefix}[${index}][${field.dataset.seriesField}]`;
+            });
+            row.querySelector('[data-series-remove-row]').disabled = rows.length <= minimumRows;
+        });
+
+        addButton.disabled = rows.length >= maximumRows;
+        showRow(activeIndex);
+    };
+
+    previousButton?.addEventListener('click', () => showRow(activeIndex - 1));
+    nextButton?.addEventListener('click', () => showRow(activeIndex + 1));
+    rowsContainer.addEventListener('invalid', (event) => {
+        const row = event.target.closest('[data-series-repeat-row]');
+        const invalidIndex = [...rowsContainer.querySelectorAll('[data-series-repeat-row]')].indexOf(row);
+
+        if (invalidIndex !== -1 && invalidIndex !== activeIndex) {
+            showRow(invalidIndex);
+        }
+    }, true);
+
+    addButton.addEventListener('click', () => {
+        if (rowsContainer.querySelectorAll('[data-series-repeat-row]').length >= maximumRows) {
+            return;
+        }
+
+        rowsContainer.append(template.content.cloneNode(true));
+        activeIndex = rowsContainer.querySelectorAll('[data-series-repeat-row]').length - 1;
+        updateRows();
+        rowsContainer.querySelector('[data-series-repeat-row]:last-child [data-series-field]:not([type="file"])')?.focus();
+    });
+
+    rowsContainer.addEventListener('click', (event) => {
+        if (!(event.target instanceof Element)) {
+            return;
+        }
+
+        const removeButton = event.target.closest('[data-series-remove-row]');
+
+        if (!removeButton) {
+            return;
+        }
+
+        const row = removeButton.closest('[data-series-repeat-row]');
+        const removedIndex = [...rowsContainer.querySelectorAll('[data-series-repeat-row]')].indexOf(row);
+        const nextRow = row.nextElementSibling ?? row.previousElementSibling;
+        row.remove();
+        if (removedIndex < activeIndex) {
+            activeIndex -= 1;
+        }
+        updateRows();
+
+        if (nextRow) {
+            nextRow.querySelector('[data-series-field]')?.focus();
+        } else {
+            addButton.focus();
+        }
+    });
+
+    updateRows();
 });
 
 document.addEventListener('click', (event) => {
@@ -665,8 +909,15 @@ const contextTriggers = document.querySelectorAll('[data-context-menu]');
 const contextMenu = contextTriggers.length ? document.getElementById(contextTriggers[0].dataset.contextMenu) : null;
 
 if (contextMenu) {
+    document.body.append(contextMenu);
     const pageTitle = contextMenu.querySelector('[data-context-page-title]');
     const pageActions = contextMenu.querySelector('[data-context-page-actions]');
+    const editLink = contextMenu.querySelector('[data-context-edit]');
+    const viewLink = contextMenu.querySelector('[data-context-view]');
+    const deleteButton = contextMenu.querySelector('[data-context-delete] button');
+    const createTitle = contextMenu.querySelector('[data-context-create-title]');
+    const createActions = contextMenu.querySelector('[data-context-create-actions]');
+    const createLinks = [...contextMenu.querySelectorAll('[data-context-create]')];
     const moveActions = contextMenu.querySelector('[data-navigation-move-actions]');
     const moveParentSelect = contextMenu.querySelector('[data-navigation-parent-select]');
     const moveButton = contextMenu.querySelector('[data-navigation-move]');
@@ -717,24 +968,60 @@ if (contextMenu) {
     const openMenu = (trigger, event, focusMove = false) => {
         activeTrigger = trigger;
 
-        const hasPage = Boolean(trigger.dataset.editUrl);
+        const hasPageActions = Boolean(
+            trigger.dataset.editUrl
+            || trigger.dataset.viewUrl
+            || trigger.dataset.deleteUrl
+        );
 
-        pageTitle.hidden = !hasPage;
-        pageActions.hidden = !hasPage;
-        pageTitle.textContent = trigger.dataset.pageName || '';
+        pageTitle.hidden = !hasPageActions;
+        pageActions.hidden = !hasPageActions;
+        pageTitle.textContent = trigger.dataset.pageName || trigger.dataset.contextTitle || '';
+        editLink.hidden = !trigger.dataset.editUrl;
+        editLink.textContent = trigger.dataset.editLabel || editLink.dataset.defaultLabel;
+        viewLink.hidden = !trigger.dataset.viewUrl;
+        viewLink.textContent = trigger.dataset.viewLabel || viewLink.dataset.defaultLabel;
         moveActions.hidden = !trigger.dataset.moveUrl;
         moveStatus.textContent = '';
+        deleteForm.hidden = !trigger.dataset.deleteUrl;
+        deleteButton.textContent = trigger.dataset.deleteLabel || deleteButton.dataset.defaultLabel;
+        deleteForm.dataset.confirmMessage = trigger.dataset.deleteConfirm
+            || 'Delete this page permanently? This cannot be undone.';
 
         const parentSlug = trigger.dataset.pageSlug || trigger.dataset.navigationParentTarget || '';
         const parentName = trigger.dataset.pageName || trigger.dataset.navigationParentName;
+        const canCreatePage = trigger.dataset.contextDisableCreate !== 'true';
+        const customCreateUrl = trigger.dataset.contextCreateUrl;
 
-        contextMenu.querySelector('[data-context-create-title]').textContent = parentSlug
+        createTitle.hidden = !canCreatePage;
+        createActions.hidden = !canCreatePage;
+        createTitle.textContent = trigger.dataset.contextCreateTitle || (parentSlug
             ? `Create new page inside ${parentName}`
-            : 'Create new page';
+            : 'Create new page');
 
-        contextMenu.querySelectorAll('[data-context-create]').forEach((link) => {
-            const url = new URL(link.href, window.location.origin);
+        createLinks.forEach((link, index) => {
+            if (!link.dataset.defaultHref) {
+                link.dataset.defaultHref = link.href;
+            }
 
+            if (!canCreatePage) {
+                link.hidden = true;
+
+                return;
+            }
+
+            link.hidden = Boolean(customCreateUrl && index > 0);
+            link.textContent = customCreateUrl && index === 0
+                ? trigger.dataset.contextCreateLabel || 'Create new page'
+                : link.dataset.defaultLabel;
+
+            if (customCreateUrl && index === 0) {
+                link.href = customCreateUrl;
+
+                return;
+            }
+
+            const url = new URL(link.dataset.defaultHref, window.location.origin);
             url.searchParams.delete('parent');
 
             if (parentSlug) {
@@ -744,11 +1031,16 @@ if (contextMenu) {
             link.href = url.toString();
         });
 
-        if (hasPage) {
-            contextMenu.querySelector('[data-context-edit]').href = trigger.dataset.editUrl;
-            contextMenu.querySelector('[data-context-view]').href = trigger.dataset.viewUrl;
-            deleteForm.hidden = !trigger.dataset.deleteUrl;
-            deleteForm.action = trigger.dataset.deleteUrl || '#';
+        if (trigger.dataset.editUrl) {
+            editLink.href = trigger.dataset.editUrl;
+        }
+
+        if (trigger.dataset.viewUrl) {
+            viewLink.href = trigger.dataset.viewUrl;
+        }
+
+        if (trigger.dataset.deleteUrl) {
+            deleteForm.action = trigger.dataset.deleteUrl;
         }
 
         if (trigger.dataset.moveUrl) {
@@ -1012,7 +1304,7 @@ adminSidebarBackdrop?.addEventListener('click', () => closeAdminSidebar(true));
 document.addEventListener('click', (event) => {
     const target = event.target;
 
-    if (target instanceof Element && !target.closest('.admin-sidebar, .admin-menu-toggle')) {
+    if (target instanceof Element && !target.closest('.admin-sidebar, .admin-menu-toggle, .admin-context-menu')) {
         closeAdminSidebar();
     }
 });
@@ -1077,3 +1369,261 @@ if (bookingSearch) {
         }
     });
 }
+
+document.querySelectorAll('[data-china-open]').forEach((opener) => {
+    const modal = document.getElementById(opener.dataset.chinaOpen);
+
+    if (!modal) {
+        return;
+    }
+
+    const track = modal.querySelector('.china-modal-track');
+    const slides = [...modal.querySelectorAll('.china-slide')];
+    const dotsWrap = modal.querySelector('.china-modal-dots');
+    const count = modal.querySelector('[data-china-count]');
+    const prev = modal.querySelector('[data-china-prev]');
+    const next = modal.querySelector('[data-china-next]');
+    let index = 0;
+
+    const goTo = (target) => {
+        index = Math.max(0, Math.min(slides.length - 1, target));
+        track.style.transform = `translateX(-${index * 100}%)`;
+        slides.forEach((slide, slideIndex) => slide.classList.toggle('is-active', slideIndex === index));
+        [...dotsWrap.children].forEach((dot, dotIndex) => dot.classList.toggle('is-active', dotIndex === index));
+        count.textContent = `${index + 1} / ${slides.length}`;
+        prev.disabled = index === 0;
+        next.disabled = index === slides.length - 1;
+    };
+
+    slides.forEach((_, slideIndex) => {
+        const dot = document.createElement('button');
+        dot.type = 'button';
+        dot.className = 'china-modal-dot';
+        dot.setAttribute('aria-label', `Go to slide ${slideIndex + 1}`);
+        dot.addEventListener('click', () => goTo(slideIndex));
+        dotsWrap.append(dot);
+    });
+
+    opener.addEventListener('click', (event) => {
+        event.preventDefault();
+        goTo(0);
+        modal.showModal();
+    });
+
+    modal.querySelector('[data-china-close]').addEventListener('click', () => modal.close());
+    modal.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            modal.close();
+        }
+    });
+    prev.addEventListener('click', () => goTo(index - 1));
+    next.addEventListener('click', () => goTo(index + 1));
+    modal.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowRight') {
+            goTo(index + 1);
+        } else if (event.key === 'ArrowLeft') {
+            goTo(index - 1);
+        }
+    });
+
+    let touchStartX = 0;
+    track.addEventListener('touchstart', (event) => {
+        touchStartX = event.touches[0].clientX;
+    }, { passive: true });
+    track.addEventListener('touchend', (event) => {
+        const distance = event.changedTouches[0].clientX - touchStartX;
+
+        if (Math.abs(distance) > 50) {
+            goTo(index + (distance < 0 ? 1 : -1));
+        }
+    });
+});
+
+document.querySelectorAll('[data-about-open]').forEach((opener) => {
+    const modal = document.getElementById(opener.dataset.aboutOpen);
+
+    if (!modal) {
+        return;
+    }
+
+    opener.addEventListener('click', () => modal.showModal());
+});
+
+document.querySelectorAll('.china-about-modal').forEach((modal) => {
+    const main = modal.querySelector('[data-about-main]');
+
+    modal.querySelectorAll('[data-about-close]').forEach((button) => button.addEventListener('click', () => modal.close()));
+    modal.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            modal.close();
+        }
+    });
+
+    modal.querySelectorAll('[data-about-thumb]').forEach((thumb) => {
+        thumb.addEventListener('click', () => {
+            main.src = thumb.dataset.aboutThumb;
+            main.alt = thumb.dataset.aboutAlt;
+            modal.querySelectorAll('[data-about-thumb]').forEach((other) => other.classList.toggle('is-active', other === thumb));
+        });
+    });
+});
+
+document.querySelectorAll('[data-china-slides]').forEach((editor) => {
+    const list = editor.querySelector('[data-china-slide-list]');
+    const template = editor.querySelector('[data-china-slide-template]');
+    let nextIndex = list.querySelectorAll('[data-china-slide]').length;
+
+    const renumber = () => {
+        list.querySelectorAll('[data-china-slide]').forEach((slide, position) => {
+            slide.querySelector('[data-china-slide-number]').textContent = String(position + 1).padStart(2, '0');
+        });
+    };
+
+    editor.querySelector('[data-china-add-slide]').addEventListener('click', () => {
+        const html = template.innerHTML.replaceAll('__INDEX__', String(nextIndex++));
+        list.insertAdjacentHTML('beforeend', html);
+        renumber();
+        const added = list.lastElementChild;
+        added.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        added.querySelector('input')?.focus({ preventScroll: true });
+    });
+
+    list.addEventListener('click', (event) => {
+        const remove = event.target.closest('[data-china-remove-slide]');
+
+        if (remove) {
+            remove.closest('[data-china-slide]').remove();
+            renumber();
+        }
+    });
+
+    renumber();
+});
+
+document.querySelectorAll('[data-china-search]').forEach((toolbar) => {
+    const items = [...document.querySelectorAll('[data-china-item]')];
+    const input = toolbar.querySelector('[data-china-search-input]');
+    const clear = toolbar.querySelector('[data-china-search-clear]');
+    const filters = [...toolbar.querySelectorAll('[data-china-filter]')];
+    const visibleCount = toolbar.querySelector('[data-china-visible]');
+    const emptyState = document.querySelector('[data-china-no-results]');
+    let activeFilter = 'all';
+
+    const apply = () => {
+        const terms = input.value.toLowerCase().split(/\s+/).filter(Boolean);
+        let visible = 0;
+
+        items.forEach((item) => {
+            const matchesText = terms.every((term) => item.dataset.search.includes(term));
+            const matchesFilter = activeFilter === 'all'
+                || (activeFilter === 'hot' && item.dataset.hot === '1')
+                || (activeFilter === 'details' && item.dataset.details === '1');
+            const show = matchesText && matchesFilter;
+
+            item.hidden = !show;
+            visible += show ? 1 : 0;
+        });
+
+        visibleCount.textContent = String(visible);
+        clear.hidden = input.value === '';
+        emptyState.hidden = visible > 0;
+    };
+
+    input.addEventListener('input', apply);
+    clear.addEventListener('click', () => {
+        input.value = '';
+        input.focus();
+        apply();
+    });
+    filters.forEach((button) => button.addEventListener('click', () => {
+        activeFilter = button.dataset.chinaFilter;
+        filters.forEach((other) => other.classList.toggle('is-active', other === button));
+        apply();
+    }));
+});
+
+document.querySelectorAll('[data-china-slider]').forEach((slider) => {
+    const track = slider.querySelector('.china-edit-track');
+    const prev = slider.querySelector('[data-china-slider-prev]');
+    const next = slider.querySelector('[data-china-slider-next]');
+
+    const update = () => {
+        prev.disabled = track.scrollLeft <= 4;
+        next.disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 4;
+    };
+
+    prev.addEventListener('click', () => track.scrollBy({ left: -track.clientWidth * 0.8 }));
+    next.addEventListener('click', () => track.scrollBy({ left: track.clientWidth * 0.8 }));
+    track.addEventListener('scroll', update, { passive: true });
+    new MutationObserver(update).observe(track, { childList: true });
+    window.addEventListener('resize', update);
+    update();
+});
+
+// Empties every field of the About this place editor so new content can be typed from scratch.
+document.querySelectorAll('.aceh-itinerary-grid').forEach((grid) => {
+    const cards = [...grid.children];
+    const nav = document.createElement('div');
+
+    nav.className = 'itinerary-slider-nav';
+    nav.innerHTML = `<button type="button" class="itinerary-slider-arrow" data-dir="-1" aria-label="Previous itinerary">‹</button>
+        <div class="itinerary-slider-dots">${cards.map((_, index) => `<button type="button" class="itinerary-slider-dot" data-go="${index}" aria-label="Show itinerary ${index + 1}"></button>`).join('')}</div>
+        <button type="button" class="itinerary-slider-arrow" data-dir="1" aria-label="Next itinerary">›</button>`;
+    grid.after(nav);
+
+    const prev = nav.querySelector('[data-dir="-1"]');
+    const next = nav.querySelector('[data-dir="1"]');
+    const dots = [...nav.querySelectorAll('.itinerary-slider-dot')];
+    const maxScroll = () => grid.scrollWidth - grid.clientWidth;
+    const currentIndex = () => {
+        const step = cards[1] ? cards[1].offsetLeft - cards[0].offsetLeft : grid.clientWidth;
+
+        return Math.min(cards.length - 1, Math.round(grid.scrollLeft / step));
+    };
+    const sync = () => {
+        const index = grid.scrollLeft >= maxScroll() - 2 ? cards.length - 1 : currentIndex();
+
+        nav.hidden = maxScroll() <= 2;
+        prev.disabled = grid.scrollLeft <= 2;
+        next.disabled = grid.scrollLeft >= maxScroll() - 2;
+        dots.forEach((dot, dotIndex) => dot.classList.toggle('is-active', dotIndex === index));
+    };
+
+    nav.addEventListener('click', (event) => {
+        const control = event.target.closest('button');
+
+        if (!control) {
+            return;
+        }
+
+        const target = control.dataset.go !== undefined ? Number(control.dataset.go) : currentIndex() + Number(control.dataset.dir);
+        const card = cards[Math.min(Math.max(target, 0), cards.length - 1)];
+
+        grid.scrollTo({ left: card.offsetLeft - cards[0].offsetLeft, behavior: 'smooth' });
+    });
+
+    grid.addEventListener('scroll', sync, { passive: true });
+    window.addEventListener('resize', sync);
+    sync();
+});
+
+document.querySelectorAll('[data-about-clear]').forEach((button) => {
+    button.addEventListener('click', () => {
+        const panel = button.closest('.china-about-editor');
+
+        if (!panel || !window.confirm('Clear all About this place fields?')) {
+            return;
+        }
+
+        panel.querySelectorAll('input[type=text], input:not([type]), textarea').forEach((field) => {
+            field.value = '';
+        });
+        panel.querySelectorAll('input[type=checkbox]').forEach((box) => {
+            box.checked = true;
+        });
+        panel.querySelectorAll('input[type=file]').forEach((file) => {
+            file.value = '';
+        });
+        panel.querySelector('input')?.focus();
+    });
+});

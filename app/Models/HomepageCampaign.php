@@ -10,6 +10,7 @@ class HomepageCampaign extends Model
     protected $fillable = [
         'slug',
         'design_key',
+        'layout',
         'position',
         'kicker',
         'headline',
@@ -25,6 +26,11 @@ class HomepageCampaign extends Model
         'brand_top',
         'brand_bottom',
     ];
+
+    public function isBanner(): bool
+    {
+        return $this->layout === 'banner';
+    }
 
     public function getRouteKeyName(): string
     {

@@ -25,7 +25,20 @@
             <div class="carousel" aria-roledescription="carousel" aria-label="Featured travel offers">
                 <div class="carousel-track">
                     @foreach ($campaigns as $index => $campaign)
-                    <article class="campaign-slide slide-{{ $campaign->design_key }}{{ $loop->first ? ' is-active' : '' }}" aria-roledescription="slide" aria-label="{{ $index + 1 }} of {{ $campaigns->count() }}" @if (! $loop->first) aria-hidden="true" inert @endif>
+                    <article class="campaign-slide slide-{{ $campaign->design_key }}{{ $campaign->isBanner() ? ' campaign-slide-banner' : '' }}{{ $loop->first ? ' is-active' : '' }}" aria-roledescription="slide" aria-label="{{ $index + 1 }} of {{ $campaigns->count() }}" @if (! $loop->first) aria-hidden="true" inert @endif>
+                        @if ($campaign->isBanner())
+                        <img class="banner-image" src="{{ $campaign->imageUrl($campaign->image_main) }}" alt="{{ $campaign->image_alt }}" @if ($loop->first) fetchpriority="high" @else loading="lazy" @endif>
+                        <div class="banner-message">
+                            <span class="campaign-kicker">{{ $campaign->kicker }}</span>
+                            @if ($loop->first)
+                                <h1>{{ $campaign->headline }}<br><strong>{{ $campaign->headline_highlight }}</strong></h1>
+                            @else
+                                <h2>{{ $campaign->headline }}<br><strong>{{ $campaign->headline_highlight }}</strong></h2>
+                            @endif
+                            <p class="campaign-description">{{ $campaign->body }}</p>
+                            <a href="#contact" class="campaign-cta">{{ $campaign->cta_label }} <span aria-hidden="true">↗</span></a>
+                        </div>
+                        @else
                         <div class="campaign-collage">
                             <img class="collage-main" src="{{ $campaign->imageUrl($campaign->image_main) }}" alt="{{ $campaign->image_alt }}" @if ($loop->first) fetchpriority="high" @else loading="lazy" @endif>
                             <img class="collage-small collage-small-top" src="{{ $campaign->imageUrl($campaign->image_top) }}" alt="" aria-hidden="true" loading="lazy">
@@ -45,6 +58,7 @@
                             <a href="#contact" class="campaign-cta">{{ $campaign->cta_label }} <span aria-hidden="true">↗</span></a>
                         </div>
                         <span class="campaign-brand-stamp" aria-hidden="true">{{ $campaign->brand_top }}<br><b>{{ $campaign->brand_bottom }}</b></span>
+                        @endif
                     </article>
                     @endforeach
                 </div>
@@ -130,10 +144,10 @@
             <div class="footer-links">
                 <h2>Quick Links</h2>
                 <a href="#welcome">About Us</a>
-                <a href="#contact">Contact Us</a>
+                <a href="{{ route('gallery') }}">Our Gallery</a>
                 <a href="#services-title">Our Services</a>
                 <a href="https://smartholidays.com.my/booking-conditions/" target="_blank" rel="noreferrer">Booking Conditions</a>
-                <a href="https://smartholidays.com.my/privacy-policy/" target="_blank" rel="noreferrer">Privacy Policy</a>
+                <a href="{{ route('privacy-policy') }}">Privacy Policy</a>
                 <h2 class="footer-follow-heading">Follow Us</h2>
                 <a href="https://www.facebook.com/smartholidays.com.my/" target="_blank" rel="noreferrer">◉ Facebook</a>
                 <a href="https://wa.me/60165500529" target="_blank" rel="noreferrer">◉ WhatsApp: +6016 550 0529</a>

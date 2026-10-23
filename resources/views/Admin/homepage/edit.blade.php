@@ -95,6 +95,15 @@
                             @error('cta_label') <small>{{ $message }}</small> @enderror
                         </label>
                         <label class="homepage-form-field">
+                            <span>Slide type</span>
+                            <select name="layout" data-campaign-layout required>
+                                @foreach (['collage' => 'Current (3-image collage)', 'banner' => 'Normal (single banner image)'] as $key => $label)
+                                    <option value="{{ $key }}" @selected(old('layout', $campaign?->layout ?? 'collage') === $key)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            @error('layout') <small>{{ $message }}</small> @enderror
+                        </label>
+                        <label class="homepage-form-field">
                             <span>Campaign visual style</span>
                             <select name="design_key" required>
                                 @foreach (['fair' => 'Classic', 'muslim' => 'Muslim tours', 'group' => 'Group travel'] as $key => $label)
@@ -120,23 +129,24 @@
                         </div>
                     </div>
 
+                    <p class="homepage-form-field-wide" data-banner-note hidden>A normal banner slide does not use stickers, ribbons or brand stamps.</p>
                     <div class="homepage-form-grid">
-                        <label class="homepage-form-field">
+                        <label class="homepage-form-field" data-collage-only>
                             <span>Image sticker <small>Use a new line to split text.</small></span>
                             <textarea name="sticker" rows="2" maxlength="100" required>{{ old('sticker', $campaign?->sticker) }}</textarea>
                             @error('sticker') <small>{{ $message }}</small> @enderror
                         </label>
-                        <label class="homepage-form-field">
+                        <label class="homepage-form-field" data-collage-only>
                             <span>Image ribbon</span>
                             <input name="ribbon" value="{{ old('ribbon', $campaign?->ribbon) }}" maxlength="100" required>
                             @error('ribbon') <small>{{ $message }}</small> @enderror
                         </label>
-                        <label class="homepage-form-field">
+                        <label class="homepage-form-field" data-collage-only>
                             <span>Brand stamp top line</span>
                             <input name="brand_top" value="{{ old('brand_top', $campaign?->brand_top) }}" maxlength="50" required>
                             @error('brand_top') <small>{{ $message }}</small> @enderror
                         </label>
-                        <label class="homepage-form-field">
+                        <label class="homepage-form-field" data-collage-only>
                             <span>Brand stamp bottom line</span>
                             <input name="brand_bottom" value="{{ old('brand_bottom', $campaign?->brand_bottom) }}" maxlength="50" required>
                             @error('brand_bottom') <small>{{ $message }}</small> @enderror
@@ -164,24 +174,24 @@
                             <input type="file" name="image_main" accept="image/jpeg,image/png,image/webp" @required(! $campaign)>
                             @error('image_main') <small>{{ $message }}</small> @enderror
                         </label>
-                        <label class="homepage-image-field">
-                            @if ($campaign)
+                        <label class="homepage-image-field" data-collage-only>
+                            @if ($campaign && filled($campaign->image_top))
                                 <img src="{{ $campaign->imageUrl($campaign->image_top) }}" alt="Current upper collage image">
                             @else
                                 <span class="homepage-image-placeholder">Top collage image preview</span>
                             @endif
                             <span class="homepage-image-name">Top collage image</span>
-                            <input type="file" name="image_top" accept="image/jpeg,image/png,image/webp" @required(! $campaign)>
+                            <input type="file" name="image_top" accept="image/jpeg,image/png,image/webp" @required(! $campaign || blank($campaign->image_top))>
                             @error('image_top') <small>{{ $message }}</small> @enderror
                         </label>
-                        <label class="homepage-image-field">
-                            @if ($campaign)
+                        <label class="homepage-image-field" data-collage-only>
+                            @if ($campaign && filled($campaign->image_bottom))
                                 <img src="{{ $campaign->imageUrl($campaign->image_bottom) }}" alt="Current lower collage image">
                             @else
                                 <span class="homepage-image-placeholder">Bottom collage image preview</span>
                             @endif
                             <span class="homepage-image-name">Bottom collage image</span>
-                            <input type="file" name="image_bottom" accept="image/jpeg,image/png,image/webp" @required(! $campaign)>
+                            <input type="file" name="image_bottom" accept="image/jpeg,image/png,image/webp" @required(! $campaign || blank($campaign->image_bottom))>
                             @error('image_bottom') <small>{{ $message }}</small> @enderror
                         </label>
                     </div>

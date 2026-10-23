@@ -1,21 +1,52 @@
 <?php
 
 use App\Http\Controllers\Admin\AuthController;
+use App\Http\Controllers\Admin\ChinaMuslimPackageController;
 use App\Http\Controllers\Admin\HomepageCampaignController;
 use App\Http\Controllers\Admin\HomepageServiceController;
 use App\Http\Controllers\Admin\IslandHoneymoonController;
+use App\Http\Controllers\Admin\MiceController;
+use App\Http\Controllers\Admin\SmartMuslimMenuController;
 use App\Http\Controllers\Admin\TourPackagePageController;
+use App\Http\Controllers\ClientAuthController;
 use App\Http\Middleware\EnsureAdmin;
+use App\Models\ChinaAboutPage;
+use App\Models\ChinaMuslimPackage;
 use App\Models\HomepageCampaign;
 use App\Models\HomepageService;
 use App\Models\HomepageSetting;
 use App\Models\IslandDestination;
 use App\Models\IslandHoneymoonSetting;
+use App\Models\MiceClient;
+use App\Models\MiceGalleryImage;
+use App\Models\MicePage;
 use App\Models\TourPackagePage;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'SmartHolidays')->name('home');
+
+Route::get('/client/login', [ClientAuthController::class, 'create'])
+    ->name('client.login');
+Route::post('/client/login', [ClientAuthController::class, 'store'])
+    ->middleware('throttle:client-login')
+    ->name('client.login.store');
+Route::get('/client/register', [ClientAuthController::class, 'register'])
+    ->name('client.register');
+Route::post('/client/register', [ClientAuthController::class, 'storeRegistration'])
+    ->middleware('throttle:client-register')
+    ->name('client.register.store');
+Route::get('/client/verify-email', [ClientAuthController::class, 'verification'])
+    ->name('client.verify');
+Route::post('/client/verify-email', [ClientAuthController::class, 'verify'])
+    ->middleware('throttle:client-otp-verify')
+    ->name('client.verify.store');
+Route::post('/client/verify-email/resend', [ClientAuthController::class, 'resendVerification'])
+    ->middleware('throttle:client-otp-resend')
+    ->name('client.verify.resend');
+Route::post('/client/logout', [ClientAuthController::class, 'destroy'])
+    ->middleware('auth')
+    ->name('client.logout');
 
 Route::get('/smart-muslim', static function (): View {
     return view('SmartMuslimpage', [
@@ -27,6 +58,60 @@ Route::get('/smart-muslim', static function (): View {
             ->value,
     ]);
 })->name('smart-muslim');
+
+Route::get('/china-muslim', fn (): View => view('Smart-Muslim.China-Muslim.china-muslim', [
+    'about' => ChinaAboutPage::query()->first(),
+    'packages' => ChinaMuslimPackage::query()->orderBy('position')->orderBy('id')->get(),
+]))->name('china-muslim');
+
+Route::get('/company-trip-mice', fn (): View => view('Smart-Muslim.company-trip-mice', [
+    'page' => MicePage::query()->firstOrFail(),
+    'clients' => MiceClient::query()->orderBy('position')->orderBy('id')->get(),
+    'galleryImages' => MiceGalleryImage::query()->orderBy('position')->orderBy('id')->get(),
+]))->name('company-trip-mice');
+
+Route::get('/gallery', fn (): View => view('Smart-Muslim.gallery', [
+    'destinations' => [
+        [
+            'country' => 'South Korea',
+            'image' => 'images/series/flag-kr.png',
+            'gallery_image' => 'images/series/seoul-1.jpg',
+            'gallery_alt' => 'Historic palace in South Korea',
+        ],
+        [
+            'country' => 'China',
+            'image' => 'images/series/flag-cn.png',
+            'gallery_image' => 'images/series/kunming-1.jpg',
+            'gallery_alt' => 'Traditional Chinese architecture',
+        ],
+        [
+            'country' => 'Vietnam',
+            'image' => 'images/series/flag-vn.png',
+            'gallery_image' => 'images/series/danang-1.jpg',
+            'gallery_alt' => 'Illuminated bridge over a river in Vietnam',
+        ],
+        [
+            'country' => 'Indonesia',
+            'image' => 'images/series/flag-id.png',
+            'gallery_image' => 'images/series/medan-1.jpg',
+            'gallery_alt' => 'Waterfall surrounded by forest in Indonesia',
+        ],
+//    [
+//             'country' => 'Indonesia',
+//             'image' => 'images/series/flag-id.png',
+//             'gallery_image' => 'images/series/medan-1.jpg',
+//             'gallery_alt' => 'Waterfall surrounded by forest in Indonesia',
+//         ],
+
+
+
+
+
+
+    ],
+]))->name('gallery');
+
+Route::view('/privacy-policy', 'privacy-policy')->name('privacy-policy');
 
 Route::get('/island-honeymoon', function () {
     return view('Smart-Muslim.Tour-Package(private).island-honeymoon.island-honeymoon', [
@@ -114,10 +199,52 @@ Route::middleware(['auth', EnsureAdmin::class])->group(function () {
     Route::delete('/admin/island-honeymoon/destinations/{destination:slug}', [IslandHoneymoonController::class, 'destroyDestination'])
         ->name('admin.island-honeymoon.destinations.destroy');
 
+    Route::put('/admin/china-muslim-about', [ChinaMuslimPackageController::class, 'updateAbout'])
+        ->name('admin.china-muslim.about');
+    Route::get('/admin/china-muslim', [ChinaMuslimPackageController::class, 'index'])
+        ->name('admin.china-muslim');
+    Route::get('/admin/china-muslim/create', [ChinaMuslimPackageController::class, 'create'])
+        ->name('admin.china-muslim.create');
+    Route::post('/admin/china-muslim', [ChinaMuslimPackageController::class, 'store'])
+        ->name('admin.china-muslim.store');
+    Route::get('/admin/china-muslim/{package}/edit', [ChinaMuslimPackageController::class, 'edit'])
+        ->name('admin.china-muslim.edit');
+    Route::put('/admin/china-muslim/{package}', [ChinaMuslimPackageController::class, 'update'])
+        ->name('admin.china-muslim.update');
+    Route::delete('/admin/china-muslim/{package}', [ChinaMuslimPackageController::class, 'destroy'])
+        ->name('admin.china-muslim.destroy');
+
+    Route::get('/admin/mice', [MiceController::class, 'index'])
+        ->name('admin.mice');
+    Route::put('/admin/mice', [MiceController::class, 'updatePage'])
+        ->name('admin.mice.update');
+    Route::post('/admin/mice/clients', [MiceController::class, 'storeClient'])
+        ->name('admin.mice.clients.store');
+    Route::delete('/admin/mice/clients/{client}', [MiceController::class, 'destroyClient'])
+        ->name('admin.mice.clients.destroy');
+    Route::post('/admin/mice/gallery', [MiceController::class, 'storeGalleryImage'])
+        ->name('admin.mice.gallery.store');
+    Route::delete('/admin/mice/gallery/{image}', [MiceController::class, 'destroyGalleryImage'])
+        ->name('admin.mice.gallery.destroy');
+
     Route::get('/admin/tour-packages/create', [TourPackagePageController::class, 'create'])
         ->name('admin.tour-packages.create');
     Route::post('/admin/tour-packages', [TourPackagePageController::class, 'store'])
         ->name('admin.tour-packages.store');
+    Route::get('/admin/smart-muslim/menus', [SmartMuslimMenuController::class, 'index'])
+        ->name('admin.smart-muslim.menus.index');
+    Route::get('/admin/smart-muslim/menus/{menu}/pages/create', [TourPackagePageController::class, 'createForSmartMuslimMenu'])
+        ->name('admin.smart-muslim.menus.pages.create');
+    Route::post('/admin/smart-muslim/menus/{menu}/pages', [TourPackagePageController::class, 'storeForSmartMuslimMenu'])
+        ->name('admin.smart-muslim.menus.pages.store');
+    Route::post('/admin/smart-muslim/menus', [SmartMuslimMenuController::class, 'store'])
+        ->name('admin.smart-muslim.menus.store');
+    Route::put('/admin/smart-muslim/menus/{menu}', [SmartMuslimMenuController::class, 'update'])
+        ->name('admin.smart-muslim.menus.update');
+    Route::post('/admin/smart-muslim/menus/{menu}/items', [SmartMuslimMenuController::class, 'storeChild'])
+        ->name('admin.smart-muslim.menus.items.store');
+    Route::delete('/admin/smart-muslim/menus/{menu}', [SmartMuslimMenuController::class, 'destroy'])
+        ->name('admin.smart-muslim.menus.destroy');
     Route::put('/admin/tour-packages/{page:slug}/move', [TourPackagePageController::class, 'move'])
         ->name('admin.tour-packages.move');
     Route::get('/admin/tour-packages/{page:slug}/edit', [TourPackagePageController::class, 'edit'])

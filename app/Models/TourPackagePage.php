@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
 
 class TourPackagePage extends Model
@@ -17,6 +18,7 @@ class TourPackagePage extends Model
         'name',
         'kind',
         'parent_slug',
+        'smart_muslim_menu_id',
         'meta_title',
         'meta_description',
         'hero_eyebrow',
@@ -68,6 +70,11 @@ class TourPackagePage extends Model
     public function isPackage(): bool
     {
         return $this->kind === self::KIND_PACKAGE;
+    }
+
+    public function smartMuslimMenu(): BelongsTo
+    {
+        return $this->belongsTo(SmartMuslimMenu::class);
     }
 
     public function isSeries(): bool
