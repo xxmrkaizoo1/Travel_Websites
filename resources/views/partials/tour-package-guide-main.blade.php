@@ -6,7 +6,7 @@
     $galleryCount = count($gallery);
     $hotels = $data['hotels'] ?? [];
 @endphp
-<main id="main">
+<main id="{{ $seriesPageMainId ?? 'main' }}">
     <section class="island-hero indonesia-hero" aria-labelledby="{{ $slug }}-title">
         <img class="island-hero-image" src="{{ $page->imageUrl($page->hero_image) }}" alt="" aria-hidden="true">
         <div class="island-hero-shade"></div>

@@ -56,8 +56,8 @@
 
         $packageDetails['includes_text'] = implode("\n", $packageDetails['includes']);
         $packageDetails['excludes_text'] = implode("\n", $packageDetails['excludes']);
-        $hasEditablePackageDetails = in_array($destination['name'] ?? '', ['Seoul', 'Kunming', 'Da Nang'], true);
-        $showPackageDetails = $hasEditablePackageDetails || $isSpare;
+        $hasPackageDetails = filled($storedPackageDetails['headline'] ?? '');
+        $showPackageDetails = ! $isSpare || $hasPackageDetails;
     @endphp
     <section class="homepage-form-panel">
         <div class="homepage-form-panel-heading">
@@ -176,9 +176,9 @@
             </template>
         </div>
 
-        <details class="series-package-editor" data-series-package-editor @if (! $showPackageDetails) hidden @endif @if ($hasEditablePackageDetails) open @endif>
-            <summary>{{ $hasEditablePackageDetails ? $destination['name'].' popup package details' : 'Seoul, Kunming or Da Nang popup package details' }}</summary>
-            <p class="homepage-form-hint">These fields power the Seoul, Kunming and Da Nang package popups on the public page. Leave this section empty for other destinations.</p>
+        <details class="series-package-editor" data-series-package-editor @if (! $showPackageDetails) hidden @endif @if ($hasPackageDetails) open @endif>
+            <summary>{{ $hasPackageDetails ? ($destination['name'] ?? 'Destination').' popup package details' : 'Popup package details' }}</summary>
+            <p class="homepage-form-hint">Add optional itinerary, pricing, flights and hotel details to this destination's package popup.</p>
 
             <div class="homepage-form-grid">
                 <label class="homepage-form-field"><span>Duration</span><input name="series[{{ $index }}][package_details][duration]" value="{{ $packageDetails['duration'] }}" maxlength="80" placeholder="5 days · 4 nights"></label>

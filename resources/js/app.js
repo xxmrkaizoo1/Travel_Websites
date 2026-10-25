@@ -1,7 +1,6 @@
 const menuToggle = document.querySelector('.menu-toggle');
 const primaryNav = document.querySelector('#primary-nav');
 const dropdownItems = [...(primaryNav?.querySelectorAll('.has-dropdown, .has-submenu') ?? [])];
-const dropdownTriggers = dropdownItems.map((item) => item.querySelector('.nav-trigger, .submenu-trigger'));
 
 const closeDropdowns = (except = null) => {
     dropdownItems.forEach((item) => {
@@ -11,7 +10,7 @@ const closeDropdowns = (except = null) => {
 
         item.classList.remove('is-open');
         item.classList.add('is-dismissed');
-        item.querySelector(':scope > .nav-trigger, :scope > .submenu-trigger')?.setAttribute('aria-expanded', 'false');
+        item.querySelector('.nav-trigger, .submenu-trigger')?.setAttribute('aria-expanded', 'false');
     });
 };
 
@@ -22,41 +21,63 @@ const closeMobileNav = () => {
     closeDropdowns();
 };
 
-dropdownTriggers.forEach((trigger) => {
-    trigger?.addEventListener('click', () => {
-        if (trigger.dataset.href && window.matchMedia('(min-width: 1101px)').matches) {
-            window.location.href = trigger.dataset.href;
-
-            return;
-        }
-
-        const item = trigger.closest('.has-dropdown, .has-submenu');
-        const isOpen = item?.classList.contains('is-open') ?? false;
-
-        if (isOpen && item?.classList.contains('has-dropdown')) {
-            closeDropdowns();
-        } else {
-            closeDropdowns(item);
-        }
-
-        item?.classList.remove('is-dismissed');
-        item?.classList.toggle('is-open', !isOpen);
-        trigger.setAttribute('aria-expanded', String(!isOpen));
-
-        if (isOpen) {
-            item?.classList.add('is-dismissed');
-        }
-    });
-
-    trigger?.closest('.has-dropdown, .has-submenu')?.addEventListener('pointerenter', (event) => {
+dropdownItems.forEach((item) => {
+    item.addEventListener('pointerenter', (event) => {
         if (event.pointerType !== 'touch') {
-            event.currentTarget.classList.remove('is-dismissed');
+            item.classList.remove('is-dismissed');
         }
     });
 
-    trigger?.closest('.has-dropdown, .has-submenu')?.addEventListener('focusin', (event) => {
-        event.currentTarget.classList.remove('is-dismissed');
-    });
+    item.addEventListener('focusin', () => item.classList.remove('is-dismissed'));
+});
+
+primaryNav?.addEventListener('click', (event) => {
+    const target = event.target;
+    const moreButton = target instanceof Element ? target.closest('[data-series-nav-more]') : null;
+
+    if (moreButton instanceof HTMLButtonElement) {
+        const extraDestinations = document.getElementById(moreButton.getAttribute('aria-controls'));
+        const isExpanded = moreButton.getAttribute('aria-expanded') === 'true';
+
+        if (extraDestinations) {
+            extraDestinations.hidden = isExpanded;
+        }
+
+        moreButton.setAttribute('aria-expanded', String(!isExpanded));
+        moreButton.querySelector('[data-series-nav-more-label]').textContent = isExpanded ? 'See more' : 'See less';
+        moreButton.querySelector('[aria-hidden="true"]').textContent = isExpanded ? '＋' : '−';
+
+        return;
+    }
+
+    const trigger = target instanceof Element ? target.closest('.nav-trigger, .submenu-trigger') : null;
+
+    if (!trigger || !primaryNav.contains(trigger)) {
+        return;
+    }
+
+    if (trigger.dataset.href && window.matchMedia('(min-width: 1101px)').matches) {
+        window.location.href = trigger.dataset.href;
+
+        return;
+    }
+
+    const item = trigger.closest('.has-dropdown, .has-submenu');
+    const isOpen = item?.classList.contains('is-open') ?? false;
+
+    if (isOpen && item?.classList.contains('has-dropdown')) {
+        closeDropdowns();
+    } else {
+        closeDropdowns(item);
+    }
+
+    item?.classList.remove('is-dismissed');
+    item?.classList.toggle('is-open', !isOpen);
+    trigger.setAttribute('aria-expanded', String(!isOpen));
+
+    if (isOpen) {
+        item?.classList.add('is-dismissed');
+    }
 });
 
 menuToggle?.addEventListener('click', () => {
@@ -161,6 +182,116 @@ if (carousel) {
     });
 }
 
+document.querySelectorAll('[data-sh-journey-carousel]').forEach((carousel) => {
+    const viewport = carousel.querySelector('.sh-journey-viewport');
+    const track = carousel.querySelector('.sh-journey-track');
+    const slides = [...carousel.querySelectorAll('.sh-journey-slide')];
+    const selectors = [...carousel.querySelectorAll('[data-sh-journey-select]')];
+    const previousButton = carousel.querySelector('[data-sh-journey-previous]');
+    const nextButton = carousel.querySelector('[data-sh-journey-next]');
+    let currentIndex = 0;
+    let pointerStartX = null;
+    let pointerStartY = null;
+    let dragStartOffset = 0;
+    let dragMoved = false;
+    let suppressClick = false;
+
+    const showSlide = (index) => {
+        currentIndex = Math.max(0, Math.min(index, slides.length - 1));
+        track.style.transform = `translateX(-${currentIndex * viewport.clientWidth}px)`;
+        previousButton.disabled = currentIndex === 0;
+        nextButton.disabled = currentIndex === slides.length - 1;
+        slides.forEach((slide, slideIndex) => {
+            slide.setAttribute('aria-hidden', String(slideIndex !== currentIndex));
+            slide.inert = slideIndex !== currentIndex;
+            slide.classList.toggle('is-active', slideIndex === currentIndex);
+        });
+        selectors.forEach((selector, selectorIndex) => {
+            if (Number(selector.dataset.shJourneyIndex) === currentIndex) {
+                selector.setAttribute('aria-current', 'true');
+            } else {
+                selector.removeAttribute('aria-current');
+            }
+        });
+    };
+
+    previousButton.addEventListener('click', () => showSlide(currentIndex - 1));
+    nextButton.addEventListener('click', () => showSlide(currentIndex + 1));
+    selectors.forEach((selector) => selector.addEventListener('click', () => showSlide(Number(selector.dataset.shJourneyIndex))));
+    viewport.addEventListener('pointerdown', (event) => {
+        if (event.target instanceof Element && event.target.closest('.sh-journey-controls')) {
+            return;
+        }
+
+        if (event.pointerType === 'mouse' && event.button !== 0) {
+            return;
+        }
+
+        pointerStartX = event.clientX;
+        pointerStartY = event.clientY;
+        dragStartOffset = -currentIndex * viewport.clientWidth;
+        dragMoved = false;
+        viewport.classList.add('is-dragging');
+        track.style.transition = 'none';
+        viewport.setPointerCapture(event.pointerId);
+    });
+    viewport.addEventListener('pointermove', (event) => {
+        if (pointerStartX === null) {
+            return;
+        }
+
+        const distanceX = event.clientX - pointerStartX;
+        const distanceY = event.clientY - pointerStartY;
+
+        if (!dragMoved && (Math.abs(distanceX) < 6 || Math.abs(distanceX) <= Math.abs(distanceY))) {
+            return;
+        }
+
+        dragMoved = true;
+        event.preventDefault();
+        const offset = Math.max(-viewport.clientWidth * (slides.length - 1), Math.min(0, dragStartOffset + distanceX));
+        track.style.transform = `translateX(${offset}px)`;
+    });
+    viewport.addEventListener('pointerup', (event) => {
+        if (pointerStartX === null) {
+            return;
+        }
+
+        const distance = event.clientX - pointerStartX;
+        const wasDragged = dragMoved;
+        pointerStartX = null;
+        pointerStartY = null;
+        dragMoved = false;
+        viewport.classList.remove('is-dragging');
+        track.style.removeProperty('transition');
+
+        if (wasDragged) {
+            showSlide(currentIndex + (Math.abs(distance) > 48 ? (distance < 0 ? 1 : -1) : 0));
+            suppressClick = true;
+            window.setTimeout(() => { suppressClick = false; }, 0);
+        } else {
+            showSlide(currentIndex);
+        }
+    });
+    viewport.addEventListener('pointercancel', () => {
+        pointerStartX = null;
+        pointerStartY = null;
+        dragMoved = false;
+        viewport.classList.remove('is-dragging');
+        track.style.removeProperty('transition');
+        showSlide(currentIndex);
+    });
+    viewport.addEventListener('click', (event) => {
+        if (suppressClick) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            suppressClick = false;
+        }
+    }, true);
+    window.addEventListener('resize', () => showSlide(currentIndex));
+    showSlide(0);
+});
+
 const destinationCarousel = document.querySelector('.destination-carousel');
 
 if (destinationCarousel) {
@@ -195,6 +326,177 @@ if (destinationCarousel) {
     window.addEventListener('resize', updateDestinationControls);
     updateDestinationControls();
 }
+
+document.querySelectorAll('[data-popular-tour-carousel]').forEach((carousel) => {
+    const viewport = carousel.querySelector('.popular-tour-viewport');
+    const track = carousel.querySelector('.popular-tour-track');
+    const cards = [...carousel.querySelectorAll('[data-popular-tour-card]')];
+    const dots = [...carousel.querySelectorAll('[data-popular-tour-dot]')];
+    let activeIndex = Math.max(0, Math.min(Number(carousel.dataset.activeIndex) || 0, cards.length - 1));
+    let pointerStartX = null;
+    let pointerStartY = null;
+    let dragStartOffset = 0;
+    let dragMoved = false;
+    let suppressClick = false;
+
+    const cardStride = () => cards[0].offsetWidth
+        + Number.parseFloat(window.getComputedStyle(track).gap);
+
+    const cardOffset = (index) => viewport.clientWidth / 2
+        - (index * cardStride() + cards[index].offsetWidth / 2);
+
+    const showCard = (index) => {
+        activeIndex = Math.max(0, Math.min(index, cards.length - 1));
+        track.style.transform = `translateX(${cardOffset(activeIndex)}px)`;
+        cards.forEach((card, cardIndex) => card.classList.toggle('is-active', cardIndex === activeIndex));
+        dots.forEach((dot, dotIndex) => {
+            if (dotIndex === activeIndex) {
+                dot.setAttribute('aria-current', 'true');
+            } else {
+                dot.removeAttribute('aria-current');
+            }
+        });
+    };
+
+    dots.forEach((dot, index) => dot.addEventListener('click', () => showCard(index)));
+    viewport.addEventListener('pointerdown', (event) => {
+        if (event.pointerType === 'mouse' && event.button !== 0) {
+            return;
+        }
+
+        pointerStartX = event.clientX;
+        pointerStartY = event.clientY;
+        dragStartOffset = cardOffset(activeIndex);
+        dragMoved = false;
+        viewport.classList.add('is-dragging');
+        track.style.transition = 'none';
+        viewport.setPointerCapture(event.pointerId);
+    });
+    viewport.addEventListener('pointermove', (event) => {
+        if (pointerStartX === null) {
+            return;
+        }
+
+        const distanceX = event.clientX - pointerStartX;
+        const distanceY = event.clientY - pointerStartY;
+
+        if (!dragMoved && (Math.abs(distanceX) < 6 || Math.abs(distanceX) <= Math.abs(distanceY))) {
+            return;
+        }
+
+        dragMoved = true;
+        event.preventDefault();
+        const minOffset = cardOffset(cards.length - 1);
+        const maxOffset = cardOffset(0);
+        const offset = Math.max(minOffset, Math.min(maxOffset, dragStartOffset + distanceX));
+        track.style.transform = `translateX(${offset}px)`;
+    });
+    viewport.addEventListener('pointerup', (event) => {
+        if (pointerStartX === null) {
+            return;
+        }
+
+        const distance = event.clientX - pointerStartX;
+        const wasDragged = dragMoved;
+        pointerStartX = null;
+        pointerStartY = null;
+        dragMoved = false;
+        viewport.classList.remove('is-dragging');
+        track.style.removeProperty('transition');
+
+        if (wasDragged) {
+            const steps = Math.max(1, Math.round(Math.abs(distance) / cardStride()));
+            showCard(activeIndex + (distance < 0 ? steps : -steps));
+            suppressClick = true;
+            window.setTimeout(() => { suppressClick = false; }, 0);
+        } else {
+            showCard(activeIndex);
+        }
+    });
+    viewport.addEventListener('pointercancel', () => {
+        pointerStartX = null;
+        pointerStartY = null;
+        dragMoved = false;
+        viewport.classList.remove('is-dragging');
+        track.style.removeProperty('transition');
+        showCard(activeIndex);
+    });
+    viewport.addEventListener('click', (event) => {
+        if (suppressClick) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            suppressClick = false;
+        }
+    }, true);
+    window.addEventListener('resize', () => showCard(activeIndex));
+    showCard(activeIndex);
+});
+
+document.querySelectorAll('[data-series-page-slider]').forEach((slider) => {
+    const panels = [...slider.querySelectorAll('[data-series-page-slide]')];
+    const pageLinks = [...document.querySelectorAll('[data-series-page-target]')];
+    const previousButton = slider.querySelector('[data-series-page-previous]');
+    const nextButton = slider.querySelector('[data-series-page-next]');
+    const count = slider.querySelector('[data-series-page-count]');
+    const hashSlug = window.location.hash.startsWith('#page-') ? window.location.hash.slice(6) : panels[0]?.dataset.seriesPageSlide;
+    let activeIndex = Math.max(0, panels.findIndex((panel) => panel.dataset.seriesPageSlide === hashSlug));
+
+    const showPage = (index, updateUrl = false) => {
+        activeIndex = Math.max(0, Math.min(index, panels.length - 1));
+        const activeSlug = panels[activeIndex].dataset.seriesPageSlide;
+
+        panels.forEach((panel, panelIndex) => {
+            const isActive = panelIndex === activeIndex;
+            panel.hidden = !isActive;
+            panel.inert = !isActive;
+            panel.setAttribute('aria-hidden', String(!isActive));
+        });
+
+        previousButton.disabled = activeIndex === 0;
+        nextButton.disabled = activeIndex === panels.length - 1;
+        count.textContent = `Page ${activeIndex + 1} of ${panels.length}`;
+
+        pageLinks.forEach((link) => {
+            const isActive = link.dataset.seriesPageTarget === activeSlug;
+            link.classList.toggle('is-current', isActive);
+
+            if (isActive) {
+                link.setAttribute('aria-current', 'page');
+            } else {
+                link.removeAttribute('aria-current');
+            }
+        });
+
+        if (updateUrl) {
+            window.history.pushState(null, '', `#page-${activeSlug}`);
+        }
+    };
+
+    pageLinks.forEach((link) => {
+        link.addEventListener('click', (event) => {
+            const targetIndex = panels.findIndex((panel) => panel.dataset.seriesPageSlide === link.dataset.seriesPageTarget);
+
+            if (targetIndex === -1) {
+                return;
+            }
+
+            event.preventDefault();
+            showPage(targetIndex, true);
+        });
+    });
+
+    previousButton.addEventListener('click', () => showPage(activeIndex - 1));
+    nextButton.addEventListener('click', () => showPage(activeIndex + 1));
+    window.addEventListener('popstate', () => {
+        const poppedSlug = window.location.hash.startsWith('#page-') ? window.location.hash.slice(6) : panels[0].dataset.seriesPageSlide;
+        const poppedIndex = panels.findIndex((panel) => panel.dataset.seriesPageSlide === poppedSlug);
+
+        if (poppedIndex !== -1) {
+            showPage(poppedIndex);
+        }
+    });
+    showPage(activeIndex);
+});
 
 const seriesCarousel = document.querySelector('.series-carousel');
 
@@ -676,7 +978,7 @@ document.addEventListener('input', (event) => {
 
     const editor = nameField.closest('.homepage-form-panel').querySelector('[data-series-package-editor]');
     const destinationName = nameField.value.trim().toLocaleLowerCase();
-    const hasEditablePackageDetails = ['seoul', 'kunming', 'da nang'].includes(destinationName);
+    const hasEditablePackageDetails = destinationName !== '';
 
     editor.toggleAttribute('hidden', !hasEditablePackageDetails);
 

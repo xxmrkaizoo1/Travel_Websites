@@ -13,7 +13,25 @@
 
     @include('partials.site-header')
 
-    @include($page->isPackage() ? 'partials.tour-package-guide-main' : 'partials.tour-package-main', ['page' => $page])
+    @if ($page->slug === 'series-departures-2026' && $seriesPages->isNotEmpty())
+        @php($seriesPageSlides = collect([$page])->concat($seriesPages)->values())
+        <div class="series-page-slider" id="main" data-series-page-slider tabindex="-1">
+            <div class="series-page-panels">
+                @foreach ($seriesPageSlides as $seriesPageSlide)
+                    <section class="series-page-panel" id="series-page-panel-{{ $seriesPageSlide->slug }}" data-series-page-slide="{{ $seriesPageSlide->slug }}" aria-labelledby="{{ $seriesPageSlide->slug }}-title" aria-hidden="{{ $loop->first ? 'false' : 'true' }}" @unless ($loop->first) hidden inert @endunless>
+                        @include($seriesPageSlide->isPackage() ? 'partials.tour-package-guide-main' : 'partials.tour-package-main', ['page' => $seriesPageSlide, 'seriesPageMainId' => 'series-content-'.$seriesPageSlide->slug])
+                    </section>
+                @endforeach
+            </div>
+            <div class="series-page-controls">
+                <button type="button" data-series-page-previous aria-label="Previous page" disabled>←</button>
+                <span data-series-page-count aria-live="polite">Page 1 of {{ count($seriesPageSlides) }}</span>
+                <button type="button" data-series-page-next aria-label="Next page">→</button>
+            </div>
+        </div>
+    @else
+        @include($page->isPackage() ? 'partials.tour-package-guide-main' : 'partials.tour-package-main', ['page' => $page])
+    @endif
 
     <footer class="site-footer">
         <div class="footer-inner">

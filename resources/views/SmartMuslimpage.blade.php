@@ -72,6 +72,7 @@
             </div>
         </section>
 
+
         <section class="welcome-section" id="welcome" aria-labelledby="welcome-title">
             <h2 id="welcome-title">WELCOME TO SMART MUSLIM BY ROYSTAR TRAVEL TOURS</h2>
             <p class="welcome-subtitle">Muslim division of Roystar Travel &amp; Tours</p>

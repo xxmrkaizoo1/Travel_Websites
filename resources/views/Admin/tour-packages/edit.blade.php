@@ -120,7 +120,7 @@
                         <label class="homepage-form-field"><span>Link label</span><input name="intro_link_label" value="{{ old('intro_link_label', $page->intro_link_label) }}" required maxlength="120"></label>
                         <label class="homepage-form-field homepage-form-field-wide"><span>Description</span><textarea name="intro_body" required maxlength="1500">{{ old('intro_body', $page->intro_body) }}</textarea></label>
                         <label class="homepage-form-field"><span>Image alt text</span><input name="intro_image_alt" value="{{ old('intro_image_alt', $page->intro_image_alt) }}" required maxlength="255"></label>
-                        <label class="homepage-form-field"><span>Image caption</span><input name="intro_image_caption" value="{{ old('intro_image_caption', $page->intro_image_caption) }}" required maxlength="120"></label>
+                       <label class="homepage-form-field"><span>Image caption</span><input name="intro_image_caption" value="{{ old('intro_image_caption', $page->intro_image_caption) }}" required maxlength="120"></label>
                         <label class="homepage-image-field homepage-form-field-wide">
                             <span>Introduction image <small class="homepage-field-hint">Leave empty to keep current image</small></span>
                             <img src="{{ $page->imageUrl($page->intro_image) }}" alt="" loading="lazy">

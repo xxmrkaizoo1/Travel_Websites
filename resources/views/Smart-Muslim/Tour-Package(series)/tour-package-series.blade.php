@@ -412,6 +412,21 @@
 
         @php
             $destinationSlug = \Illuminate\Support\Str::slug($destination['name']);
+            $destinationPackageDetails = $destination['package_details'] ?? [];
+            $destinationItinerarySlides = array_chunk($destinationPackageDetails['itinerary'] ?? [], 3);
+            $hasPackageCoverage = ! empty($destinationPackageDetails['includes']) || ! empty($destinationPackageDetails['excludes']);
+            $hasTravelArrangements = filled($destinationPackageDetails['outbound']['flight'] ?? '')
+                || filled($destinationPackageDetails['return']['flight'] ?? '')
+                || ! empty($destinationPackageDetails['hotels']);
+            $destinationEssentials = array_filter($destinationPackageDetails['essentials'] ?? []);
+            $destinationWeather = $destinationPackageDetails['weather'] ?? [];
+            $hasPreTravelDetails = $destinationEssentials !== [] || $destinationWeather !== [];
+            $destinationDetailsSlideCount = 2
+                + (empty($destination['gallery']) ? 0 : 1)
+                + count($destinationItinerarySlides)
+                + ($hasPackageCoverage ? 1 : 0)
+                + ($hasTravelArrangements ? 1 : 0)
+                + ($hasPreTravelDetails ? 1 : 0);
         @endphp
         <dialog class="series-details-dialog" id="{{ $destinationSlug }}-package-details" aria-labelledby="{{ $destinationSlug }}-package-details-title">
             <div class="series-details-panel">
@@ -426,8 +441,11 @@
                 <div class="series-details-viewport">
                     <div class="series-details-track">
                         <section class="series-details-slide" aria-label="{{ $destination['name'] }} destination overview">
-                            <p class="series-details-kicker">DESTINATION OVERVIEW</p>
-                            <h3>{{ $destination['tagline'] }}</h3>
+                            <p class="series-details-kicker">{{ filled($destinationPackageDetails['headline'] ?? '') ? 'PACKAGE OVERVIEW' : 'DESTINATION OVERVIEW' }}</p>
+                            <h3>{{ $destinationPackageDetails['headline'] ?? $destination['tagline'] }}</h3>
+                            @if (filled($destinationPackageDetails['headline'] ?? '') && $destination['tagline'] !== '')
+                                <p class="series-details-note">{{ $destination['tagline'] }}</p>
+                            @endif
                             <p class="series-details-note">{{ $destination['intro'] }}</p>
                             <div class="series-details-generic-highlights">
                                 @foreach ($destination['advantages'] as $advantage)
@@ -437,7 +455,100 @@
                                     </article>
                                 @endforeach
                             </div>
+                            @if ($destinationPackageDetails !== [])
+                                <div class="series-details-highlights">
+                                    @foreach (['travel_dates' => 'Travel dates', 'price_from' => 'Package price', 'tour_code' => 'Tour code', 'duration' => 'Duration'] as $key => $label)
+                                        @if (filled($destinationPackageDetails[$key] ?? ''))
+                                            <article><span>{{ $label }}</span><strong>{{ $destinationPackageDetails[$key] }}</strong></article>
+                                        @endif
+                                    @endforeach
+                                </div>
+                                @if (! empty($destinationPackageDetails['departures']))
+                                    <div class="series-details-date-list">
+                                        <strong>Available departures</strong>
+                                        @foreach ($destinationPackageDetails['departures'] as $departure)
+                                            <span>{{ $departure['date'] }} · {{ $departure['price'] }} · {{ $departure['availability'] }}</span>
+                                        @endforeach
+                                    </div>
+                                @endif
+                                @if (filled($destinationPackageDetails['note'] ?? ''))
+                                    <p class="series-details-note">{{ $destinationPackageDetails['note'] }}</p>
+                                @endif
+                            @endif
                         </section>
+
+                        @foreach ($destinationItinerarySlides as $days)
+                            <section class="series-details-slide" aria-label="{{ $destination['name'] }} itinerary, {{ $days[0]['day'] }} to {{ $days[count($days) - 1]['day'] }}">
+                                <p class="series-details-kicker">THE ITINERARY · {{ $days[0]['day'] }}–{{ $days[count($days) - 1]['day'] }}</p>
+                                <h3>{{ $destinationPackageDetails['headline'] ?? $destination['name'].' itinerary' }}</h3>
+                                <div class="series-itinerary">
+                                    @foreach ($days as $day)
+                                        <article><span>{{ $day['day'] }}</span><div><h4>{{ $day['title'] }}</h4><p>{{ $day['places'] }} @if (($day['meals'] ?? '') !== '')<strong>Meals:</strong> {{ $day['meals'] }}.@endif @if (($day['transfer'] ?? '') !== '')<strong>Transfer:</strong> {{ $day['transfer'] }}.@endif</p></div></article>
+                                    @endforeach
+                                </div>
+                            </section>
+                        @endforeach
+
+                        @if ($hasPackageCoverage)
+                            <section class="series-details-slide" aria-label="{{ $destination['name'] }} package inclusions and exclusions">
+                                <p class="series-details-kicker">WHAT'S INCLUDED</p>
+                                <h3>Know what's covered.</h3>
+                                <div class="series-details-columns">
+                                    @if (! empty($destinationPackageDetails['includes']))
+                                        <div><h4><span aria-hidden="true">✓</span> Package includes</h4><ul>@foreach ($destinationPackageDetails['includes'] as $item)<li>{{ $item }}</li>@endforeach</ul></div>
+                                    @endif
+                                    @if (! empty($destinationPackageDetails['excludes']))
+                                        <div><h4><span aria-hidden="true">−</span> Not included</h4><ul>@foreach ($destinationPackageDetails['excludes'] as $item)<li>{{ $item }}</li>@endforeach</ul></div>
+                                    @endif
+                                </div>
+                            </section>
+                        @endif
+
+                        @if ($hasTravelArrangements)
+                            <section class="series-details-slide" aria-label="{{ $destination['name'] }} flights and hotels">
+                                <p class="series-details-kicker">FLIGHTS &amp; STAYS</p>
+                                <h3>Your travel arrangements.</h3>
+                                @if (filled($destinationPackageDetails['outbound']['flight'] ?? '') || filled($destinationPackageDetails['return']['flight'] ?? ''))
+                                    <div class="series-details-columns">
+                                        @foreach (['outbound' => 'Outbound', 'return' => 'Return'] as $flightKey => $flightLabel)
+                                            @if (filled($destinationPackageDetails[$flightKey]['flight'] ?? ''))
+                                                <div><h4>{{ $flightLabel }} · {{ $destinationPackageDetails[$flightKey]['flight'] }}</h4><p>{{ $destinationPackageDetails[$flightKey]['route'] }}</p><p>{{ $destinationPackageDetails[$flightKey]['time'] }}@if (filled($destinationPackageDetails[$flightKey]['duration'] ?? '')) · {{ $destinationPackageDetails[$flightKey]['duration'] }}@endif</p></div>
+                                            @endif
+                                        @endforeach
+                                    </div>
+                                @endif
+                                @if (! empty($destinationPackageDetails['hotels']))
+                                    <div class="series-details-hotels">
+                                        <strong>Hotels</strong>
+                                        @foreach ($destinationPackageDetails['hotels'] as $hotel)
+                                            <span>{{ implode(' · ', array_filter([$hotel['name'] ?? '', $hotel['room'] ?? '', $hotel['location'] ?? ''])) }}</span>
+                                            @if (filled($hotel['note'] ?? ''))
+                                                <span>{{ $hotel['note'] }}</span>
+                                            @endif
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </section>
+                        @endif
+
+                        @if ($hasPreTravelDetails)
+                            <section class="series-details-slide" aria-label="{{ $destination['name'] }} travel essentials and seasonal weather">
+                                <p class="series-details-kicker">BEFORE YOU GO</p>
+                                <h3>Travel essentials &amp; weather.</h3>
+                                @if ($destinationEssentials !== [])
+                                    <div class="series-details-highlights">
+                                        @foreach (['visa' => 'Visa', 'arrival_card' => 'Arrival card', 'currency' => 'Currency', 'time' => 'Time zone', 'language' => 'Language'] as $key => $label)
+                                            @if (filled($destinationPackageDetails['essentials'][$key] ?? ''))
+                                                <article><span>{{ $label }}</span><strong>{{ $destinationPackageDetails['essentials'][$key] }}</strong></article>
+                                            @endif
+                                        @endforeach
+                                    </div>
+                                @endif
+                                @if ($destinationWeather !== [])
+                                    <div class="series-weather"><strong>Seasonal guide</strong>@foreach ($destinationWeather as $season)<span>{{ $season['season'] }} · {{ $season['temperature'] }} · {{ $season['description'] }}</span>@endforeach</div>
+                                @endif
+                            </section>
+                        @endif
 
                         @if (! empty($destination['gallery']))
                             <section class="series-details-slide" aria-label="{{ $destination['name'] }} photo gallery">
@@ -457,14 +568,14 @@
                         <section class="series-details-slide" aria-label="{{ $destination['name'] }} tour enquiry">
                             <p class="series-details-kicker">PLAN YOUR TRIP</p>
                             <h3>Ready to explore {{ $destination['name'] }}?</h3>
-                            <p class="series-details-note">Contact our team for itinerary, dates, prices and package details for this destination.</p>
+                            <p class="series-details-note">Contact our team for availability and booking assistance.</p>
                             <a class="series-details-open" href="{{ $page->contact_href }}" target="_blank" rel="noreferrer">Ask about this tour <span aria-hidden="true">↗</span></a>
                         </section>
                     </div>
                 </div>
 
                 <footer class="series-details-footer">
-                    <p class="series-details-count" aria-live="polite">Step 1 of {{ 2 + (empty($destination['gallery']) ? 0 : 1) }}</p>
+                    <p class="series-details-count" aria-live="polite">Step 1 of {{ $destinationDetailsSlideCount }}</p>
                     <div class="series-control-buttons" role="group" aria-label="{{ $destination['name'] }} package detail slide controls">
                         <button class="series-details-prev" type="button" aria-label="Previous package details" disabled>←</button>
                         <button class="series-details-next" type="button" aria-label="Next package details">→</button>

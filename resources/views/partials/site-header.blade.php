@@ -14,7 +14,10 @@
             <a href="{{ route('smart-muslim') }}#services-title">Ground Tours</a>
             <a href="{{ route('smart-muslim') }}#service-company">Domestic Tour</a>
             <div class="nav-item has-dropdown">
-                <button class="nav-trigger muslim-nav{{ request()->routeIs('smart-muslim', 'china-muslim', 'tour-package-private', 'island-honeymoon', 'indonesia', 'indonesia.aceh', 'bali', 'thailand', 'vietnam', 'philippines', 'tour-package.show') ? ' is-current' : '' }}" type="button" data-href="{{ route('smart-muslim') }}" aria-expanded="false" aria-controls="muslim-tours-menu">Smart Muslim Tour <span class="nav-chevron" aria-hidden="true"></span></button>
+                <div class="muslim-nav-control">
+                    <a class="muslim-nav{{ request()->routeIs('smart-muslim', 'china-muslim', 'tour-package-private', 'island-honeymoon', 'indonesia', 'indonesia.aceh', 'bali', 'thailand', 'vietnam', 'philippines', 'tour-package.show') ? ' is-current' : '' }}" href="{{ route('smart-muslim') }}">Smart Muslim Tour</a>
+                    <button class="nav-trigger muslim-nav-toggle" type="button" aria-label="Toggle Smart Muslim Tour menu" aria-expanded="false" aria-controls="muslim-tours-menu"><span class="nav-chevron" aria-hidden="true"></span></button>
+                </div>
                 <div class="dropdown-menu" id="muslim-tours-menu">
                     <div class="nav-subitem has-submenu">
                         <button class="submenu-trigger" type="button" aria-expanded="false" aria-controls="private-tour-menu">
@@ -105,28 +108,32 @@
                         </div>
                     </div>
                     @if ($customTourPages->contains('slug', 'series-departures-2026'))
+                        @php($seriesNavEntries = $customTourPagesByParent->get('series-departures-2026', collect())->map(fn ($seriesPage) => ['slug' => $seriesPage->slug, 'label' => $seriesPage->name])->values())
+                        @php($hasSeriesPageSlides = $seriesNavEntries->isNotEmpty())
                         <div class="nav-subitem has-submenu">
                             <button class="submenu-trigger" type="button" aria-expanded="false" aria-controls="series-tour-menu">
                                 Tour Package (Series)
                                 <span class="submenu-arrow" aria-hidden="true">›</span>
                             </button>
                             <div class="submenu-menu" id="series-tour-menu">
-                                @if ($customTourPagesByParent->get('series-departures-2026', collect())->isEmpty())
-                                    <a class="{{ request()->is('tour/series-departures-2026') ? 'is-current' : '' }}" href="{{ route('tour-package.show', 'series-departures-2026') }}">Introduction</a>
+                                @if ($hasSeriesPageSlides)
+                                    <a class="series-nav-page" href="{{ route('tour-package.show', 'series-departures-2026') }}#page-series-departures-2026" data-series-page-target="series-departures-2026" aria-current="page">Introduction</a>
                                 @else
-                                    <div class="nav-subitem has-submenu destination-nav">
-                                        <a class="destination-link{{ request()->is('tour/series-departures-2026') ? ' is-current' : '' }}" href="{{ route('tour-package.show', 'series-departures-2026') }}">Introduction</a>
-                                        <button class="submenu-trigger destination-toggle" type="button" aria-label="Show Introduction pages" aria-expanded="false" aria-controls="series-introduction-menu">
-                                            <span class="submenu-arrow" aria-hidden="true">›</span>
-                                        </button>
-                                        <div class="submenu-menu" id="series-introduction-menu">
-                                            @include('partials.tour-package-submenu', ['parentSlug' => 'series-departures-2026'])
-                                        </div>
-                                    </div>
+                                    <a class="{{ request()->is('tour/series-departures-2026') ? 'is-current' : '' }}" href="{{ route('tour-package.show', 'series-departures-2026') }}">Introduction</a>
                                 @endif
-                                @foreach ($seriesDestinations as $seriesDestination)
-                                    <a href="{{ route('tour-package.show', 'series-departures-2026') }}#series-{{ \Illuminate\Support\Str::slug($seriesDestination['name']) }}">{{ $seriesDestination['name'] }} · {{ $seriesDestination['country'] }}</a>
+                                @foreach ($seriesNavEntries->take(4) as $seriesNavEntry)
+                                    <a class="series-nav-page" href="{{ route('tour-package.show', 'series-departures-2026') }}#page-{{ $seriesNavEntry['slug'] }}" data-series-page-target="{{ $seriesNavEntry['slug'] }}">{{ $seriesNavEntry['label'] }}</a>
                                 @endforeach
+                                @if ($seriesNavEntries->count() > 4)
+                                    <div id="series-extra-destinations" hidden>
+                                        @foreach ($seriesNavEntries->skip(4) as $seriesNavEntry)
+                                            <a class="series-nav-page" href="{{ route('tour-package.show', 'series-departures-2026') }}#page-{{ $seriesNavEntry['slug'] }}" data-series-page-target="{{ $seriesNavEntry['slug'] }}">{{ $seriesNavEntry['label'] }}</a>
+                                        @endforeach
+                                    </div>
+                                    <button class="series-nav-more" type="button" data-series-nav-more aria-expanded="false" aria-controls="series-extra-destinations">
+                                        <span data-series-nav-more-label>See more</span><span aria-hidden="true">＋</span>
+                                    </button>
+                                @endif
                             </div>
                         </div>
                     @else

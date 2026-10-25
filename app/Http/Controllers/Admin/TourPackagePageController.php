@@ -334,7 +334,7 @@ class TourPackagePageController extends Controller
 
             $details = $destination['package_details'] ?? [];
 
-            if (in_array($destination['name'] ?? '', ['Seoul', 'Kunming', 'Da Nang'], true) && is_array($details)) {
+            if (is_array($details) && filled($details['headline'] ?? '')) {
                 $normalisedDestination['package_details'] = [
                     'duration' => $details['duration'] ?? '',
                     'headline' => $details['headline'] ?? '',

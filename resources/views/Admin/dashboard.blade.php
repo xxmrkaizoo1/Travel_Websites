@@ -87,7 +87,7 @@
                     </summary>
                     <nav class="admin-subnav" aria-label="Tour Package (Series)">
                         <a class="admin-nav-link admin-subnav-link" data-context-menu="tour-package-menu" data-page-name="Series Departures 2026" data-page-slug="series-departures-2026" data-navigation-parent-target="series-departures-2026" data-navigation-parent-name="Tour Package (Series)" data-edit-url="{{ route('admin.tour-packages.edit', 'series-departures-2026') }}" data-view-url="{{ route('tour-package.show', 'series-departures-2026') }}" href="{{ route('admin.tour-packages.edit', 'series-departures-2026') }}">Introduction <small>Series Departures 2026</small></a>
-                        @include('Admin.partials.tour-page-children', ['parentSlug' => 'series-departures-2026', 'depth' => 2])
+                        @include('Admin.partials.tour-page-children', ['parentSlug' => 'series-departures-2026', 'depth' => 0, 'directSeriesEntries' => true])
                         <a class="admin-nav-link admin-subnav-link admin-subnav-new" data-context-menu="tour-package-menu" data-page-slug="series-departures-2026" data-page-name="Series Departures 2026" data-navigation-parent-target="series-departures-2026" data-navigation-parent-name="Tour Package (Series)" title="Right-click for page actions" href="{{ route('admin.tour-packages.create', ['parent' => 'series-departures-2026']) }}">＋ New page</a>
                     </nav>
                 </details>

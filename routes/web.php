@@ -24,7 +24,23 @@ use App\Models\TourPackagePage;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'SmartHolidays')->name('home');
+Route::get('/', function (): View {
+    $seriesPage = TourPackagePage::query()
+        ->where('slug', 'series-departures-2026')
+        ->first(['slug', 'hero_image', 'package_data']);
+    $popularTours = collect($seriesPage?->package_data['series'] ?? [])
+        ->take(5)
+        ->map(fn (array $destination): array => [
+            'title' => $destination['name'],
+            'country' => $destination['country'],
+            'tagline' => $destination['tagline'] ?? '',
+            'image' => $seriesPage->imageUrl($destination['gallery'][0]['image'] ?? $seriesPage->hero_image),
+            'href' => route('tour-package.show', 'series-departures-2026').'#series-'.\Illuminate\Support\Str::slug($destination['name']),
+        ])
+        ->all();
+
+    return view('SmartHolidays', compact('popularTours'));
+})->name('home');
 
 Route::get('/client/login', [ClientAuthController::class, 'create'])
     ->name('client.login');
@@ -147,9 +163,14 @@ Route::get('/philippines', fn (): View => view('Smart-Muslim.Tour-Package(privat
     'page' => TourPackagePage::forSlug('philippines'),
 ]))->name('philippines');
 
-Route::get('/tour/{slug}', fn (string $slug): View => view('Smart-Muslim.Tour-Package(private).custom.show', [
-    'page' => TourPackagePage::query()->where('is_custom', true)->where('slug', $slug)->firstOrFail(),
-]))->where('slug', '[a-z0-9-]+')->name('tour-package.show');
+Route::get('/tour/{slug}', function (string $slug): View {
+    $page = TourPackagePage::query()->where('is_custom', true)->where('slug', $slug)->firstOrFail();
+    $seriesPages = $page->slug === 'series-departures-2026'
+        ? TourPackagePage::query()->where('is_custom', true)->where('parent_slug', $page->slug)->orderBy('name')->get()
+        : collect();
+
+    return view('Smart-Muslim.Tour-Package(private).custom.show', compact('page', 'seriesPages'));
+})->where('slug', '[a-z0-9-]+')->name('tour-package.show');
 
 Route::get('/admin/login', [AuthController::class, 'create'])
     ->name('login');
