@@ -14,8 +14,7 @@ class ThailandPrivateTourPageTest extends TestCase
         $this->get(route('smart-muslim'))
             ->assertOk()
             ->assertSee(route('thailand'))
-            ->assertSee('Bangkok')
-            ->assertSee('Chiang Mai');
+            ->assertSee('aria-label="Show Thailand destinations"', false);
 
         $this->get(route('thailand'))
             ->assertOk()

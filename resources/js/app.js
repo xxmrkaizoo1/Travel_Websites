@@ -206,7 +206,7 @@ document.querySelectorAll('[data-sh-journey-carousel]').forEach((carousel) => {
             slide.inert = slideIndex !== currentIndex;
             slide.classList.toggle('is-active', slideIndex === currentIndex);
         });
-        selectors.forEach((selector, selectorIndex) => {
+        selectors.forEach((selector) => {
             if (Number(selector.dataset.shJourneyIndex) === currentIndex) {
                 selector.setAttribute('aria-current', 'true');
             } else {
@@ -1162,7 +1162,7 @@ if (previewForm) {
                 ? ['Website navbar & admin sidebar', 'The page name and its menu position appear in the top navigation.']
                 : ['Browser tab & search results', 'The browser title and description shown in the tab and on Google.'];
 
-            const shot = key === 'navbar' ? `<img class="field-preview-shot" src="/images/admin-preview/navbar.jpg" alt="Website navbar" onerror="this.remove()">` : `<div class="field-preview-page"><span class="field-preview-block is-active">Page title — description</span></div>`;
+            const shot = key === 'navbar' ? '<img class="field-preview-shot" src="/images/admin-preview/navbar.jpg" alt="Website navbar" onerror="this.remove()">' : '<div class="field-preview-page"><span class="field-preview-block is-active">Page title — description</span></div>';
 
             preview.innerHTML = `<strong class="field-preview-title">Shown in: ${text[0]}</strong>${shot}<p>${text[1]}</p>`;
 

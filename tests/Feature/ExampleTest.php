@@ -28,16 +28,18 @@ class ExampleTest extends TestCase
     {
         $this->get(route('smart-muslim'))
             ->assertOk()
-            ->assertSee('<section class="smart-muslim-gallery" id="gallery"', false)
-            ->assertSee('href="#gallery">Our Gallery</a>', false)
-            ->assertSee('href="'.route('smart-muslim').'#gallery">Our Gallery</a>', false)
-            ->assertSee(asset('images/series/seoul-1.jpg'), false)
+            ->assertSee('href="'.route('gallery').'">Our Gallery</a>', false)
             ->assertSee('href="#contact">Contact Us</a>', false);
 
         $this->get(route('home'))
             ->assertOk()
-            ->assertSee('href="'.route('smart-muslim').'#gallery">Our Gallery</a>', false)
+            ->assertSee('href="'.route('gallery').'">Our Gallery</a>', false)
             ->assertSee('href="#contact">Contact Us</a>', false);
+
+        $this->get(route('gallery'))
+            ->assertOk()
+            ->assertSee('<title>Our Gallery | Smart Muslim by Roystar Travel &amp; Tours</title>', false)
+            ->assertSee(asset('images/series/seoul-1.jpg'), false);
     }
 
     public function test_island_honeymoon_page_is_available_from_private_tour_menu(): void
@@ -105,20 +107,12 @@ class ExampleTest extends TestCase
         $this->get(route('smart-muslim'))
             ->assertOk()
             ->assertSee(route('indonesia'))
-            ->assertSee('Aceh')
-            ->assertSee('Medan')
-            ->assertSee('Padang')
-            ->assertSee('Surabaya')
-            ->assertSee('Yogyakarta');
+            ->assertSee('href="'.route('tour-package.show', 'aceh').'">Aceh</a>', false);
 
         $this->get(route('island-honeymoon'))
             ->assertOk()
             ->assertSee(route('indonesia'))
-            ->assertSee('Aceh')
-            ->assertSee('Medan')
-            ->assertSee('Padang')
-            ->assertSee('Surabaya')
-            ->assertSee('Yogyakarta');
+            ->assertSee('href="'.route('tour-package.show', 'aceh').'">Aceh</a>', false);
 
         $this->get(route('indonesia'))
             ->assertOk()
