@@ -31,4 +31,19 @@ class ThailandPrivateTourPageTest extends TestCase
             ->assertSee('aria-label="Next destinations"', false)
             ->assertSee('Enquire on WhatsApp');
     }
+
+    public function test_every_country_destination_card_links_to_its_package_or_an_enquiry(): void
+    {
+        $this->get(route('thailand'))
+            ->assertSeeInOrder(['href="/tour/bangkok"', 'Explore Bangkok tour packages', 'href="/tour/chiang-mai-chiang-rai"', 'href="/tour/pattaya"'], false)
+            ->assertSee('href="https://wa.me/60165500590?text=Hi%2C%20I%27d%20like%20to%20ask%20about%20Phuket%20tour%20packages." target="_blank" rel="noreferrer">Ask about Phuket packages', false)
+            ->assertSee('href="/tour/krabi"', false)
+            ->assertSee('href="/tour/kanchanaburi"', false);
+
+        $this->get(route('vietnam'))
+            ->assertSeeInOrder(['href="/tour/hanoi"', 'Ask about Ha Long Bay packages', 'href="/tour/da-nang"', 'href="/tour/ho-chi-minh"', 'Ask about Mekong Delta packages'], false);
+
+        $this->get(route('philippines'))
+            ->assertSeeInOrder(['href="/tour/boracay"', 'href="/tour/palawan"', 'href="/tour/manila"', 'href="/tour/cebu"', 'Ask about Bohol packages'], false);
+    }
 }

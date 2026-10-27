@@ -7,6 +7,7 @@
     <meta name="description" content="Manage the Company Trip (MICE) page content and clientele logos.">
     <title>Company Trip (MICE) | Smart Holidays Admin</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>@view-transition { navigation: auto; }</style>
 </head>
 <body class="admin-page">
     <a class="skip-link" href="#mice-admin-main">Skip to Company Trip (MICE) content</a>

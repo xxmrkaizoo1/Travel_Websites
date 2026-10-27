@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\ChinaMuslimPackage;
+use App\Models\HomepageCampaign;
 use App\Models\User;
 use Database\Seeders\AdminUserSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -54,6 +56,24 @@ class AdminAuthenticationTest extends TestCase
             ->assertRedirect(route('login'));
 
         $this->assertGuest();
+    }
+
+    public function test_dashboard_sidebar_lists_manageable_content_with_context_actions(): void
+    {
+        $admin = User::factory()->create();
+        $admin->forceFill(['is_admin' => true])->save();
+        $package = ChinaMuslimPackage::factory()->create(['title' => 'Sidebar Beijing Tour']);
+        $campaign = HomepageCampaign::query()->orderBy('position')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('Sidebar Beijing Tour')
+            ->assertSee('data-edit-url="'.route('admin.china-muslim.edit', $package).'"', false)
+            ->assertSee('data-delete-url="'.route('admin.china-muslim.destroy', $package).'"', false)
+            ->assertSee('data-edit-url="'.route('admin.homepage.edit', $campaign).'"', false)
+            ->assertSee('data-delete-url="'.route('admin.homepage.destroy', $campaign).'"', false)
+            ->assertSee('data-context-create-url="'.route('admin.china-muslim.create').'"', false);
     }
 
     public function test_non_admin_user_cannot_log_in_or_access_admin_dashboard(): void

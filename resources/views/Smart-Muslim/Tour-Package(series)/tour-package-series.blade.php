@@ -1,3 +1,6 @@
+@php
+    $seriesBooking = new \App\Support\BookablePackage($page);
+@endphp
 <section class="series-section" id="destinations" aria-labelledby="series-title">
     <div class="island-section-heading">
         <span class="island-section-label">{{ $page->destinations_eyebrow }}</span>
@@ -42,26 +45,41 @@
                                     @endforeach
                                 </div>
                             </div>
-                            @if (! empty($destination['flag']))
                             <figure class="series-flag">
-                                <img src="{{ $page->imageUrl($destination['flag']) }}" alt="Flag of {{ $destination['country'] }}" loading="lazy">
+                                @if (! empty($destination['flag']))
+                                    <img src="{{ $page->imageUrl($destination['flag']) }}" alt="Flag of {{ $destination['country'] }}" loading="lazy">
+                                @else
+                                    <img src="{{ $page->imageUrl(\App\Models\TourPackagePage::PLACEHOLDER_IMAGE) }}" alt="" loading="lazy">
+                                @endif
                                 <figcaption><strong>{{ $destination['name'] }}</strong>{{ $destination['country'] }}</figcaption>
                             </figure>
-                            @endif
                         </div>
 
                         <div class="series-gallery">
-                            @foreach ($destination['gallery'] as $photo)
+                            @forelse ($destination['gallery'] ?? [] as $photo)
                                 <figure class="series-photo">
                                     <img src="{{ $page->imageUrl($photo['image']) }}" alt="{{ $photo['alt'] }}" loading="lazy">
                                     <figcaption>{{ $photo['caption'] }}</figcaption>
                                 </figure>
-                            @endforeach
+                            @empty
+                                @for ($placeholder = 0; $placeholder < \App\Models\TourPackagePage::PLACEHOLDER_GALLERY_SIZE; $placeholder++)
+                                    <figure class="series-photo series-photo-placeholder">
+                                        <img src="{{ $page->imageUrl(\App\Models\TourPackagePage::PLACEHOLDER_IMAGE) }}" alt="" loading="lazy">
+                                        <figcaption>Photo coming soon</figcaption>
+                                    </figure>
+                                @endfor
+                            @endforelse
                         </div>
 
-                        <button class="series-details-open" type="button" data-series-details-open aria-haspopup="dialog" aria-controls="{{ \Illuminate\Support\Str::slug($destination['name']) }}-package-details">
-                            Explore the full {{ $destination['name'] }} package <span aria-hidden="true">↗</span>
-                        </button>
+                        <div class="series-destination-actions">
+                            <button class="series-details-open" type="button" data-series-details-open aria-haspopup="dialog" aria-controls="{{ \Illuminate\Support\Str::slug($destination['name']) }}-package-details">
+                                Explore the full {{ $destination['name'] }} package <span aria-hidden="true">↗</span>
+                            </button>
+                            @if ($destinationBookingUrl = $seriesBooking->bookNowUrl($destination['name']))
+                                <a class="package-book-now" href="{{ $destinationBookingUrl }}">Book now <span aria-hidden="true">→</span></a>
+                            @endif
+                            @include('partials.like-button', ['likeKey' => \App\Support\PackageLikes::key($page, $destination['name']), 'likeLabel' => $destination['name']])
+                        </div>
                     </article>
                 @endforeach
             </div>
@@ -113,12 +131,7 @@
                             <article><span>Tour code</span><strong>{{ $seoulDetails['tour_code'] }}</strong></article>
                             <article><span>Duration</span><strong>{{ $seoulDetails['duration'] }}</strong></article>
                         </div>
-                        <div class="series-details-date-list">
-                            <strong>Available departures</strong>
-                            @foreach ($seoulDetails['departures'] as $departure)
-                                <span>{{ $departure['date'] }} · {{ $departure['price'] }} · {{ $departure['availability'] }}</span>
-                            @endforeach
-                        </div>
+                        @include('Smart-Muslim.Tour-Package(series).partials.departures', ['departures' => $seoulDetails['departures'] ?? [], 'bookingUrl' => $seriesBooking->bookNowUrl('Seoul')])
                         <p class="series-details-note">{{ $seoulDetails['note'] }}</p>
                     </section>
 
@@ -128,7 +141,7 @@
                             <h3>{{ $seoulDetails['headline'] }}</h3>
                             <div class="series-itinerary">
                                 @foreach ($days as $day)
-                                    <article><span>{{ $day['day'] }}</span><div><h4>{{ $day['title'] }}</h4><p>{{ $day['places'] }} @if ($day['meals'] !== '')<strong>Meals:</strong> {{ $day['meals'] }}.@endif @if ($day['transfer'] !== '')<strong>Transfer:</strong> {{ $day['transfer'] }}.@endif</p></div></article>
+                                    @include('Smart-Muslim.Tour-Package(series).partials.itinerary-day', ['day' => $day])
                                 @endforeach
                             </div>
                             @if ($loop->last && ($seoulDetails['itinerary_note'] ?? '') !== '')
@@ -141,42 +154,21 @@
                         <p class="series-details-kicker">WHAT'S INCLUDED</p>
                         <h3>Know what's covered.</h3>
                         <div class="series-details-columns">
-                            <div><h4><span aria-hidden="true">✓</span> Package includes</h4><ul>@foreach ($seoulDetails['includes'] as $item)<li>{{ $item }}</li>@endforeach</ul></div>
-                            <div><h4><span aria-hidden="true">−</span> Not included</h4><ul>@foreach ($seoulDetails['excludes'] as $item)<li>{{ $item }}</li>@endforeach</ul></div>
+                            <div class="series-coverage series-coverage--included"><h4><span aria-hidden="true">✓</span> Package includes</h4><ul>@foreach ($seoulDetails['includes'] as $item)<li>{{ $item }}</li>@endforeach</ul></div>
+                            <div class="series-coverage series-coverage--excluded"><h4><span aria-hidden="true">✕</span> Not included</h4><ul>@foreach ($seoulDetails['excludes'] as $item)<li>{{ $item }}</li>@endforeach</ul></div>
                         </div>
                     </section>
 
                     <section class="series-details-slide" aria-label="Seoul flights and hotel">
                         <p class="series-details-kicker">FLIGHTS &amp; STAY</p>
                         <h3>Your travel arrangements.</h3>
-                        <div class="series-details-columns">
-                            <div><h4>Outbound · {{ $seoulDetails['outbound']['flight'] }}</h4><p>{{ $seoulDetails['outbound']['route'] }}</p><p>{{ $seoulDetails['outbound']['time'] }} · {{ $seoulDetails['outbound']['duration'] }}</p></div>
-                            <div><h4>Return · {{ $seoulDetails['return']['flight'] }}</h4><p>{{ $seoulDetails['return']['route'] }}</p><p>{{ $seoulDetails['return']['time'] }} · {{ $seoulDetails['return']['duration'] }}</p></div>
-                        </div>
-                        <div class="series-details-hotels">
-                            <strong>Hotels · twin-share</strong>
-                            @foreach ($seoulHotels as $hotel)
-                                <span>{{ $hotel['name'] }} · {{ $hotel['room'] }} · {{ $hotel['location'] }}</span>
-                            @endforeach
-                        </div>
-                        @foreach ($seoulHotels as $hotel)
-                            @if (($hotel['note'] ?? '') !== '')
-                                <p class="series-details-note">{{ $hotel['note'] }}</p>
-                            @endif
-                        @endforeach
+                        @include('Smart-Muslim.Tour-Package(series).partials.travel-arrangements', ['details' => $seoulDetails, 'hotels' => $seoulHotels, 'hotelsHeading' => 'Hotels · twin-share'])
                     </section>
 
                     <section class="series-details-slide" aria-label="Seoul travel essentials and seasonal weather">
                         <p class="series-details-kicker">BEFORE YOU GO</p>
                         <h3>Travel essentials &amp; weather.</h3>
-                        <div class="series-details-highlights">
-                            <article><span>Visa</span><strong>{{ $seoulDetails['essentials']['visa'] }}</strong></article>
-                            <article><span>Arrival card</span><strong>{{ $seoulDetails['essentials']['arrival_card'] }}</strong></article>
-                            <article><span>Currency</span><strong>{{ $seoulDetails['essentials']['currency'] }}</strong></article>
-                            <article><span>Time zone</span><strong>{{ $seoulDetails['essentials']['time'] }}</strong></article>
-                            <article><span>Language</span><strong>{{ $seoulDetails['essentials']['language'] }}</strong></article>
-                        </div>
-                        <div class="series-weather"><strong>Seasonal guide</strong>@foreach ($seoulDetails['weather'] as $season)<span>{{ $season['season'] }} · {{ $season['temperature'] }} · {{ $season['description'] }}</span>@endforeach</div>
+                        @include('Smart-Muslim.Tour-Package(series).partials.essentials-weather', ['essentials' => $seoulDetails['essentials'] ?? [], 'weather' => $seoulDetails['weather'] ?? []])
                     </section>
                 </div>
             </div>
@@ -219,12 +211,7 @@
                             <article><span>Tour code</span><strong>{{ $kunmingDetails['tour_code'] }}</strong></article>
                             <article><span>Duration</span><strong>{{ $kunmingDetails['duration'] }}</strong></article>
                         </div>
-                        <div class="series-details-date-list">
-                            <strong>Available departures</strong>
-                            @foreach ($kunmingDetails['departures'] as $departure)
-                                <span>{{ $departure['date'] }} · {{ $departure['price'] }} · {{ $departure['availability'] }}</span>
-                            @endforeach
-                        </div>
+                        @include('Smart-Muslim.Tour-Package(series).partials.departures', ['departures' => $kunmingDetails['departures'] ?? [], 'bookingUrl' => $seriesBooking->bookNowUrl('Kunming')])
                         <p class="series-details-note">{{ $kunmingDetails['note'] }}</p>
                     </section>
 
@@ -234,7 +221,7 @@
                             <h3>{{ $loop->first ? 'From Kunming to Dali.' : ($loop->last ? 'Return to Kunming.' : 'Highlands, old towns & mountain views.') }}</h3>
                             <div class="series-itinerary">
                                 @foreach ($days as $day)
-                                    <article><span>{{ $day['day'] }}</span><div><h4>{{ $day['title'] }}</h4><p>{{ $day['places'] }} @if ($day['meals'] !== '')<strong>Meals:</strong> {{ $day['meals'] }}.@endif @if ($day['transfer'] !== '')<strong>Transfer:</strong> {{ $day['transfer'] }}.@endif</p></div></article>
+                                    @include('Smart-Muslim.Tour-Package(series).partials.itinerary-day', ['day' => $day])
                                 @endforeach
                             </div>
                             @if ($loop->last && ($kunmingDetails['itinerary_note'] ?? '') !== '')
@@ -247,37 +234,21 @@
                         <p class="series-details-kicker">WHAT'S INCLUDED</p>
                         <h3>Know what's covered.</h3>
                         <div class="series-details-columns">
-                            <div><h4><span aria-hidden="true">✓</span> Package includes</h4><ul>@foreach ($kunmingDetails['includes'] as $item)<li>{{ $item }}</li>@endforeach</ul></div>
-                            <div><h4><span aria-hidden="true">−</span> Not included</h4><ul>@foreach ($kunmingDetails['excludes'] as $item)<li>{{ $item }}</li>@endforeach</ul></div>
+                            <div class="series-coverage series-coverage--included"><h4><span aria-hidden="true">✓</span> Package includes</h4><ul>@foreach ($kunmingDetails['includes'] as $item)<li>{{ $item }}</li>@endforeach</ul></div>
+                            <div class="series-coverage series-coverage--excluded"><h4><span aria-hidden="true">✕</span> Not included</h4><ul>@foreach ($kunmingDetails['excludes'] as $item)<li>{{ $item }}</li>@endforeach</ul></div>
                         </div>
                     </section>
 
                     <section class="series-details-slide" aria-label="Kunming flights and hotels">
                         <p class="series-details-kicker">FLIGHTS &amp; STAYS</p>
                         <h3>Your travel arrangements.</h3>
-                        <div class="series-details-columns">
-                            <div><h4>Outbound · {{ $kunmingDetails['outbound']['flight'] }}</h4><p>{{ $kunmingDetails['outbound']['route'] }}</p><p>{{ $kunmingDetails['outbound']['time'] }} · {{ $kunmingDetails['outbound']['duration'] }}</p></div>
-                            <div><h4>Return · {{ $kunmingDetails['return']['flight'] }}</h4><p>{{ $kunmingDetails['return']['route'] }}</p><p>{{ $kunmingDetails['return']['time'] }} · {{ $kunmingDetails['return']['duration'] }}</p></div>
-                        </div>
-                        <div class="series-details-hotels">
-                            <strong>Hotels · twin-share</strong>
-                            @foreach ($kunmingDetails['hotels'] as $hotel)
-                                <span>{{ $hotel['name'] }} · {{ $hotel['room'] }} · {{ $hotel['location'] }}</span>
-                            @endforeach
-                        </div>
+                        @include('Smart-Muslim.Tour-Package(series).partials.travel-arrangements', ['details' => $kunmingDetails, 'hotels' => $kunmingDetails['hotels'] ?? [], 'hotelsHeading' => 'Hotels · twin-share'])
                     </section>
 
                     <section class="series-details-slide" aria-label="Kunming travel essentials and seasonal weather">
                         <p class="series-details-kicker">BEFORE YOU GO</p>
                         <h3>Travel essentials &amp; weather.</h3>
-                        <div class="series-details-highlights">
-                            <article><span>Visa</span><strong>{{ $kunmingDetails['essentials']['visa'] }}</strong></article>
-                            <article><span>Arrival card</span><strong>{{ $kunmingDetails['essentials']['arrival_card'] }}</strong></article>
-                            <article><span>Currency</span><strong>{{ $kunmingDetails['essentials']['currency'] }}</strong></article>
-                            <article><span>Time zone</span><strong>{{ $kunmingDetails['essentials']['time'] }}</strong></article>
-                            <article><span>Language</span><strong>{{ $kunmingDetails['essentials']['language'] }}</strong></article>
-                        </div>
-                        <div class="series-weather"><strong>Seasonal guide</strong>@foreach ($kunmingDetails['weather'] as $season)<span>{{ $season['season'] }} · {{ $season['temperature'] }} · {{ $season['description'] }}</span>@endforeach</div>
+                        @include('Smart-Muslim.Tour-Package(series).partials.essentials-weather', ['essentials' => $kunmingDetails['essentials'] ?? [], 'weather' => $kunmingDetails['weather'] ?? []])
                     </section>
                 </div>
             </div>
@@ -330,12 +301,7 @@
                             <article><span>Tour code</span><strong>{{ $daNangDetails['tour_code'] }}</strong></article>
                             <article><span>Duration</span><strong>{{ $daNangDetails['duration'] }}</strong></article>
                         </div>
-                        <div class="series-details-date-list">
-                            <strong>Available departures</strong>
-                            @foreach ($daNangDetails['departures'] as $departure)
-                                <span>{{ $departure['date'] }} · {{ $departure['price'] }} · {{ $departure['availability'] }}</span>
-                            @endforeach
-                        </div>
+                        @include('Smart-Muslim.Tour-Package(series).partials.departures', ['departures' => $daNangDetails['departures'] ?? [], 'bookingUrl' => $seriesBooking->bookNowUrl('Da Nang')])
                         <p class="series-details-note">{{ $daNangDetails['note'] }}</p>
                     </section>
 
@@ -345,7 +311,7 @@
                             <h3>{{ $daNangDetails['headline'] }}</h3>
                             <div class="series-itinerary">
                                 @foreach ($days as $day)
-                                    <article><span>{{ $day['day'] }}</span><div><h4>{{ $day['title'] }}</h4><p>{{ $day['places'] }} @if ($day['meals'] !== '')<strong>Meals:</strong> {{ $day['meals'] }}.@endif @if ($day['transfer'] !== '')<strong>Transfer:</strong> {{ $day['transfer'] }}.@endif</p></div></article>
+                                    @include('Smart-Muslim.Tour-Package(series).partials.itinerary-day', ['day' => $day])
                                 @endforeach
                             </div>
                             @if ($loop->last && ($daNangDetails['itinerary_note'] ?? '') !== '')
@@ -358,40 +324,21 @@
                         <p class="series-details-kicker">WHAT'S INCLUDED</p>
                         <h3>Know what's covered.</h3>
                         <div class="series-details-columns">
-                            <div><h4><span aria-hidden="true">✓</span> Package includes</h4><ul>@foreach ($daNangDetails['includes'] as $item)<li>{{ $item }}</li>@endforeach</ul></div>
-                            <div><h4><span aria-hidden="true">−</span> Not included</h4><ul>@foreach ($daNangDetails['excludes'] as $item)<li>{{ $item }}</li>@endforeach</ul></div>
+                            <div class="series-coverage series-coverage--included"><h4><span aria-hidden="true">✓</span> Package includes</h4><ul>@foreach ($daNangDetails['includes'] as $item)<li>{{ $item }}</li>@endforeach</ul></div>
+                            <div class="series-coverage series-coverage--excluded"><h4><span aria-hidden="true">✕</span> Not included</h4><ul>@foreach ($daNangDetails['excludes'] as $item)<li>{{ $item }}</li>@endforeach</ul></div>
                         </div>
                     </section>
 
                     <section class="series-details-slide" aria-label="Da Nang flights and hotel">
                         <p class="series-details-kicker">FLIGHTS &amp; STAY</p>
                         <h3>Your travel arrangements.</h3>
-                        <div class="series-details-columns">
-                            <div><h4>Outbound · {{ $daNangDetails['outbound']['flight'] }}</h4><p>{{ $daNangDetails['outbound']['route'] }}</p><p>{{ $daNangDetails['outbound']['time'] }} · {{ $daNangDetails['outbound']['duration'] }}</p></div>
-                            <div><h4>Return · {{ $daNangDetails['return']['flight'] }}</h4><p>{{ $daNangDetails['return']['route'] }}</p><p>{{ $daNangDetails['return']['time'] }} · {{ $daNangDetails['return']['duration'] }}</p></div>
-                        </div>
-                        <div class="series-details-hotels">
-                            <strong>Hotel · twin-share</strong>
-                            @foreach ($daNangHotels as $hotel)
-                                <span>{{ $hotel['name'] }} · {{ $hotel['room'] }} · {{ $hotel['location'] }}</span>
-                                @if (($hotel['note'] ?? '') !== '')
-                                    <span>{{ $hotel['note'] }}</span>
-                                @endif
-                            @endforeach
-                        </div>
+                        @include('Smart-Muslim.Tour-Package(series).partials.travel-arrangements', ['details' => $daNangDetails, 'hotels' => $daNangHotels, 'hotelsHeading' => 'Hotel · twin-share'])
                     </section>
 
                     <section class="series-details-slide" aria-label="Da Nang travel essentials and seasonal weather">
                         <p class="series-details-kicker">BEFORE YOU GO</p>
                         <h3>Travel essentials &amp; weather.</h3>
-                        <div class="series-details-highlights">
-                            <article><span>Visa</span><strong>{{ $daNangDetails['essentials']['visa'] }}</strong></article>
-                            <article><span>Arrival card</span><strong>{{ $daNangDetails['essentials']['arrival_card'] }}</strong></article>
-                            <article><span>Currency</span><strong>{{ $daNangDetails['essentials']['currency'] }}</strong></article>
-                            <article><span>Time</span><strong>{{ $daNangDetails['essentials']['time'] }}</strong></article>
-                            <article><span>Language</span><strong>{{ $daNangDetails['essentials']['language'] }}</strong></article>
-                        </div>
-                        <div class="series-weather"><strong>Seasonal guide</strong>@foreach ($daNangDetails['weather'] as $season)<span>{{ $season['season'] }} · {{ $season['temperature'] }} · {{ $season['description'] }}</span>@endforeach</div>
+                        @include('Smart-Muslim.Tour-Package(series).partials.essentials-weather', ['essentials' => $daNangDetails['essentials'] ?? [], 'weather' => $daNangDetails['weather'] ?? []])
                     </section>
                 </div>
             </div>
@@ -444,7 +391,7 @@
                             <p class="series-details-kicker">{{ filled($destinationPackageDetails['headline'] ?? '') ? 'PACKAGE OVERVIEW' : 'DESTINATION OVERVIEW' }}</p>
                             <h3>{{ $destinationPackageDetails['headline'] ?? $destination['tagline'] }}</h3>
                             @if (filled($destinationPackageDetails['headline'] ?? '') && $destination['tagline'] !== '')
-                                <p class="series-details-note">{{ $destination['tagline'] }}</p>
+                                <p class="series-details-lead">{{ $destination['tagline'] }}</p>
                             @endif
                             <p class="series-details-note">{{ $destination['intro'] }}</p>
                             <div class="series-details-generic-highlights">
@@ -464,12 +411,7 @@
                                     @endforeach
                                 </div>
                                 @if (! empty($destinationPackageDetails['departures']))
-                                    <div class="series-details-date-list">
-                                        <strong>Available departures</strong>
-                                        @foreach ($destinationPackageDetails['departures'] as $departure)
-                                            <span>{{ $departure['date'] }} · {{ $departure['price'] }} · {{ $departure['availability'] }}</span>
-                                        @endforeach
-                                    </div>
+                                    @include('Smart-Muslim.Tour-Package(series).partials.departures', ['departures' => $destinationPackageDetails['departures'] ?? [], 'bookingUrl' => $seriesBooking->bookNowUrl($destination['name'])])
                                 @endif
                                 @if (filled($destinationPackageDetails['note'] ?? ''))
                                     <p class="series-details-note">{{ $destinationPackageDetails['note'] }}</p>
@@ -483,9 +425,12 @@
                                 <h3>{{ $destinationPackageDetails['headline'] ?? $destination['name'].' itinerary' }}</h3>
                                 <div class="series-itinerary">
                                     @foreach ($days as $day)
-                                        <article><span>{{ $day['day'] }}</span><div><h4>{{ $day['title'] }}</h4><p>{{ $day['places'] }} @if (($day['meals'] ?? '') !== '')<strong>Meals:</strong> {{ $day['meals'] }}.@endif @if (($day['transfer'] ?? '') !== '')<strong>Transfer:</strong> {{ $day['transfer'] }}.@endif</p></div></article>
+                                        @include('Smart-Muslim.Tour-Package(series).partials.itinerary-day', ['day' => $day])
                                     @endforeach
                                 </div>
+                                @if ($loop->last && filled($destinationPackageDetails['itinerary_note'] ?? ''))
+                                    <p class="series-details-note">{{ $destinationPackageDetails['itinerary_note'] }}</p>
+                                @endif
                             </section>
                         @endforeach
 
@@ -495,10 +440,10 @@
                                 <h3>Know what's covered.</h3>
                                 <div class="series-details-columns">
                                     @if (! empty($destinationPackageDetails['includes']))
-                                        <div><h4><span aria-hidden="true">✓</span> Package includes</h4><ul>@foreach ($destinationPackageDetails['includes'] as $item)<li>{{ $item }}</li>@endforeach</ul></div>
+                                        <div class="series-coverage series-coverage--included"><h4><span aria-hidden="true">✓</span> Package includes</h4><ul>@foreach ($destinationPackageDetails['includes'] as $item)<li>{{ $item }}</li>@endforeach</ul></div>
                                     @endif
                                     @if (! empty($destinationPackageDetails['excludes']))
-                                        <div><h4><span aria-hidden="true">−</span> Not included</h4><ul>@foreach ($destinationPackageDetails['excludes'] as $item)<li>{{ $item }}</li>@endforeach</ul></div>
+                                        <div class="series-coverage series-coverage--excluded"><h4><span aria-hidden="true">✕</span> Not included</h4><ul>@foreach ($destinationPackageDetails['excludes'] as $item)<li>{{ $item }}</li>@endforeach</ul></div>
                                     @endif
                                 </div>
                             </section>
@@ -508,26 +453,7 @@
                             <section class="series-details-slide" aria-label="{{ $destination['name'] }} flights and hotels">
                                 <p class="series-details-kicker">FLIGHTS &amp; STAYS</p>
                                 <h3>Your travel arrangements.</h3>
-                                @if (filled($destinationPackageDetails['outbound']['flight'] ?? '') || filled($destinationPackageDetails['return']['flight'] ?? ''))
-                                    <div class="series-details-columns">
-                                        @foreach (['outbound' => 'Outbound', 'return' => 'Return'] as $flightKey => $flightLabel)
-                                            @if (filled($destinationPackageDetails[$flightKey]['flight'] ?? ''))
-                                                <div><h4>{{ $flightLabel }} · {{ $destinationPackageDetails[$flightKey]['flight'] }}</h4><p>{{ $destinationPackageDetails[$flightKey]['route'] }}</p><p>{{ $destinationPackageDetails[$flightKey]['time'] }}@if (filled($destinationPackageDetails[$flightKey]['duration'] ?? '')) · {{ $destinationPackageDetails[$flightKey]['duration'] }}@endif</p></div>
-                                            @endif
-                                        @endforeach
-                                    </div>
-                                @endif
-                                @if (! empty($destinationPackageDetails['hotels']))
-                                    <div class="series-details-hotels">
-                                        <strong>Hotels</strong>
-                                        @foreach ($destinationPackageDetails['hotels'] as $hotel)
-                                            <span>{{ implode(' · ', array_filter([$hotel['name'] ?? '', $hotel['room'] ?? '', $hotel['location'] ?? ''])) }}</span>
-                                            @if (filled($hotel['note'] ?? ''))
-                                                <span>{{ $hotel['note'] }}</span>
-                                            @endif
-                                        @endforeach
-                                    </div>
-                                @endif
+                                @include('Smart-Muslim.Tour-Package(series).partials.travel-arrangements', ['details' => $destinationPackageDetails, 'hotels' => $destinationPackageDetails['hotels'] ?? [], 'hotelsHeading' => 'Hotels'])
                             </section>
                         @endif
 
@@ -535,18 +461,7 @@
                             <section class="series-details-slide" aria-label="{{ $destination['name'] }} travel essentials and seasonal weather">
                                 <p class="series-details-kicker">BEFORE YOU GO</p>
                                 <h3>Travel essentials &amp; weather.</h3>
-                                @if ($destinationEssentials !== [])
-                                    <div class="series-details-highlights">
-                                        @foreach (['visa' => 'Visa', 'arrival_card' => 'Arrival card', 'currency' => 'Currency', 'time' => 'Time zone', 'language' => 'Language'] as $key => $label)
-                                            @if (filled($destinationPackageDetails['essentials'][$key] ?? ''))
-                                                <article><span>{{ $label }}</span><strong>{{ $destinationPackageDetails['essentials'][$key] }}</strong></article>
-                                            @endif
-                                        @endforeach
-                                    </div>
-                                @endif
-                                @if ($destinationWeather !== [])
-                                    <div class="series-weather"><strong>Seasonal guide</strong>@foreach ($destinationWeather as $season)<span>{{ $season['season'] }} · {{ $season['temperature'] }} · {{ $season['description'] }}</span>@endforeach</div>
-                                @endif
+                                @include('Smart-Muslim.Tour-Package(series).partials.essentials-weather', ['essentials' => $destinationPackageDetails['essentials'] ?? [], 'weather' => $destinationPackageDetails['weather'] ?? []])
                             </section>
                         @endif
 
@@ -568,8 +483,11 @@
                         <section class="series-details-slide" aria-label="{{ $destination['name'] }} tour enquiry">
                             <p class="series-details-kicker">PLAN YOUR TRIP</p>
                             <h3>Ready to explore {{ $destination['name'] }}?</h3>
-                            <p class="series-details-note">Contact our team for availability and booking assistance.</p>
-                            <a class="series-details-open" href="{{ $page->contact_href }}" target="_blank" rel="noreferrer">Ask about this tour <span aria-hidden="true">↗</span></a>
+                            <div class="series-details-cta">
+                                <span class="series-details-cta__icon" aria-hidden="true">💬</span>
+                                <p>Contact our team for availability and booking assistance.</p>
+                                <a class="series-details-open" href="{{ $page->contact_href }}" target="_blank" rel="noreferrer">Ask about this tour <span aria-hidden="true">↗</span></a>
+                            </div>
                         </section>
                     </div>
                 </div>

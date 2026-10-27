@@ -1,9 +1,9 @@
 <section class="homepage-form-panel china-about-editor">
     <div class="homepage-form-panel-heading">
-        <span class="homepage-form-icon" aria-hidden="true">🌏</span>
+        <span class="homepage-form-icon" aria-hidden="true">05</span>
         <div>
             <h2>About this place popup</h2>
-            <p>Shared by every card’s “About this place” button. Saved with its own button below.</p>
+            <p>Text and photos shared by every card’s “About this place” popup (the video in section 04 belongs to this card only). Saved with its own button below.</p>
         </div>
     </div>
 

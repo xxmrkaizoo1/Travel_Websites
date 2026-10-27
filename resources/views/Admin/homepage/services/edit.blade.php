@@ -7,6 +7,7 @@
     <meta name="description" content="Edit a service card on the Smart Muslim homepage.">
     <title>Edit {{ $service->title }} | Smart Holidays Admin</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>@view-transition { navigation: auto; }</style>
 </head>
 <body class="admin-page">
     <a class="skip-link" href="#homepage-service-form">Skip to service form</a>

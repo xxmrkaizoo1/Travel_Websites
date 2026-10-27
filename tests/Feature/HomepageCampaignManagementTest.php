@@ -134,6 +134,11 @@ class HomepageCampaignManagementTest extends TestCase
         $campaign = HomepageCampaign::query()->where('kicker', 'Simple banner')->firstOrFail();
         $this->assertTrue($campaign->isBanner());
 
+        $this->get(route('admin.homepage.edit', $campaign))
+            ->assertOk()
+            ->assertSee('<input type="radio" name="layout" value="collage"  required>', false)
+            ->assertSee('<input type="radio" name="layout" value="banner" checked>', false);
+
         $this->get(route('smart-muslim'))
             ->assertOk()
             ->assertSee('campaign-slide-banner', false)

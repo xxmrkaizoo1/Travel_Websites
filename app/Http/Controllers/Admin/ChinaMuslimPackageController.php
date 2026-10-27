@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ChinaAboutPage;
 use App\Models\ChinaMuslimPackage;
+use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -16,7 +17,61 @@ class ChinaMuslimPackageController extends Controller
     {
         return view('Admin.china-muslim.index', [
             'packages' => ChinaMuslimPackage::query()->orderBy('position')->orderBy('id')->get(),
+            'about' => ChinaAboutPage::query()->first(),
         ]);
+    }
+
+    /**
+     * Updates the traveller photos slideshow: captions, removals and new uploads.
+     */
+    public function updateTravellerPhotos(Request $request): RedirectResponse
+    {
+        $about = ChinaAboutPage::query()->firstOrFail();
+        $current = collect($about->traveller_photos ?? [])->keyBy('image');
+
+        $validated = $request->validate([
+            'photos' => ['nullable', 'array'],
+            'photos.*.image' => ['required', 'string'],
+            'photos.*.caption' => ['nullable', 'string', 'max:80'],
+            'photos.*.remove' => ['nullable', 'boolean'],
+            'new_photos' => ['nullable', 'array', 'max:12'],
+            'new_photos.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+        ], [
+            'new_photos.max' => 'Upload up to 12 photos at a time.',
+        ]);
+
+        $kept = [];
+        $removed = [];
+
+        foreach ($validated['photos'] ?? [] as $photo) {
+            if (! $current->has($photo['image'])) {
+                continue;
+            }
+
+            if (! empty($photo['remove'])) {
+                $removed[] = $photo['image'];
+
+                continue;
+            }
+
+            $kept[] = ['image' => $photo['image'], 'caption' => trim((string) ($photo['caption'] ?? ''))];
+        }
+
+        $room = ChinaAboutPage::MAX_TRAVELLER_PHOTOS - count($kept);
+
+        if (count($request->file('new_photos', [])) > $room) {
+            return back()->withInput()->withErrors(['new_photos' => 'The slideshow holds up to '.ChinaAboutPage::MAX_TRAVELLER_PHOTOS." photos. Remove some or upload fewer (room for {$room} more)."]);
+        }
+
+        foreach ($request->file('new_photos', []) as $upload) {
+            $kept[] = ['image' => $upload->store('china-travellers', 'public'), 'caption' => 'Smart Muslim travellers'];
+        }
+
+        $about->update(['traveller_photos' => $kept]);
+
+        Storage::disk('public')->delete(array_filter($removed, fn (string $path): bool => ! str_starts_with($path, 'images/')));
+
+        return redirect()->route('admin.china-muslim')->with('status', 'Traveller photos updated.');
     }
 
     public function updateAbout(Request $request): RedirectResponse
@@ -88,6 +143,18 @@ class ChinaMuslimPackageController extends Controller
             ]);
         }
 
+        if ($request->hasFile('about_video')) {
+            $video = $request->file('about_video')->store('china-muslim-videos', 'public');
+
+            if (! is_string($video)) {
+                Storage::disk('public')->delete($image);
+
+                return back()->withInput()->withErrors(['about_video' => 'The video could not be saved. Please try again.']);
+            }
+
+            $validated['about_video_path'] = $video;
+        }
+
         ChinaMuslimPackage::query()->create([
             ...$validated,
             'image_path' => $image,
@@ -121,10 +188,28 @@ class ChinaMuslimPackageController extends Controller
             $validated['image_path'] = $image;
         }
 
+        $oldVideo = $package->about_video_path;
+
+        if ($request->hasFile('about_video')) {
+            $video = $request->file('about_video')->store('china-muslim-videos', 'public');
+
+            if (! is_string($video)) {
+                return back()->withInput()->withErrors(['about_video' => 'The video could not be saved. Please try again.']);
+            }
+
+            $validated['about_video_path'] = $video;
+        } elseif ($request->boolean('remove_about_video')) {
+            $validated['about_video_path'] = null;
+        }
+
         $package->update([...$validated, 'is_hot' => $request->boolean('is_hot')]);
 
         if (isset($validated['image_path'])) {
             Storage::disk('public')->delete($oldImage);
+        }
+
+        if ($oldVideo !== null && array_key_exists('about_video_path', $validated)) {
+            Storage::disk('public')->delete($oldVideo);
         }
 
         return redirect()->route('admin.china-muslim')
@@ -133,9 +218,9 @@ class ChinaMuslimPackageController extends Controller
 
     public function destroy(ChinaMuslimPackage $package): RedirectResponse
     {
-        $image = $package->image_path;
+        $files = array_filter([$package->image_path, $package->about_video_path]);
         $package->delete();
-        Storage::disk('public')->delete($image);
+        Storage::disk('public')->delete($files);
 
         return redirect()->route('admin.china-muslim')
             ->with('status', 'China Muslim package card deleted.');
@@ -161,6 +246,21 @@ class ChinaMuslimPackageController extends Controller
             'note' => ['nullable', 'string', 'max:1000'],
             'is_hot' => ['sometimes', 'boolean'],
             'image' => [$imageRequired ? 'required' : 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'about_video' => ['nullable', 'file', 'mimetypes:video/mp4,video/webm,video/quicktime', 'max:102400'],
+            'about_video_url' => [
+                'nullable',
+                'url:http,https',
+                'max:2048',
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    if (ChinaMuslimPackage::youtubeId($value) === null) {
+                        $fail('Paste a YouTube video link, for example https://www.youtube.com/watch?v=…');
+                    }
+                },
+            ],
+            'remove_about_video' => ['sometimes', 'boolean'],
+        ], [
+            'about_video.mimetypes' => 'The video must be an MP4, WebM or MOV file.',
+            'about_video.max' => 'The video must be 100 MB or smaller. For longer videos, upload to YouTube and paste the link instead.',
         ]);
 
         $validated['details'] = ChinaMuslimPackage::composeDetails(
@@ -169,7 +269,7 @@ class ChinaMuslimPackageController extends Controller
             $validated['note'] ?? null,
         );
 
-        unset($validated['image'], $validated['is_hot'], $validated['slides'], $validated['sections'], $validated['note']);
+        unset($validated['image'], $validated['about_video'], $validated['remove_about_video'], $validated['is_hot'],$validated['slides'], $validated['sections'], $validated['note']);
 
         return $validated;
     }

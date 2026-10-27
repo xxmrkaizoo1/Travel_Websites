@@ -8,7 +8,7 @@
     <title>Smart Muslim by Roystar Travel &amp; Tours</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body>
+<body class="smart-muslim-page">
     <a class="skip-link" href="#main">Skip to content</a>
 
     @include('partials.site-header')
@@ -113,20 +113,63 @@
     <section class="services-section" aria-labelledby="services-title">
         <div class="services-inner">
             <h2 id="services-title">{{ $servicesHeading }}</h2>
-            <div class="services-grid">
+            <div class="services-bento">
                 @foreach ($services as $service)
-                    <article class="service-card" id="{{ $service->design_key }}">
-                        <a class="service-image {{ $service->design_key }}" href="{{ $service->href }}" @if (str_starts_with($service->href, 'https://')) target="_blank" rel="noreferrer" @endif aria-label="{{ $service->button_label }}: {{ $service->title }}">
-                            <img src="{{ $service->imageUrl() }}" alt="{{ $service->image_alt }}" loading="lazy">
-                            <span>{{ $service->overlay_label }}</span>
-                        </a>
-                        <a class="service-button" href="{{ $service->href }}" @if (str_starts_with($service->href, 'https://')) target="_blank" rel="noreferrer" @endif>{{ $service->button_label }}</a>
-                        <h3>{{ $service->title }}</h3>
-                    </article>
+                    @php($opensNewTab = str_starts_with($service->href, 'https://'))
+                    <a class="service-tile" id="{{ $service->design_key }}" href="{{ $service->href }}" @if ($opensNewTab) target="_blank" rel="noreferrer" @endif>
+                        <img src="{{ $service->imageUrl() }}" alt="{{ $service->image_alt }}" loading="lazy">
+                        <span class="service-tile-number" aria-hidden="true">{{ sprintf('%02d', $loop->iteration) }}</span>
+                        <span class="service-tile-body">
+                            @if (\Illuminate\Support\Str::squish(\Illuminate\Support\Str::lower($service->overlay_label)) !== \Illuminate\Support\Str::squish(\Illuminate\Support\Str::lower($service->title)))
+                                <span class="service-tile-title">{{ $service->title }}</span>
+                            @endif
+                            <strong class="service-tile-label">{{ $service->overlay_label }}</strong>
+                            <span class="service-tile-button">{{ $service->button_label }} <span aria-hidden="true">{{ $opensNewTab ? '↗' : '→' }}</span></span>
+                        </span>
+                    </a>
                 @endforeach
             </div>
         </div>
     </section>
+
+    @if ($consultants->isNotEmpty())
+        <section class="consultants-section" aria-labelledby="consultants-title">
+            <div class="consultants-inner">
+                <div class="consultants-intro">
+                    <p class="consultants-kicker"><span aria-hidden="true">💬</span> Have a question?</p>
+                    <h2 id="consultants-title">We’re here to help</h2>
+                    <p>Chat with one of our travel consultants on WhatsApp about packages, departure dates or a custom trip for your group.</p>
+                    <div class="consultants-direct">
+                        <a href="tel:+60321430188"><span aria-hidden="true">☎</span> +603 2143 0188</a>
+                        <a href="mailto:tour@roystartravel.com.my"><span aria-hidden="true">✉</span> tour@roystartravel.com.my</a>
+                    </div>
+                </div>
+
+                <ul class="consultants-grid" role="list">
+                    @foreach ($consultants as $consultant)
+                        <li class="consultant-card" style="--consultant-delay: {{ $loop->index * 60 }}ms">
+                            <span class="consultant-photo">
+                                @if ($consultant->photoUrl())
+                                    <img src="{{ $consultant->photoUrl() }}" alt="{{ $consultant->name }}" loading="lazy" width="88" height="88">
+                                @else
+                                    <span class="consultant-avatar" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0 2c-4.4 0-8 2.5-8 5.6V21h16v-1.4C20 16.5 16.4 14 12 14Z"/></svg></span>
+                                @endif                            </span>
+                            <span class="consultant-body">
+                                <strong>{{ $consultant->name }}</strong>
+                                @if (filled($consultant->role))
+                                    <small>{{ $consultant->role }}</small>
+                                @endif
+                            </span>
+                            <a class="consultant-whatsapp" href="{{ $consultant->whatsappUrl() }}" target="_blank" rel="noreferrer" aria-label="Chat with {{ $consultant->name }} on WhatsApp">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12.04 2a9.9 9.9 0 0 0-8.5 15l-1.4 5 5.2-1.36A9.9 9.9 0 1 0 12.04 2Zm0 18.1a8.2 8.2 0 0 1-4.2-1.15l-.3-.18-3.08.8.82-3-.2-.31a8.2 8.2 0 1 1 6.96 3.84Zm4.5-6.14c-.25-.12-1.46-.72-1.69-.8-.23-.08-.39-.12-.55.12-.17.25-.64.8-.78.97-.14.16-.29.18-.53.06a6.7 6.7 0 0 1-3.34-2.92c-.25-.43.25-.4.72-1.34.08-.16.04-.3-.02-.43l-.75-1.82c-.2-.48-.4-.41-.55-.42h-.47a.9.9 0 0 0-.65.3 2.74 2.74 0 0 0-.85 2.03 4.76 4.76 0 0 0 1 2.53 10.9 10.9 0 0 0 4.17 3.68c1.55.67 2.16.73 2.93.61.47-.07 1.46-.6 1.66-1.17.2-.58.2-1.07.15-1.17-.06-.1-.22-.17-.47-.29Z"/></svg>
+                                <span>WhatsApp</span>
+                            </a>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        </section>
+    @endif
 
     <footer class="site-footer" id="contact">
         <div class="footer-inner">

@@ -42,7 +42,7 @@
         @media (prefers-reduced-motion: reduce) { .mice-track { animation: none; } .mice-slider { overflow-x: auto; } }
     </style>
 </head>
-<body class="island-page">
+<body class="island-page mice-page">
     <a class="skip-link" href="#main">Skip to content</a>
 
     @include('partials.site-header')

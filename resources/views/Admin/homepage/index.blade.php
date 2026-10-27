@@ -7,6 +7,7 @@
     <meta name="description" content="Manage the featured campaigns on the Smart Muslim homepage.">
     <title>Smart Muslim Homepage Content | Smart Holidays Admin</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>@view-transition { navigation: auto; }</style>
 </head>
 <body class="admin-page">
     <a class="skip-link" href="#homepage-content-main">Skip to Smart Muslim homepage content</a>
@@ -100,6 +101,17 @@
                         <p>Edit the Smart Muslim homepage section title, service labels, images, and enquiry links.</p>
                     </div>
                     <a class="admin-primary-button" href="{{ route('admin.homepage.services') }}">Manage services <span aria-hidden="true">→</span></a>
+                </div>
+            </section>
+
+            <section class="homepage-services-admin" aria-labelledby="homepage-consultants-title">
+                <div class="homepage-services-admin-heading">
+                    <div>
+                        <span class="admin-eyebrow">HAVE A QUESTION?</span>
+                        <h2 id="homepage-consultants-title">Consultant team</h2>
+                        <p>The team shown below Our services, each with a WhatsApp button. Add people, photos and their WhatsApp numbers.</p>
+                    </div>
+                    <a class="admin-primary-button" href="{{ route('admin.homepage.consultants') }}">Manage team <span aria-hidden="true">→</span></a>
                 </div>
             </section>
         </main>

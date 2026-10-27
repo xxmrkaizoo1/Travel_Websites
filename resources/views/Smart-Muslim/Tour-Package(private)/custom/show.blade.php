@@ -8,7 +8,7 @@
     <title>{{ $page->meta_title }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="island-page indonesia-page {{ $page->isPackage() ? 'bali-tour-page' : '' }}">
+<body class="island-page indonesia-page {{ $page->hasItineraries() ? 'bali-tour-page' : '' }} {{ $page->themeClass() }}">
     <a class="skip-link" href="#main">Skip to content</a>
 
     @include('partials.site-header')
@@ -19,7 +19,7 @@
             <div class="series-page-panels">
                 @foreach ($seriesPageSlides as $seriesPageSlide)
                     <section class="series-page-panel" id="series-page-panel-{{ $seriesPageSlide->slug }}" data-series-page-slide="{{ $seriesPageSlide->slug }}" aria-labelledby="{{ $seriesPageSlide->slug }}-title" aria-hidden="{{ $loop->first ? 'false' : 'true' }}" @unless ($loop->first) hidden inert @endunless>
-                        @include($seriesPageSlide->isPackage() ? 'partials.tour-package-guide-main' : 'partials.tour-package-main', ['page' => $seriesPageSlide, 'seriesPageMainId' => 'series-content-'.$seriesPageSlide->slug])
+                        @include($seriesPageSlide->hasItineraries() ? 'partials.tour-package-guide-main' : 'partials.tour-package-main', ['page' => $seriesPageSlide, 'seriesPageMainId' => 'series-content-'.$seriesPageSlide->slug])
                     </section>
                 @endforeach
             </div>
@@ -30,7 +30,7 @@
             </div>
         </div>
     @else
-        @include($page->isPackage() ? 'partials.tour-package-guide-main' : 'partials.tour-package-main', ['page' => $page])
+        @include($page->hasItineraries() ? 'partials.tour-package-guide-main' : 'partials.tour-package-main', ['page' => $page])
     @endif
 
     <footer class="site-footer">

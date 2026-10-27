@@ -7,6 +7,7 @@
     <meta name="description" content="Create or edit a China Muslim series departure card.">
     <title>{{ $package ? 'Edit' : 'New' }} China Muslim card | Smart Holidays Admin</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>@view-transition { navigation: auto; }</style>
 </head>
 <body class="admin-page">
     <a class="skip-link" href="#china-muslim-form">Skip to card form</a>
@@ -61,7 +62,11 @@
                 </div>
             @endif
 
-            <form class="homepage-campaign-form" method="POST" enctype="multipart/form-data"
+            @if ($package)
+                @include('Admin.partials.booking-switch', ['package' => $package])
+            @endif
+
+            <form class="homepage-campaign-form" data-form-slideshow data-no-field-preview method="POST" enctype="multipart/form-data"
                 action="{{ $package ? route('admin.china-muslim.update', $package) : route('admin.china-muslim.store') }}">
                 @csrf
                 @if ($package)
@@ -70,7 +75,7 @@
 
                 <section class="homepage-form-panel">
                     <div class="homepage-form-panel-heading">
-                        <span class="homepage-form-icon" aria-hidden="true">Aa</span>
+                        <span class="homepage-form-icon" aria-hidden="true">01</span>
                         <div>
                             <h2>Card details</h2>
                             <p>The title, price and duration appear on the card.</p>
@@ -125,12 +130,12 @@
                     ])->all());
                     $slideDays = array_values($slideDays);
                     $sectionHeadings = \App\Models\ChinaMuslimPackage::sectionHeadings();
-                    $sectionIcons = ['mandatory' => '🏛️', 'shopping' => '🛍️', 'included' => '✅', 'excluded' => '❌', 'duration' => '⏱️', 'language' => '🗣️'];
+                    $sectionIcons = ['departures' => '📅', 'accommodation' => '🏨', 'mandatory' => '🏛️', 'shopping' => '🛍️', 'optional' => '🎟️', 'included' => '✅', 'excluded' => '❌', 'duration' => '⏱️', 'language' => '🗣️'];
                 @endphp
 
                 <section class="homepage-form-panel" data-china-slides>
                     <div class="homepage-form-panel-heading">
-                        <span class="homepage-form-icon" aria-hidden="true">▤</span>
+                        <span class="homepage-form-icon" aria-hidden="true">02</span>
                         <div>
                             <h2>Popup slides</h2>
                             <p>Each card below becomes one slide in the popup. Add as many days as you need.</p>
@@ -186,7 +191,7 @@
 
                 <section class="homepage-form-panel">
                     <div class="homepage-form-panel-heading">
-                        <span class="homepage-form-icon" aria-hidden="true">▧</span>
+                        <span class="homepage-form-icon" aria-hidden="true">03</span>
                         <div>
                             <h2>Card photo</h2>
                             <p>Choose a JPG, PNG or WebP image up to 5 MB.</p>
@@ -201,6 +206,42 @@
                             @endif
                             <input type="file" name="image" accept="image/jpeg,image/png,image/webp" @required(! $package)>
                             @error('image') <small>{{ $message }}</small> @enderror
+                        </label>
+                    </div>
+                </section>
+
+                <section class="homepage-form-panel china-video-editor">
+                    <div class="homepage-form-panel-heading">
+                        <span class="homepage-form-icon" aria-hidden="true">04</span>
+                        <div>
+                            <h2>About this place video</h2>
+                            <p>Plays at the top of this card’s “About this place” popup. Upload a video file, or paste a YouTube link. An uploaded file is shown first.</p>
+                        </div>
+                    </div>
+
+                    @if ($currentVideo = $package?->aboutVideo())
+                        <div class="china-video-current">
+                            @if ($currentVideo['type'] === 'file')
+                                <video src="{{ $currentVideo['src'] }}" controls preload="metadata"></video>
+                            @else
+                                <iframe src="{{ $currentVideo['src'] }}" title="Current YouTube video" loading="lazy" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>
+                            @endif
+                            @if ($package->about_video_path)
+                                <label class="china-travellers-remove"><input type="checkbox" name="remove_about_video" value="1" @checked(old('remove_about_video'))> Remove uploaded video</label>
+                            @endif
+                        </div>
+                    @endif
+
+                    <div class="homepage-form-grid">
+                        <label class="homepage-form-field">
+                            <span>Upload video <small class="homepage-field-hint">MP4, WebM or MOV, up to 100 MB.</small></span>
+                            <input type="file" name="about_video" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov">
+                            @error('about_video') <small class="china-video-error">{{ $message }}</small> @enderror
+                        </label>
+                        <label class="homepage-form-field">
+                            <span>Or YouTube link <small class="homepage-field-hint">Leave empty for no YouTube video.</small></span>
+                            <input type="url" name="about_video_url" value="{{ old('about_video_url', $package?->about_video_url) }}" maxlength="2048" placeholder="https://www.youtube.com/watch?v=…">
+                            @error('about_video_url') <small class="china-video-error">{{ $message }}</small> @enderror
                         </label>
                     </div>
                 </section>

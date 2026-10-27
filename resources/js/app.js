@@ -21,6 +21,45 @@ const closeMobileNav = () => {
     closeDropdowns();
 };
 
+const NAV_VISIBLE_ITEMS = 5;
+
+// Long menus show their first five links; the rest sit behind a "See more" toggle.
+primaryNav?.querySelectorAll('.dropdown-menu, .submenu-menu').forEach((menu, menuIndex) => {
+    if (menu.querySelector(':scope > [data-series-nav-more]')) {
+        return;
+    }
+
+    const menuItems = [...menu.children].filter((child) => child.matches('a, .nav-subitem'));
+
+    if (menuItems.length <= NAV_VISIBLE_ITEMS) {
+        return;
+    }
+
+    const extraItems = menuItems.slice(NAV_VISIBLE_ITEMS);
+    const showsCurrentPage = extraItems.some((item) => item.matches('.is-current, [aria-current]') || item.querySelector('.is-current, [aria-current]'));
+    const moreButton = document.createElement('button');
+
+    menu.id ||= `nav-menu-${menuIndex}`;
+    moreButton.type = 'button';
+    moreButton.className = 'series-nav-more';
+    moreButton.dataset.navMore = '';
+    moreButton.setAttribute('aria-controls', menu.id);
+    moreButton.innerHTML = '<span data-series-nav-more-label></span><span aria-hidden="true"></span>';
+    menu.append(moreButton);
+
+    const setExpanded = (isExpanded) => {
+        extraItems.forEach((item) => {
+            item.hidden = !isExpanded;
+        });
+        moreButton.setAttribute('aria-expanded', String(isExpanded));
+        moreButton.querySelector('[data-series-nav-more-label]').textContent = isExpanded ? 'See less' : `See more (${extraItems.length})`;
+        moreButton.querySelector('[aria-hidden="true"]').textContent = isExpanded ? '−' : '＋';
+    };
+
+    moreButton.addEventListener('click', () => setExpanded(moreButton.getAttribute('aria-expanded') !== 'true'));
+    setExpanded(showsCurrentPage);
+});
+
 dropdownItems.forEach((item) => {
     item.addEventListener('pointerenter', (event) => {
         if (event.pointerType !== 'touch') {
@@ -175,6 +214,27 @@ if (carousel) {
         dot.addEventListener('click', () => showSlide(index));
     });
 
+    // Swipe left or right to change slides; phones hide the arrows.
+    let swipeStart = null;
+
+    carousel.addEventListener('touchstart', (event) => {
+        swipeStart = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+    }, { passive: true });
+
+    carousel.addEventListener('touchend', (event) => {
+        if (!swipeStart) {
+            return;
+        }
+
+        const deltaX = event.changedTouches[0].clientX - swipeStart.x;
+        const deltaY = event.changedTouches[0].clientY - swipeStart.y;
+        swipeStart = null;
+
+        if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY)) {
+            showSlide(activeIndex + (deltaX < 0 ? 1 : -1));
+        }
+    });
+
     document.querySelectorAll('[data-slide-to]').forEach((link) => {
         link.addEventListener('click', () => {
             showSlide(Number(link.dataset.slideTo));
@@ -189,6 +249,7 @@ document.querySelectorAll('[data-sh-journey-carousel]').forEach((carousel) => {
     const selectors = [...carousel.querySelectorAll('[data-sh-journey-select]')];
     const previousButton = carousel.querySelector('[data-sh-journey-previous]');
     const nextButton = carousel.querySelector('[data-sh-journey-next]');
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     let currentIndex = 0;
     let pointerStartX = null;
     let pointerStartY = null;
@@ -205,6 +266,15 @@ document.querySelectorAll('[data-sh-journey-carousel]').forEach((carousel) => {
             slide.setAttribute('aria-hidden', String(slideIndex !== currentIndex));
             slide.inert = slideIndex !== currentIndex;
             slide.classList.toggle('is-active', slideIndex === currentIndex);
+
+            const video = slide.querySelector('[data-sh-journey-video]');
+
+            if (video && slideIndex === currentIndex && !prefersReducedMotion) {
+                video.preload = 'auto';
+                video.play().catch(() => {});
+            } else {
+                video?.pause();
+            }
         });
         selectors.forEach((selector) => {
             if (Number(selector.dataset.shJourneyIndex) === currentIndex) {
@@ -231,9 +301,6 @@ document.querySelectorAll('[data-sh-journey-carousel]').forEach((carousel) => {
         pointerStartY = event.clientY;
         dragStartOffset = -currentIndex * viewport.clientWidth;
         dragMoved = false;
-        viewport.classList.add('is-dragging');
-        track.style.transition = 'none';
-        viewport.setPointerCapture(event.pointerId);
     });
     viewport.addEventListener('pointermove', (event) => {
         if (pointerStartX === null) {
@@ -245,6 +312,13 @@ document.querySelectorAll('[data-sh-journey-carousel]').forEach((carousel) => {
 
         if (!dragMoved && (Math.abs(distanceX) < 6 || Math.abs(distanceX) <= Math.abs(distanceY))) {
             return;
+        }
+
+        // Capture only once a swipe starts: capturing on press sends the click to the viewport, so links never open.
+        if (!dragMoved) {
+            viewport.classList.add('is-dragging');
+            track.style.transition = 'none';
+            viewport.setPointerCapture(event.pointerId);
         }
 
         dragMoved = true;
@@ -368,9 +442,6 @@ document.querySelectorAll('[data-popular-tour-carousel]').forEach((carousel) => 
         pointerStartY = event.clientY;
         dragStartOffset = cardOffset(activeIndex);
         dragMoved = false;
-        viewport.classList.add('is-dragging');
-        track.style.transition = 'none';
-        viewport.setPointerCapture(event.pointerId);
     });
     viewport.addEventListener('pointermove', (event) => {
         if (pointerStartX === null) {
@@ -382,6 +453,13 @@ document.querySelectorAll('[data-popular-tour-carousel]').forEach((carousel) => 
 
         if (!dragMoved && (Math.abs(distanceX) < 6 || Math.abs(distanceX) <= Math.abs(distanceY))) {
             return;
+        }
+
+        // Capture only once a swipe starts: capturing on press sends the click to the viewport, so links never open.
+        if (!dragMoved) {
+            viewport.classList.add('is-dragging');
+            track.style.transition = 'none';
+            viewport.setPointerCapture(event.pointerId);
         }
 
         dragMoved = true;
@@ -563,10 +641,13 @@ document.querySelectorAll('.series-details-dialog').forEach((seriesDetailsDialog
         count.textContent = `Step ${activeIndex + 1} of ${slides.length}`;
         previousButton.disabled = activeIndex === 0;
         nextButton.disabled = activeIndex === slides.length - 1;
+        slides[activeIndex].scrollTop = 0;
+        seriesDetailsDialog.style.setProperty('--series-progress', `${((activeIndex + 1) / slides.length) * 100}%`);
 
         slides.forEach((slide, slideIndex) => {
             slide.setAttribute('aria-hidden', String(slideIndex !== activeIndex));
             slide.inert = slideIndex !== activeIndex;
+            slide.classList.toggle('is-active', slideIndex === activeIndex);
         });
     };
 
@@ -581,6 +662,215 @@ document.querySelectorAll('.series-details-dialog').forEach((seriesDetailsDialog
     nextButton.addEventListener('click', () => showDetailsSlide(activeIndex + 1));
     showDetailsSlide(0);
 });
+
+const galleryAlbum = document.querySelector('#gallery-album');
+
+/**
+ * Builds popup albums from the admin gallery editor's current (possibly unsaved) form values.
+ */
+const collectEditorAlbums = (editor) => {
+    const resolveImage = (value, fileInput) => {
+        const file = fileInput?.files?.[0];
+
+        if (file) {
+            return URL.createObjectURL(file);
+        }
+
+        const path = (value ?? '').trim();
+
+        if (path === '' || /^https?:\/\//.test(path)) {
+            return path;
+        }
+
+        return (path.startsWith('images/') ? editor.dataset.assetBase : editor.dataset.storageBase) + path;
+    };
+    const field = (slide, name) => slide.querySelector(`[data-gallery-field="${name}"]`);
+
+    return [...editor.querySelectorAll('[data-gallery-slides] [data-gallery-slide]')].map((slide) => {
+        const photos = [...slide.querySelectorAll('.gallery-album-slot')].map((slot, slotIndex) => ({
+            src: resolveImage(field(slot, `photos][${slotIndex}][image`)?.value, field(slot, `photos][${slotIndex}][image_file`)),
+            caption: field(slot, `photos][${slotIndex}][caption`)?.value.trim() ?? '',
+        })).filter((photo) => photo.src !== '');
+        const postcard = resolveImage(field(slide, 'photo').value, field(slide, 'photo_file'));
+
+        return {
+            country: field(slide, 'country').value.trim() || slide.querySelector('[data-slide-legend]').textContent,
+            flag: resolveImage(field(slide, 'flag').value, field(slide, 'flag_file')),
+            photos: photos.length ? photos : [{ src: postcard, caption: field(slide, 'photo_alt').value.trim() }].filter((photo) => photo.src !== ''),
+        };
+    });
+};
+
+if (galleryAlbum) {
+    let albums = [];
+    const stage = galleryAlbum.querySelector('[data-album-stage]');
+    const image = galleryAlbum.querySelector('[data-album-image]');
+    const caption = galleryAlbum.querySelector('[data-album-caption]');
+    const counter = galleryAlbum.querySelector('[data-album-counter]');
+    const thumbs = galleryAlbum.querySelector('[data-album-thumbs]');
+    const flag = galleryAlbum.querySelector('[data-album-flag]');
+    const country = galleryAlbum.querySelector('[data-album-country]');
+    const destinationButtons = [...galleryAlbum.querySelectorAll('[data-album-destination]')];
+    let albumIndex = 0;
+    let photoIndex = 0;
+    let lastOpener = null;
+    let swipeStartX = null;
+
+    const wrap = (index, length) => (index + length) % length;
+    const photos = () => albums[albumIndex].photos;
+
+    const showPhoto = (index) => {
+        photoIndex = wrap(index, photos().length);
+        const photo = photos()[photoIndex];
+
+        galleryAlbum.classList.add('is-changing');
+        window.setTimeout(() => {
+            image.src = photo.src;
+            image.alt = photo.caption || albums[albumIndex].country;
+            caption.textContent = photo.caption;
+            caption.hidden = photo.caption === '';
+            galleryAlbum.classList.remove('is-changing');
+        }, 160);
+
+        counter.textContent = `${photoIndex + 1} / ${photos().length}`;
+        thumbs.querySelectorAll('button').forEach((thumb, thumbIndex) => {
+            thumb.classList.toggle('is-active', thumbIndex === photoIndex);
+            thumb.setAttribute('aria-current', String(thumbIndex === photoIndex));
+        });
+        thumbs.querySelector('.is-active')?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+
+        [photoIndex - 1, photoIndex + 1].forEach((neighbour) => {
+            new Image().src = photos()[wrap(neighbour, photos().length)].src;
+        });
+    };
+
+    const showAlbum = (index) => {
+        albumIndex = wrap(index, albums.length);
+        const album = albums[albumIndex];
+
+        flag.src = album.flag;
+        country.textContent = album.country;
+        thumbs.replaceChildren(...album.photos.map((photo, thumbIndex) => {
+            const thumb = document.createElement('button');
+            const thumbImage = document.createElement('img');
+
+            thumb.type = 'button';
+            thumb.dataset.albumPhoto = String(thumbIndex);
+            thumb.setAttribute('aria-label', `Photo ${thumbIndex + 1}${photo.caption ? `: ${photo.caption}` : ''}`);
+            thumbImage.src = photo.src;
+            thumbImage.alt = '';
+            thumbImage.loading = 'lazy';
+            thumb.append(thumbImage);
+
+            return thumb;
+        }));
+
+        const hasManyPhotos = album.photos.length > 1;
+        galleryAlbum.querySelectorAll('[data-album-step]').forEach((arrow) => {
+            arrow.hidden = !hasManyPhotos;
+        });
+        thumbs.hidden = !hasManyPhotos;
+
+        destinationButtons.forEach((button) => {
+            const target = albums[wrap(albumIndex + Number(button.dataset.albumDestination), albums.length)];
+
+            button.hidden = albums.length < 2;
+            button.querySelector('[data-album-destination-label]').textContent = target.country;
+            button.setAttribute('aria-label', `View ${target.country} photo gallery`);
+        });
+
+        showPhoto(0);
+    };
+
+    const openAlbum = (albumList, index, opener) => {
+        albums = albumList;
+        lastOpener = opener;
+        showAlbum(index);
+        galleryAlbum.showModal();
+        document.documentElement.classList.add('has-gallery-album');
+    };
+
+    const pageAlbumData = document.querySelector('#gallery-album-data');
+
+    if (pageAlbumData) {
+        const pageAlbums = JSON.parse(pageAlbumData.textContent);
+
+        document.querySelectorAll('[data-gallery-album-open]').forEach((opener) => {
+            opener.addEventListener('click', () => openAlbum(pageAlbums, Number(opener.dataset.galleryAlbumOpen), opener));
+        });
+    }
+
+    document.addEventListener('click', (event) => {
+        const preview = event.target.closest('[data-gallery-album-preview]');
+
+        if (!preview) {
+            return;
+        }
+
+        const editor = preview.closest('[data-gallery-editor]');
+        const slides = [...editor.querySelectorAll('[data-gallery-slides] [data-gallery-slide]')];
+        const editorAlbums = collectEditorAlbums(editor);
+        const previewIndex = slides.indexOf(preview.closest('[data-gallery-slide]'));
+        const previewable = editorAlbums.filter((album) => album.photos.length > 0);
+
+        if (editorAlbums[previewIndex].photos.length === 0) {
+            window.alert('Add a postcard photo or at least one popup photo to preview this destination.');
+
+            return;
+        }
+
+        openAlbum(previewable, previewable.indexOf(editorAlbums[previewIndex]), preview);
+    });
+
+    galleryAlbum.addEventListener('click', (event) => {
+        if (event.target === galleryAlbum || event.target.closest('[data-album-close]')) {
+            galleryAlbum.close();
+
+            return;
+        }
+
+        const step = event.target.closest('[data-album-step]');
+        const thumb = event.target.closest('[data-album-photo]');
+        const destination = event.target.closest('[data-album-destination]');
+
+        if (step) {
+            showPhoto(photoIndex + Number(step.dataset.albumStep));
+        } else if (thumb) {
+            showPhoto(Number(thumb.dataset.albumPhoto));
+        } else if (destination) {
+            showAlbum(albumIndex + Number(destination.dataset.albumDestination));
+        }
+    });
+
+    galleryAlbum.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+            event.preventDefault();
+            showPhoto(photoIndex + (event.key === 'ArrowRight' ? 1 : -1));
+        }
+    });
+
+    stage.addEventListener('pointerdown', (event) => {
+        swipeStartX = event.clientX;
+    });
+
+    stage.addEventListener('pointerup', (event) => {
+        if (swipeStartX === null) {
+            return;
+        }
+
+        const distance = event.clientX - swipeStartX;
+        swipeStartX = null;
+
+        if (Math.abs(distance) > 40 && photos().length > 1) {
+            showPhoto(photoIndex + (distance < 0 ? 1 : -1));
+        }
+    });
+
+    galleryAlbum.addEventListener('close', () => {
+        document.documentElement.classList.remove('has-gallery-album');
+        lastOpener?.focus();
+    });
+}
 
 document.querySelectorAll('.bali-gallery').forEach((baliCarousel) => {
     const slides = [...baliCarousel.querySelectorAll('.bali-slide')];
@@ -758,11 +1048,12 @@ document.addEventListener('click', (event) => {
 });
 
 const revealTargets = document.querySelectorAll([
-    '.welcome-section h2', '.welcome-subtitle', '.value-card', '.services-section h2', '.service-card', '.footer-inner > *',
+    '.welcome-section h2', '.welcome-subtitle', '.value-card', '.services-section h2', '.service-card', '.service-tile', '.footer-inner > *',
     '.island-intro-copy', '.island-photo-stack', '.island-section-heading', '.island-highlight', '.destination-carousel',
     '.aceh-itinerary-heading', '.aceh-day', '.bali-gallery', '.aceh-details-card', '.aceh-hotel-card', '.island-contact > *',
     '.series-head', '.series-advantage', '.series-flag', '.series-photo',
     '.travel-moments__heading', '.travel-moment-card',
+    '.focus-tour-card', '.focus-tours-cta__inner', '.booking-toc__card', '.booking-card', '.destination-state',
 ].join(', '));
 
 if (revealTargets.length && 'IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -778,7 +1069,10 @@ if (revealTargets.length && 'IntersectionObserver' in window && !window.matchMed
     revealTargets.forEach((target) => {
         const siblings = [...target.parentElement.children].filter((child) => child.className === target.className);
 
-        target.style.setProperty('--reveal-delay', `${Math.max(siblings.indexOf(target), 0) * 110}ms`);
+        target.style.setProperty('--reveal-delay', `${Math.min(Math.max(siblings.indexOf(target), 0), 5) * 110}ms`);
+    });
+
+    revealTargets.forEach((target) => {
         target.classList.add('js-reveal');
         revealObserver.observe(target);
     });
@@ -921,11 +1215,11 @@ document.querySelectorAll('input[name="kind"]').forEach((kindInput) => {
     });
 });
 
-const campaignLayoutSelect = document.querySelector('[data-campaign-layout]');
+const campaignLayoutPicker = document.querySelector('[data-campaign-layout]');
 
-if (campaignLayoutSelect) {
+if (campaignLayoutPicker) {
     const syncCampaignLayout = () => {
-        const isCollage = campaignLayoutSelect.value === 'collage';
+        const isCollage = campaignLayoutPicker.querySelector('input[name="layout"]:checked')?.value !== 'banner';
 
         document.querySelectorAll('[data-collage-only]').forEach((field) => {
             field.hidden = !isCollage;
@@ -938,11 +1232,12 @@ if (campaignLayoutSelect) {
         });
     };
 
-    campaignLayoutSelect.addEventListener('change', syncCampaignLayout);
+    campaignLayoutPicker.addEventListener('change', syncCampaignLayout);
     syncCampaignLayout();
 }
 
-const previewForm = document.querySelector('form[data-form-slideshow]');
+// Forms whose fields are not page sections opt out of the "Shown in" preview.
+const previewForm = document.querySelector('form[data-form-slideshow]:not([data-no-field-preview])');
 
 document.addEventListener('click', (event) => {
     const clearButton = event.target.closest('[data-clear-destination]');
@@ -1115,88 +1410,229 @@ document.addEventListener('click', (event) => {
 });
 
 if (previewForm) {
-    const isPackagePage = previewForm.querySelector('[name^="package["]') !== null;
-    const isSeriesPage = previewForm.querySelector('[name^="series["]') !== null;
-    const sections = [
-        ['hero', 'Hero banner', 'Top of the page: headline, intro text, button and background image'],
-        ['intro', 'Introduction', 'Welcome text with a photo and caption'],
-        ['highlights', 'Highlights', 'Three highlight cards'],
-        ...(isPackagePage
-            ? [
-                ['itineraries', 'Itinerary cards', 'Package cards with the day-by-day plan'],
-                ['gallery', 'Photo gallery', 'Slideshow of photos'],
-                ['details', 'Includes / excludes', 'Price includes and does not include lists'],
-                ['accommodation', 'Accommodation', 'Hotel cards'],
-            ]
-            : isSeriesPage
-                ? [['series', 'Series destinations', 'Destination tabs with advantages, flag and five photos']]
-                : [['destinations', 'Destination slideshow', 'Sliding destination cards']]),
-        ['contact', 'Contact section', 'Enquiry text and WhatsApp button'],
+    const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
+    const shorten = (value, length) => (value.length > length ? `${value.slice(0, length - 1)}…` : value);
+    const fieldValue = (name) => previewForm.querySelector(`[name="${name}"]`)?.value.trim() ?? '';
+    const isNavField = (field) => /^(name|parent_slug)$/.test(field.name);
+    const isMetaField = (field) => /^meta_/.test(field.name);
+
+    // Each form panel is one section of the public page; its heading decides how the section is drawn.
+    const panelKinds = [
+        [/banner|hero|campaign|slide/, 'hero'],
+        [/contact|closing|call to action|enquir|plan your/, 'contact'],
+        [/gallery|photo|album|moment/, 'gallery'],
+        [/include|exclude|condition|detail/, 'list'],
+        [/card|destination|highlight|itinerar|tour|package|service|reason|state|region|perk|client|hotel|accommodation|series/, 'cards'],
+        [/intro|about|welcome|story/, 'intro'],
     ];
-    const rules = [
-        [/^(name|parent_slug)$/, 'navbar'],
-        [/^hero_/, 'hero'],
-        [/^intro_/, 'intro'],
-        [/^highlights/, 'highlights'],
-        [/^series\[/, 'series'],
-        [/^(destinations_|slides)/, isSeriesPage ? 'series' : 'destinations'],
-        [/^package\[itineraries/, 'itineraries'],
-        [/^package\[gallery/, 'gallery'],
-        [/^package\[(details_|inclusions|exclusions)/, 'details'],
-        [/^package\[(accommodation_|hotels)/, 'accommodation'],
-        [/^contact_/, 'contact'],
-        [/^meta_/, 'meta'],
-    ];
+    const sectionHeights = { hero: 62, intro: 46, cards: 48, gallery: 40, list: 40, contact: 34, text: 30 };
+
+    const panelInfo = (panel) => {
+        const title = panel.querySelector('h2')?.textContent.trim() ?? 'This section';
+        const description = panel.querySelector('.homepage-form-panel-heading p')?.textContent.trim() ?? '';
+        const kindOf = (text) => panelKinds.find(([pattern]) => pattern.test(text.toLowerCase()))?.[1];
+        const kind = kindOf(title) ?? kindOf(description) ?? 'text';
+
+        return { panel, title, description, kind };
+    };
+
+    // Panels holding only the page name, menu position or browser details are not page sections.
+    const sectionPanels = () => [...previewForm.querySelectorAll('.homepage-form-panel')]
+        .filter((panel) => [...panel.querySelectorAll('input[name], textarea[name], select[name]')].some((field) => !isNavField(field) && !isMetaField(field) && field.name !== 'theme' && field.type !== 'hidden'))
+        .map(panelInfo)
+        // Pages always open with the banner and end with the contact box, whatever order the form uses.
+        .sort((first, second) => (first.kind === 'hero' ? -1 : first.kind === 'contact' ? 1 : 0) - (second.kind === 'hero' ? -1 : second.kind === 'contact' ? 1 : 0));
+
+    const drawSection = (kind, y, height, isActive) => {
+        const fill = isActive ? '#e3eeff' : '#f3f6fa';
+        const ink = isActive ? '#2f6fe0' : '#d3dbe6';
+        const soft = isActive ? '#9cc0fa' : '#e3e9f1';
+        const outline = isActive ? `<rect x="10" y="${y}" width="280" height="${height}" rx="6" fill="none" stroke="#2f6fe0" stroke-width="2"/><rect x="232" y="${y - 7}" width="52" height="14" rx="7" fill="#2f6fe0"/><text x="258" y="${y + 3}" text-anchor="middle" font-size="8" font-weight="700" fill="#fff">EDITING</text>` : '';
+        let shapes = '';
+
+        if (kind === 'hero') {
+            shapes = `<rect x="10" y="${y}" width="280" height="${height}" rx="6" fill="${isActive ? '#2f6fe0' : '#cfd8e4'}"/>
+                <path d="M10 ${y + height - 14} l60 -22 l40 14 l50 -26 l70 30 l60 -12 v${16} h-280z" fill="${isActive ? '#1d4fae' : '#bcc7d6'}"/>
+                <rect x="24" y="${y + 14}" width="40" height="5" rx="2.5" fill="#fff" opacity=".7"/>
+                <rect x="24" y="${y + 24}" width="110" height="8" rx="4" fill="#fff"/>
+                <rect x="24" y="${y + 36}" width="80" height="8" rx="4" fill="#fff" opacity=".85"/>`;
+        } else if (kind === 'intro') {
+            shapes = `<rect x="10" y="${y}" width="280" height="${height}" rx="6" fill="${fill}"/>
+                <rect x="22" y="${y + 10}" width="100" height="7" rx="3.5" fill="${ink}"/>
+                <rect x="22" y="${y + 22}" width="130" height="4" rx="2" fill="${soft}"/>
+                <rect x="22" y="${y + 30}" width="120" height="4" rx="2" fill="${soft}"/>
+                <rect x="186" y="${y + 7}" width="92" height="${height - 14}" rx="5" fill="${ink}"/>`;
+        } else if (kind === 'cards') {
+            shapes = `<rect x="10" y="${y}" width="280" height="${height}" rx="6" fill="${fill}"/>
+                ${[0, 1, 2].map((index) => `<rect x="${22 + index * 88}" y="${y + 8}" width="80" height="${height - 16}" rx="5" fill="#fff" stroke="${soft}"/><rect x="${22 + index * 88}" y="${y + 8}" width="80" height="16" rx="5" fill="${ink}"/><rect x="${29 + index * 88}" y="${y + 29}" width="48" height="4" rx="2" fill="${soft}"/>`).join('')}`;
+        } else if (kind === 'gallery') {
+            shapes = `<rect x="10" y="${y}" width="280" height="${height}" rx="6" fill="${fill}"/>
+                ${[0, 1, 2, 3].map((index) => `<rect x="${22 + index * 66}" y="${y + 8}" width="58" height="${height - 16}" rx="5" fill="${ink}"/>`).join('')}`;
+        } else if (kind === 'list') {
+            shapes = `<rect x="10" y="${y}" width="280" height="${height}" rx="6" fill="${fill}"/>
+                ${[0, 1].map((column) => [0, 1, 2].map((row) => `<circle cx="${28 + column * 136}" cy="${y + 11 + row * 9}" r="2.5" fill="${ink}"/><rect x="${35 + column * 136}" y="${y + 9 + row * 9}" width="90" height="4" rx="2" fill="${soft}"/>`).join('')).join('')}`;
+        } else if (kind === 'contact') {
+            shapes = `<rect x="10" y="${y}" width="280" height="${height}" rx="6" fill="${isActive ? '#2f6fe0' : '#cfd8e4'}"/>
+                <rect x="24" y="${y + 10}" width="110" height="6" rx="3" fill="#fff"/>
+                <rect x="24" y="${y + 20}" width="80" height="4" rx="2" fill="#fff" opacity=".7"/>
+                <rect x="216" y="${y + 9}" width="58" height="16" rx="8" fill="#fff"/>`;
+        } else {
+            shapes = `<rect x="10" y="${y}" width="280" height="${height}" rx="6" fill="${fill}"/>
+                <rect x="22" y="${y + 9}" width="90" height="6" rx="3" fill="${ink}"/>
+                <rect x="22" y="${y + 19}" width="200" height="4" rx="2" fill="${soft}"/>`;
+        }
+
+        return shapes + outline;
+    };
+
+    const browserFrame = (height, body) => `<svg class="field-preview-sketch" viewBox="0 0 300 ${height}" role="img" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, sans-serif">
+        <rect x="1" y="1" width="298" height="${height - 2}" rx="10" fill="#fff" stroke="#c9d5e5" stroke-width="1.5"/>
+        <path d="M1 11 a10 10 0 0 1 10 -10 h278 a10 10 0 0 1 10 10 v11 h-298z" fill="#eef2f8"/>
+        <circle cx="13" cy="11" r="3" fill="#f2a1a1"/><circle cx="23" cy="11" r="3" fill="#f5d38a"/><circle cx="33" cy="11" r="3" fill="#9fd9a5"/>
+        <rect x="48" y="6" width="200" height="10" rx="5" fill="#fff" stroke="#d8e1ed"/>
+        ${body}
+    </svg>`;
+
+    const siteNavbar = (y, isActive) => `<rect x="10" y="${y}" width="280" height="18" rx="5" fill="${isActive ? '#e3eeff' : '#f3f6fa'}" ${isActive ? 'stroke="#2f6fe0" stroke-width="2"' : ''}/>
+        <rect x="18" y="${y + 5}" width="22" height="8" rx="2" fill="${isActive ? '#2f6fe0' : '#d3dbe6'}"/>
+        ${[0, 1, 2, 3].map((index) => `<rect x="${110 + index * 34}" y="${y + 7}" width="26" height="4" rx="2" fill="${isActive ? '#9cc0fa' : '#d3dbe6'}"/>`).join('')}
+        <rect x="252" y="${y + 4}" width="30" height="10" rx="5" fill="${isActive ? '#2f6fe0' : '#d3dbe6'}"/>`;
+
+    const pageSketch = (activePanel, wholePage = false) => {
+        const sections = sectionPanels();
+        let y = 54;
+        const body = sections.map((section) => {
+            const height = sectionHeights[section.kind];
+            const drawing = drawSection(section.kind, y, height, wholePage || section.panel === activePanel);
+            y += height + 7;
+
+            return drawing;
+        }).join('');
+
+        return browserFrame(y + 4, siteNavbar(30, false) + body);
+    };
+
+    const navbarSketch = () => {
+        const pageName = escapeHtml(shorten(fieldValue('name') || 'This page', 24));
+
+        return browserFrame(150, `${siteNavbar(30, true)}
+            <rect x="120" y="52" width="150" height="86" rx="8" fill="#fff" stroke="#c9d5e5"/>
+            <rect x="130" y="62" width="90" height="5" rx="2.5" fill="#d3dbe6"/>
+            <rect x="126" y="74" width="138" height="20" rx="6" fill="#e3eeff" stroke="#2f6fe0" stroke-width="1.5"/>
+            <text x="134" y="88" font-size="10" font-weight="700" fill="#1d4fae">${pageName}</text>
+            <rect x="130" y="104" width="76" height="5" rx="2.5" fill="#d3dbe6"/>
+            <rect x="130" y="118" width="100" height="5" rx="2.5" fill="#d3dbe6"/>
+            <path d="M178 44 v8" stroke="#2f6fe0" stroke-width="2" stroke-dasharray="2 2"/>`);
+    };
+
+    const searchSketch = () => {
+        const title = escapeHtml(shorten(fieldValue('meta_title') || 'Page title', 44));
+        const description = escapeHtml(shorten(fieldValue('meta_description') || 'Page description shown under the title.', 60));
+        const tabTitle = escapeHtml(shorten(fieldValue('meta_title') || 'Page title', 22));
+
+        return `<svg class="field-preview-sketch" viewBox="0 0 300 150" role="img" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, sans-serif">
+            <rect x="1" y="1" width="298" height="148" rx="10" fill="#fff" stroke="#c9d5e5" stroke-width="1.5"/>
+            <path d="M1 11 a10 10 0 0 1 10 -10 h278 a10 10 0 0 1 10 10 v17 h-298z" fill="#eef2f8"/>
+            <path d="M12 28 v-14 a5 5 0 0 1 5 -5 h120 a5 5 0 0 1 5 5 v14z" fill="#fff" stroke="#2f6fe0" stroke-width="1.5"/>
+            <circle cx="22" cy="19" r="4" fill="#2f6fe0"/>
+            <text x="31" y="22" font-size="9" font-weight="700" fill="#1f3550">${tabTitle}</text>
+            <rect x="14" y="40" width="200" height="16" rx="8" fill="#f3f6fa" stroke="#d8e1ed"/>
+            <circle cx="26" cy="48" r="3.5" fill="none" stroke="#9aa9bd" stroke-width="1.5"/>
+            <rect x="14" y="66" width="272" height="72" rx="8" fill="#f8fbff" stroke="#2f6fe0" stroke-width="1.5"/>
+            <rect x="24" y="76" width="90" height="4" rx="2" fill="#9cc0a8"/>
+            <text x="24" y="98" font-size="11" font-weight="700" fill="#1a4fd0">${title}</text>
+            <text x="24" y="114" font-size="9" fill="#5d6f8a">${description}</text>
+            <rect x="24" y="122" width="150" height="4" rx="2" fill="#e3e9f1"/>
+        </svg>`;
+    };
+
     const preview = document.createElement('aside');
+    const hintsToggle = document.createElement('button');
+    const hintsStorageKey = 'admin-field-hints';
+    let hintsEnabled = true;
+
+    try {
+        hintsEnabled = window.localStorage.getItem(hintsStorageKey) !== 'off';
+    } catch {
+        // Storage can be blocked; hints then stay on for this visit.
+    }
 
     preview.className = 'field-preview';
     preview.setAttribute('role', 'tooltip');
     preview.hidden = true;
     document.body.append(preview);
 
-    const sectionFor = (field) => rules.find(([pattern]) => pattern.test(field.name))?.[1] ?? null;
+    // One switch on every editor to hide or show the "Shown in" pop-up; the choice is remembered.
+    const syncHintsToggle = () => {
+        hintsToggle.setAttribute('aria-pressed', String(hintsEnabled));
+        hintsToggle.innerHTML = `<span aria-hidden="true">💡</span> Hints ${hintsEnabled ? 'on' : 'off'}`;
+        hintsToggle.title = hintsEnabled ? 'Hide the "Shown in" pop-up' : 'Show the "Shown in" pop-up';
+    };
 
-    const renderPreview = (key) => {
-        if (key === 'navbar' || key === 'meta') {
-            const text = key === 'navbar'
-                ? ['Website navbar & admin sidebar', 'The page name and its menu position appear in the top navigation.']
-                : ['Browser tab & search results', 'The browser title and description shown in the tab and on Google.'];
+    hintsToggle.type = 'button';
+    hintsToggle.className = 'field-preview-toggle';
+    hintsToggle.addEventListener('click', () => {
+        hintsEnabled = !hintsEnabled;
+        preview.hidden = true;
+        syncHintsToggle();
 
-            const shot = key === 'navbar' ? '<img class="field-preview-shot" src="/images/admin-preview/navbar.jpg" alt="Website navbar" onerror="this.remove()">' : '<div class="field-preview-page"><span class="field-preview-block is-active">Page title — description</span></div>';
+        try {
+            window.localStorage.setItem(hintsStorageKey, hintsEnabled ? 'on' : 'off');
+        } catch {
+            // The choice then lasts only for this visit.
+        }
+    });
+    syncHintsToggle();
+    document.body.append(hintsToggle);
 
-            preview.innerHTML = `<strong class="field-preview-title">Shown in: ${text[0]}</strong>${shot}<p>${text[1]}</p>`;
+    const renderPreview = (field) => {
+        let title;
+        let description;
+        let sketch;
 
-            return;
+        if (isNavField(field)) {
+            title = 'Website navbar & admin sidebar';
+            description = 'The page name appears in the top menu and in this sidebar.';
+            sketch = navbarSketch();
+        } else if (isMetaField(field)) {
+            title = 'Browser tab & search results';
+            description = 'The browser title and description shown in the tab and on Google.';
+            sketch = searchSketch();
+        } else if (field.name === 'theme') {
+            title = 'Whole page';
+            description = 'The theme colour is used across the banner, labels, buttons and contact box.';
+            sketch = pageSketch(null, true);
+        } else {
+            const section = panelInfo(field.closest('.homepage-form-panel'));
+
+            title = section.title;
+            description = shorten(section.description, 150);
+            sketch = pageSketch(section.panel);
         }
 
-        const active = sections.find(([sectionKey]) => sectionKey === key);
-
-        const image = new Image();
-        image.className = 'field-preview-shot';
-        image.alt = active[1];
-        image.src = `/images/admin-preview/${key}.jpg`;
-
-        preview.innerHTML = `<strong class="field-preview-title">Shown in: ${active[1]}</strong><p>${active[2]}</p>`;
-        preview.insertBefore(image, preview.querySelector('p'));
-        image.onerror = () => image.remove();
+        preview.innerHTML = `<strong class="field-preview-title">Shown in: ${escapeHtml(title)}</strong>${sketch}${description ? `<p>${escapeHtml(description)}</p>` : ''}`;
     };
 
     const showPreview = (event) => {
         const field = event.target instanceof Element ? event.target.closest('input, textarea, select') : null;
-        const key = field && field.name ? sectionFor(field) : null;
 
-        if (!key) {
+        if (!hintsEnabled || !field || !field.name || field.type === 'hidden' || !field.closest('.homepage-form-panel')) {
             preview.hidden = true;
 
             return;
         }
 
-        renderPreview(key);
+        renderPreview(field);
         preview.hidden = false;
     };
 
     previewForm.addEventListener('focusin', showPreview);
     previewForm.addEventListener('mouseover', showPreview);
+    previewForm.addEventListener('input', (event) => {
+        if (!preview.hidden && event.target instanceof Element && (isNavField(event.target) || isMetaField(event.target))) {
+            renderPreview(event.target);
+        }
+    });
     previewForm.addEventListener('focusout', () => {
         preview.hidden = true;
     });
@@ -1370,10 +1806,12 @@ if (contextMenu) {
 
         if (moveTrigger) {
             event.preventDefault();
-            const pageTrigger = moveTrigger.closest('.admin-subnav-entry')?.querySelector('[data-context-menu][data-move-url]');
+            const entry = moveTrigger.closest('.admin-subnav-entry');
+            const pageTrigger = entry?.querySelector('[data-context-menu][data-move-url]')
+                || entry?.querySelector('[data-context-menu]');
 
             if (pageTrigger) {
-                openMenu(pageTrigger, event, true);
+                openMenu(pageTrigger, event, Boolean(pageTrigger.dataset.moveUrl));
             }
 
             return;
@@ -1496,22 +1934,94 @@ if (contextMenu) {
     window.addEventListener('resize', closeMenu);
 }
 
-const galleryEditor = document.querySelector('[data-gallery-editor]');
-
-if (galleryEditor) {
+// Each repeatable list uses the template in its own form panel, so a form can hold several lists.
+document.querySelectorAll('[data-gallery-editor]').forEach((galleryEditor) => {
     const slidesContainer = galleryEditor.querySelector('[data-gallery-slides]');
     const addSlideButton = galleryEditor.querySelector('[data-add-slide]');
     const slideCount = galleryEditor.querySelector('[data-gallery-count]');
-    const slideTemplate = document.querySelector('template[data-gallery-template]');
+    const slideTemplate = galleryEditor.closest('.homepage-form-panel')?.querySelector('template[data-gallery-template]')
+        ?? document.querySelector('template[data-gallery-template]');
     const maximumSlides = Number(galleryEditor.dataset.maxSlides);
     const fieldPrefix = galleryEditor.dataset.fieldPrefix ?? 'gallery';
+    const itemLabel = galleryEditor.dataset.itemLabel ?? 'Slide';
+    const itemLabelPlural = galleryEditor.dataset.itemLabelPlural ?? 'slides';
+    const tabLabelField = galleryEditor.dataset.galleryPaged;
+    const isPaged = tabLabelField !== undefined;
+    const pageNav = document.createElement('div');
+    let activePage = 0;
+
+    const renderPages = (slides) => {
+        activePage = Math.min(Math.max(activePage, 0), slides.length - 1);
+
+        slides.forEach((slide, index) => {
+            slide.hidden = index !== activePage;
+        });
+
+        const tabs = slides.map((slide, index) => {
+            const label = slide.querySelector(`[data-gallery-field="${tabLabelField}"]`)?.value.trim() || `${itemLabel} ${index + 1}`;
+            const button = document.createElement('button');
+
+            button.type = 'button';
+            button.className = `repeater-slider-tab${index === activePage ? ' is-active' : ''}`;
+            button.dataset.galleryPage = String(index);
+            button.setAttribute('aria-current', String(index === activePage));
+            button.textContent = label;
+
+            return button;
+        });
+
+        pageNav.querySelector('.repeater-slider-tabs').replaceChildren(...tabs);
+        pageNav.querySelector('[data-gallery-page-step="-1"]').disabled = activePage === 0;
+        pageNav.querySelector('[data-gallery-page-step="1"]').disabled = activePage === slides.length - 1;
+    };
+
+    if (isPaged) {
+        pageNav.className = 'repeater-slider-nav gallery-page-nav';
+        pageNav.innerHTML = `<button type="button" class="repeater-slider-arrow" data-gallery-page-step="-1" aria-label="Previous ${itemLabel.toLowerCase()}">‹</button>
+            <div class="repeater-slider-tabs"></div>
+            <button type="button" class="repeater-slider-arrow" data-gallery-page-step="1" aria-label="Next ${itemLabel.toLowerCase()}">›</button>`;
+        slidesContainer.before(pageNav);
+
+        pageNav.addEventListener('click', (event) => {
+            const control = event.target.closest('[data-gallery-page], [data-gallery-page-step]');
+
+            if (!control) {
+                return;
+            }
+
+            activePage = control.dataset.galleryPage !== undefined
+                ? Number(control.dataset.galleryPage)
+                : activePage + Number(control.dataset.galleryPageStep);
+            renderPages([...slidesContainer.querySelectorAll('[data-gallery-slide]')]);
+        });
+
+        slidesContainer.addEventListener('input', (event) => {
+            if (event.target.matches(`[data-gallery-field="${tabLabelField}"]`)) {
+                renderPages([...slidesContainer.querySelectorAll('[data-gallery-slide]')]);
+            }
+        });
+
+        galleryEditor.closest('form')?.addEventListener('invalid', (event) => {
+            const slides = [...slidesContainer.querySelectorAll('[data-gallery-slide]')];
+            const invalidIndex = slides.findIndex((slide) => slide.contains(event.target));
+
+            if (invalidIndex !== -1 && invalidIndex !== activePage) {
+                activePage = invalidIndex;
+                renderPages(slides);
+            }
+        }, true);
+    }
 
     const updateSlides = () => {
         const slides = [...slidesContainer.querySelectorAll('[data-gallery-slide]')];
 
+        if (isPaged) {
+            renderPages(slides);
+        }
+
         slides.forEach((slide, index) => {
-            slide.querySelector('[data-slide-legend]').textContent = `Slide ${index + 1}`;
-            slide.querySelector('[data-remove-slide]').setAttribute('aria-label', `Remove slide ${index + 1}`);
+            slide.querySelector('[data-slide-legend]').textContent = `${itemLabel} ${index + 1}`;
+            slide.querySelector('[data-remove-slide]').setAttribute('aria-label', `Remove ${itemLabel.toLowerCase()} ${index + 1}`);
 
             slide.querySelectorAll('[data-gallery-field]').forEach((field) => {
                 field.name = `${fieldPrefix}[${index}][${field.dataset.galleryField}]`;
@@ -1519,7 +2029,7 @@ if (galleryEditor) {
             });
         });
 
-        slideCount.textContent = `${slides.length} of ${maximumSlides} slides`;
+        slideCount.textContent = `${slides.length} of ${maximumSlides} ${itemLabelPlural}`;
         addSlideButton.disabled = slides.length >= maximumSlides;
     };
 
@@ -1529,8 +2039,9 @@ if (galleryEditor) {
         }
 
         slidesContainer.append(slideTemplate.content.cloneNode(true));
+        activePage = slidesContainer.querySelectorAll('[data-gallery-slide]').length - 1;
         updateSlides();
-        slidesContainer.querySelector('[data-gallery-slide]:last-child [data-gallery-field="image"]').focus();
+        slidesContainer.querySelector('[data-gallery-slide]:last-child [data-gallery-field]').focus();
     });
 
     slidesContainer.addEventListener('click', (event) => {
@@ -1546,7 +2057,14 @@ if (galleryEditor) {
 
         const slide = removeButton.closest('[data-gallery-slide]');
         const nextSlide = slide.nextElementSibling ?? slide.previousElementSibling;
+        const removedIndex = [...slidesContainer.querySelectorAll('[data-gallery-slide]')].indexOf(slide);
+        const wasLastSlide = slide.nextElementSibling === null;
         slide.remove();
+
+        if (removedIndex < activePage || (removedIndex === activePage && wasLastSlide)) {
+            activePage -= 1;
+        }
+
         updateSlides();
 
         if (nextSlide) {
@@ -1557,7 +2075,7 @@ if (galleryEditor) {
     });
 
     updateSlides();
-}
+});
 
 const adminMenuToggle = document.querySelector('.admin-menu-toggle');
 const adminSidebar = document.querySelector('.admin-sidebar');
@@ -1641,36 +2159,28 @@ adminSidebarBreakpoint.addEventListener('change', syncAdminSidebar);
 window.addEventListener('resize', syncAdminSidebar);
 syncAdminSidebar();
 
-const bookingSearch = document.querySelector('.admin-booking-search');
+// Filters such as the revenue period apply as soon as a new option is picked.
+document.querySelectorAll('[data-auto-submit]').forEach((field) => {
+    field.addEventListener('change', () => field.form?.requestSubmit());
+});
 
-if (bookingSearch) {
-    const bookingRows = [...document.querySelectorAll('.admin-bookings-table tbody tr')];
-    const visibleCount = document.querySelector('.admin-visible-booking-count');
-    const emptyState = document.querySelector('.admin-empty-state');
-
-    bookingSearch.addEventListener('input', () => {
-        const query = bookingSearch.value.trim().toLocaleLowerCase();
-        let visibleRows = 0;
-
-        bookingRows.forEach((row) => {
-            const matches = row.textContent.toLocaleLowerCase().includes(query);
-
-            row.hidden = !matches;
-
-            if (matches) {
-                visibleRows += 1;
-            }
-        });
-
-        if (visibleCount) {
-            visibleCount.textContent = String(visibleRows);
-        }
-
-        if (emptyState) {
-            emptyState.hidden = visibleRows > 0;
+// Row action menus in admin tables close when another opens or on a click outside.
+document.addEventListener('click', (event) => {
+    document.querySelectorAll('.admin-row-menu[open]').forEach((menu) => {
+        if (!menu.contains(event.target)) {
+            menu.removeAttribute('open');
         }
     });
-}
+});
+
+// Destructive admin actions ask for confirmation first.
+document.addEventListener('submit', (event) => {
+    const message = event.target.dataset?.confirm;
+
+    if (message && !window.confirm(message)) {
+        event.preventDefault();
+    }
+});
 
 document.querySelectorAll('[data-china-open]').forEach((opener) => {
     const modal = document.getElementById(opener.dataset.chinaOpen);
@@ -1748,11 +2258,41 @@ document.querySelectorAll('[data-about-open]').forEach((opener) => {
         return;
     }
 
-    opener.addEventListener('click', () => modal.showModal());
+    opener.addEventListener('click', () => {
+        const slot = modal.querySelector('[data-about-video]');
+        const { aboutVideoType: type, aboutVideoSrc: src, aboutVideoTitle: title } = opener.dataset;
+
+        // Each card brings its own video; the popup itself is shared.
+        if (slot) {
+            slot.replaceChildren();
+            slot.hidden = !src;
+
+            if (src && type === 'file') {
+                const video = document.createElement('video');
+                Object.assign(video, { src, controls: true, playsInline: true, preload: 'metadata' });
+                video.setAttribute('aria-label', `Video: ${title ?? ''}`);
+                slot.append(video);
+            } else if (src) {
+                const frame = document.createElement('iframe');
+                Object.assign(frame, { src, title: `Video: ${title ?? ''}`, allowFullscreen: true });
+                frame.setAttribute('allow', 'encrypted-media; picture-in-picture; fullscreen');
+                frame.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+                slot.append(frame);
+            }
+        }
+
+        modal.showModal();
+    });
 });
 
 document.querySelectorAll('.china-about-modal').forEach((modal) => {
     const main = modal.querySelector('[data-about-main]');
+    const videoSlot = modal.querySelector('[data-about-video]');
+
+    // Removing the player stops playback when the popup closes.
+    modal.addEventListener('close', () => {
+        videoSlot?.replaceChildren();
+    });
 
     modal.querySelectorAll('[data-about-close]').forEach((button) => button.addEventListener('click', () => modal.close()));
     modal.addEventListener('click', (event) => {
@@ -1929,3 +2469,1051 @@ document.querySelectorAll('[data-about-clear]').forEach((button) => {
         panel.querySelector('input')?.focus();
     });
 });
+
+if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.querySelectorAll('[data-background-video], [data-sh-journey-video]').forEach((video) => {
+        video.removeAttribute('autoplay');
+        video.pause();
+    });
+}
+
+document.querySelectorAll('[data-video-field]').forEach((videoField) => {
+    const urlInput = videoField.querySelector('[data-video-url]');
+    const fileInput = videoField.querySelector('[data-video-file]');
+    const preview = videoField.querySelector('[data-video-preview]');
+    const emptyState = videoField.querySelector('[data-video-empty]');
+    const clearButton = videoField.querySelector('[data-video-clear]');
+    let objectUrl = null;
+
+    const showPreview = (source) => {
+        preview.hidden = !source;
+        emptyState.hidden = Boolean(source);
+        clearButton.hidden = !source;
+
+        if (!source) {
+            preview.pause();
+            preview.removeAttribute('src');
+            preview.load();
+
+            return;
+        }
+
+        if (preview.getAttribute('src') !== source) {
+            preview.src = source;
+            preview.play().catch(() => {});
+        }
+    };
+
+    const sourceForUrl = (value) => {
+        if (value === videoField.dataset.savedVideo) {
+            return videoField.dataset.savedVideoSrc;
+        }
+
+        return /^https?:\/\//i.test(value) ? value : '';
+    };
+
+    const releaseObjectUrl = () => {
+        if (objectUrl) {
+            URL.revokeObjectURL(objectUrl);
+            objectUrl = null;
+        }
+    };
+
+    urlInput.addEventListener('input', () => {
+        if (!fileInput.files.length) {
+            showPreview(sourceForUrl(urlInput.value.trim()));
+        }
+    });
+
+    fileInput.addEventListener('change', () => {
+        releaseObjectUrl();
+
+        if (fileInput.files.length) {
+            objectUrl = URL.createObjectURL(fileInput.files[0]);
+            showPreview(objectUrl);
+        } else {
+            showPreview(sourceForUrl(urlInput.value.trim()));
+        }
+    });
+
+    clearButton.addEventListener('click', () => {
+        releaseObjectUrl();
+        urlInput.value = '';
+        fileInput.value = '';
+        showPreview('');
+        urlInput.focus();
+    });
+});
+
+/**
+ * Arrows and page dots for a horizontally scrolling card row. Returns a function that refreshes them.
+ */
+const setUpCardSlider = (slider, dotLabel) => {
+    const track = slider.querySelector('[data-slider-track]');
+    const previousButton = slider.querySelector('[data-slider-prev]');
+    const nextButton = slider.querySelector('[data-slider-next]');
+    const dots = slider.parentElement.querySelector('[data-slider-dots]');
+
+    // A partly filled last page still counts, e.g. 5 cards at 4 per view is 2 pages.
+    const pageCount = () => 1 + Math.max(0, Math.ceil((track.scrollWidth - track.clientWidth - 2) / track.clientWidth));
+    const currentPage = () => Math.round(track.scrollLeft / track.clientWidth);
+
+    const updateSliderControls = () => {
+        const isScrollable = track.scrollWidth > track.clientWidth + 2;
+        const atStart = track.scrollLeft <= 2;
+        const atEnd = track.scrollLeft + track.clientWidth >= track.scrollWidth - 2;
+
+        previousButton.hidden = !isScrollable;
+        nextButton.hidden = !isScrollable;
+        previousButton.disabled = atStart;
+        nextButton.disabled = atEnd;
+        dots.hidden = !isScrollable;
+
+        if (!isScrollable) {
+            return;
+        }
+
+        const pages = pageCount();
+        const activePage = atEnd ? pages - 1 : currentPage();
+
+        if (dots.children.length !== pages) {
+            dots.replaceChildren(...Array.from({ length: pages }, (_, page) => {
+                const dot = document.createElement('button');
+                dot.type = 'button';
+                dot.setAttribute('aria-label', `${dotLabel} ${page + 1}`);
+                dot.addEventListener('click', () => track.scrollTo({ left: page * track.clientWidth, behavior: 'smooth' }));
+
+                return dot;
+            }));
+        }
+
+        [...dots.children].forEach((dot, page) => {
+            if (page === activePage) {
+                dot.setAttribute('aria-current', 'true');
+            } else {
+                dot.removeAttribute('aria-current');
+            }
+        });
+    };
+
+    previousButton.addEventListener('click', () => track.scrollBy({ left: -track.clientWidth, behavior: 'smooth' }));
+    nextButton.addEventListener('click', () => track.scrollBy({ left: track.clientWidth, behavior: 'smooth' }));
+    track.addEventListener('scroll', updateSliderControls, { passive: true });
+    window.addEventListener('resize', updateSliderControls);
+    updateSliderControls();
+
+    // Cards starting beyond the visible row would otherwise play their scroll-in animation only when slid to.
+    const visibleRight = track.getBoundingClientRect().right - Number.parseFloat(getComputedStyle(track).paddingRight);
+    [...track.children].filter((card) => card.getBoundingClientRect().right > visibleRight + 1).forEach((card) => card.classList.add('is-revealed'));
+
+    return updateSliderControls;
+};
+
+document.querySelectorAll('[data-tour-finder]').forEach((finder) => {
+    const section = finder.closest('section');
+    const track = section.querySelector('[data-slider-track]');
+    const cards = [...track.querySelectorAll('[data-tour-card]')];
+    const searchInput = finder.querySelector('[data-tour-search]');
+    const filterButtons = [...finder.querySelectorAll('[data-tour-filter]')];
+    const countLabel = finder.querySelector('[data-tour-count]');
+    const emptyMessage = section.querySelector('[data-tour-empty]');
+    const [singular, plural] = [finder.dataset.itemSingular ?? 'destination', finder.dataset.itemPlural ?? 'destinations'];
+    const updateSliderControls = setUpCardSlider(section.querySelector('[data-card-slider]'), `Show ${plural} page`);
+    let activeCategory = '';
+
+    const applyFilters = () => {
+        const query = searchInput.value.trim().toLowerCase();
+        let visibleCount = 0;
+
+        cards.forEach((card) => {
+            // A card may carry several tags separated by "|".
+            const matchesCategory = activeCategory === '' || card.dataset.category.split('|').includes(activeCategory);
+            const matchesQuery = query === '' || card.dataset.search.includes(query);
+            card.hidden = !(matchesCategory && matchesQuery);
+            visibleCount += card.hidden ? 0 : 1;
+        });
+
+        countLabel.textContent = `${visibleCount} ${visibleCount === 1 ? singular : plural}`;
+        emptyMessage.hidden = visibleCount > 0;
+        track.scrollTo({ left: 0 });
+        updateSliderControls();
+    };
+
+    searchInput.addEventListener('input', applyFilters);
+
+    filterButtons.forEach((button) => button.addEventListener('click', () => {
+        activeCategory = button.dataset.tourFilter;
+        filterButtons.forEach((other) => other.setAttribute('aria-pressed', String(other === button)));
+        applyFilters();
+    }));
+
+    section.querySelector('[data-tour-reset]')?.addEventListener('click', () => {
+        searchInput.value = '';
+        filterButtons[0]?.click();
+        applyFilters();
+        searchInput.focus();
+    });
+});
+
+document.querySelectorAll('[data-state-finder]').forEach((finder) => {
+    const section = finder.closest('section');
+    const searchInput = finder.querySelector('[data-state-search]');
+    const regionSelect = finder.querySelector('[data-state-region]');
+    const countLabel = finder.querySelector('[data-state-count]');
+    const emptyMessage = section.querySelector('[data-state-empty]');
+    const states = [...section.querySelectorAll('[data-state-card]')];
+    const regionSections = [...section.querySelectorAll('[data-region-section]')];
+    const slides = [...section.querySelectorAll('[data-region-slide]')];
+    const slider = section.querySelector('[data-card-slider]');
+
+    if (slider) {
+        setUpCardSlider(slider, 'Show regions page');
+    }
+
+    const applyFilters = () => {
+        const query = searchInput.value.trim().toLowerCase();
+        const region = regionSelect?.value ?? '';
+        let visibleCount = 0;
+
+        states.forEach((state) => {
+            const matchesRegion = region === '' || state.dataset.region === region;
+            const matchesQuery = query === '' || state.dataset.search.includes(query);
+            state.hidden = !(matchesRegion && matchesQuery);
+            visibleCount += state.hidden ? 0 : 1;
+        });
+
+        regionSections.forEach((regionSection) => {
+            regionSection.hidden = !regionSection.querySelector('[data-state-card]:not([hidden])');
+        });
+
+        slides.forEach((slide) => {
+            if (slide.dataset.regionSlide === region) {
+                slide.setAttribute('aria-current', 'true');
+            } else {
+                slide.removeAttribute('aria-current');
+            }
+        });
+
+        countLabel.textContent = `${visibleCount} ${visibleCount === 1 ? (finder.dataset.itemSingular ?? 'state') : (finder.dataset.itemPlural ?? 'states')}`;
+        emptyMessage.hidden = visibleCount > 0;
+    };
+
+    searchInput.addEventListener('input', applyFilters);
+    regionSelect?.addEventListener('change', applyFilters);
+
+    // A region slide filters the states to that region; choosing it again shows every region.
+    slides.forEach((slide) => slide.addEventListener('click', (event) => {
+        if (!regionSelect) {
+            return;
+        }
+
+        event.preventDefault();
+        const isActive = regionSelect.value === slide.dataset.regionSlide;
+        regionSelect.value = isActive ? '' : slide.dataset.regionSlide;
+        applyFilters();
+
+        if (!isActive) {
+            document.getElementById(`region-${slide.dataset.regionSlide}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }));
+
+    section.querySelector('[data-state-reset]')?.addEventListener('click', () => {
+        searchInput.value = '';
+
+        if (regionSelect) {
+            regionSelect.value = '';
+        }
+
+        applyFilters();
+        searchInput.focus();
+    });
+});
+
+document.querySelectorAll('form[data-confirm]').forEach((form) => {
+    form.addEventListener('submit', (event) => {
+        if (!window.confirm(form.dataset.confirm)) {
+            event.preventDefault();
+        }
+    });
+});
+
+/**
+ * Clearable image fields: the preview follows the URL or chosen file, and Clear returns the default look.
+ * Delegated so fields in slides added later work too.
+ */
+const imageFieldPreviewUrls = new WeakMap();
+
+const showImageFieldPreview = (field, source) => {
+    const preview = field.querySelector('[data-image-preview]');
+
+    preview.hidden = !source;
+    field.querySelector('[data-image-default]').hidden = Boolean(source);
+    field.querySelector('[data-image-clear]').hidden = !source;
+
+    if (source) {
+        preview.src = source;
+    } else {
+        preview.removeAttribute('src');
+    }
+};
+
+const releaseImageFieldPreview = (field) => {
+    if (imageFieldPreviewUrls.has(field)) {
+        URL.revokeObjectURL(imageFieldPreviewUrls.get(field));
+        imageFieldPreviewUrls.delete(field);
+    }
+};
+
+document.addEventListener('input', (event) => {
+    const field = event.target.closest?.('[data-image-field]');
+
+    if (!field || !event.target.matches('[data-image-url]') || field.querySelector('[data-image-file]').files.length) {
+        return;
+    }
+
+    const value = event.target.value.trim();
+    const source = value === field.dataset.savedImage ? field.dataset.savedImageSrc : (/^https?:\/\//i.test(value) ? value : '');
+
+    showImageFieldPreview(field, source);
+
+    if (value !== '' && !source) {
+        field.querySelector('[data-image-clear]').hidden = false;
+    }
+});
+
+document.addEventListener('change', (event) => {
+    const field = event.target.closest?.('[data-image-field]');
+
+    if (!field || !event.target.matches('[data-image-file]')) {
+        return;
+    }
+
+    releaseImageFieldPreview(field);
+    const file = event.target.files[0];
+
+    if (file) {
+        imageFieldPreviewUrls.set(field, URL.createObjectURL(file));
+        showImageFieldPreview(field, imageFieldPreviewUrls.get(field));
+    }
+});
+
+document.addEventListener('click', (event) => {
+    const clearButton = event.target.closest('[data-image-clear]');
+    const field = clearButton?.closest('[data-image-field]');
+
+    if (!field) {
+        return;
+    }
+
+    const urlInput = field.querySelector('[data-image-url]');
+
+    urlInput.value = '';
+    field.querySelector('[data-image-file]').value = '';
+    releaseImageFieldPreview(field);
+    showImageFieldPreview(field, '');
+    urlInput.focus();
+});
+
+document.querySelectorAll('[data-print-page]').forEach((button) => {
+    button.addEventListener('click', () => window.print());
+});
+
+// Booking conditions: highlight the contents link of the condition being read.
+document.querySelectorAll('[data-booking-conditions]').forEach((section) => {
+    const links = [...section.querySelectorAll('[data-booking-toc-link]')];
+    const cards = links.map((link) => document.getElementById(link.hash.slice(1))).filter(Boolean);
+
+    if (!cards.length || !('IntersectionObserver' in window)) {
+        return;
+    }
+
+    const visible = new Set();
+    const setCurrent = () => {
+        const current = cards.find((card) => visible.has(card)) ?? null;
+
+        links.forEach((link) => {
+            if (current && link.hash === `#${current.id}`) {
+                link.setAttribute('aria-current', 'true');
+                // On phones the contents are a sideways chip row; keep the current chip in view without moving the page.
+                const list = link.closest('ol');
+
+                if (list.scrollWidth > list.clientWidth) {
+                    list.scrollTo({ left: link.offsetLeft - 18, behavior: 'smooth' });
+                }
+            } else {
+                link.removeAttribute('aria-current');
+            }
+        });
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => (entry.isIntersecting ? visible.add(entry.target) : visible.delete(entry.target)));
+        setCurrent();
+    }, { rootMargin: '-110px 0px -55% 0px' });
+
+    cards.forEach((card) => observer.observe(card));
+});
+
+// Ticketing: the enquiry form becomes a WhatsApp message to the ticketing team.
+document.querySelectorAll('[data-ticket-enquiry]').forEach((form) => {
+    const returnField = form.querySelector('[data-return-field]');
+    const returnInput = returnField?.querySelector('input');
+
+    const syncTripType = () => {
+        const isOneWay = form.querySelector('[data-trip-type]:checked')?.value === 'One way';
+
+        returnField?.toggleAttribute('hidden', isOneWay);
+
+        if (returnInput) {
+            returnInput.required = !isOneWay;
+            returnInput.disabled = isOneWay;
+        }
+    };
+
+    form.addEventListener('change', (event) => {
+        if (event.target.matches('[data-trip-type]')) {
+            syncTripType();
+        }
+
+        if (event.target.name === 'depart' && returnInput) {
+            returnInput.min = event.target.value;
+        }
+    });
+
+    form.addEventListener('submit', (event) => {
+        event.preventDefault();
+
+        const data = new FormData(form);
+        const value = (name) => String(data.get(name) ?? '').trim();
+        const lines = [
+            "Hi, I'd like to enquire about a flight ticket.",
+            `Name: ${value('name')}`,
+            `Phone: ${value('phone')}`,
+            `Trip: ${value('trip')}`,
+            `From: ${value('from')}`,
+            `To: ${value('to')}`,
+            `Departure: ${value('depart')}`,
+            ...(value('trip') === 'One way' ? [] : [`Return: ${value('return')}`]),
+            `Passengers: ${value('passengers')}`,
+            `Class: ${value('class')}`,
+            ...(value('airline') ? [`Preferred airline: ${value('airline')}`] : []),
+            ...(value('notes') ? [`Notes: ${value('notes')}`] : []),
+        ];
+
+        // Also log the enquiry in the admin inbox. WhatsApp opens in the same click so the
+        // browser does not block it, and a failed log never stops the visitor.
+        if (form.dataset.enquiryUrl) {
+            fetch(form.dataset.enquiryUrl, {
+                method: 'POST',
+                keepalive: true,
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': value('_token') },
+                body: JSON.stringify({
+                    name: value('name'),
+                    phone: value('phone'),
+                    destination: `Flight ticket: ${value('from')} → ${value('to')}`,
+                    message: lines.slice(1).join('\n'),
+                }),
+            }).catch(() => {});
+        }
+
+        window.open(`https://wa.me/${form.dataset.whatsapp}?text=${encodeURIComponent(lines.join('\n'))}`, '_blank', 'noopener');
+    });
+
+    syncTripType();
+});
+
+document.querySelectorAll('[data-privacy-toc]').forEach((toc) => {
+    const links = [...toc.querySelectorAll('a[href^="#"]')];
+    const sections = links.map((link) => document.querySelector(link.getAttribute('href'))).filter(Boolean);
+
+    const setActive = (id) => {
+        links.forEach((link) => {
+            const isActive = link.getAttribute('href') === `#${id}`;
+
+            link.classList.toggle('is-active', isActive);
+
+            if (isActive) {
+                link.setAttribute('aria-current', 'true');
+                const list = link.closest('ol');
+
+                if (list.scrollWidth > list.clientWidth) {
+                    list.scrollTo({ left: link.offsetLeft - list.offsetLeft - 16, behavior: 'smooth' });
+                }
+            } else {
+                link.removeAttribute('aria-current');
+            }
+        });
+    };
+
+    // The current section is the last one whose top has scrolled just past its jump-link landing spot.
+    let frame = null;
+    const update = () => {
+        frame = null;
+
+        const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
+        const passed = sections.filter((section) => {
+            const landing = parseFloat(getComputedStyle(section).scrollMarginTop) || 0;
+
+            return section.getBoundingClientRect().top <= landing + 24;
+        });
+        const current = atBottom ? sections[sections.length - 1] : passed[passed.length - 1] ?? sections[0];
+
+        setActive(current.id);
+    };
+
+    window.addEventListener('scroll', () => {
+        frame ??= requestAnimationFrame(update);
+    }, { passive: true });
+    update();
+});
+
+// Package booking form: a fixed departure sets the travel date, and the estimate follows the traveller count.
+document.querySelectorAll('[data-package-booking]').forEach((form) => {
+    const option = form.querySelector('[data-booking-option]');
+    const date = form.querySelector('[data-booking-date]');
+    const dateHint = form.querySelector('[data-booking-date-hint]');
+    const adults = form.querySelector('[data-booking-adults]');
+    const children = form.querySelector('[data-booking-children]');
+    const estimate = document.querySelector('[data-booking-estimate]');
+    const estimateNote = document.querySelector('[data-booking-estimate-note]');
+    const money = (value) => `RM ${Math.round(value).toLocaleString('en-MY')}`;
+
+    const updateDate = () => {
+        const fixedDate = option.selectedOptions[0]?.dataset.date ?? '';
+
+        if (fixedDate) {
+            date.value = fixedDate;
+        } else if (date.readOnly) {
+            date.value = '';
+        }
+
+        date.readOnly = fixedDate !== '';
+        date.required = fixedDate === '';
+        dateHint.textContent = fixedDate ? 'Set by the departure you chose' : 'Choose the day you would like to leave';
+    };
+
+    const updateEstimate = () => {
+        const price = Number(option.selectedOptions[0]?.dataset.price || 0);
+        const travellers = Math.max(1, (Number(adults.value) || 0) + (Number(children.value) || 0));
+
+        if (!estimate) {
+            return;
+        }
+
+        estimate.textContent = price ? money(price * travellers) : estimate.dataset.empty;
+        estimateNote.textContent = price
+            ? `${money(price)} per person × ${travellers} ${travellers === 1 ? 'traveller' : 'travellers'}`
+            : 'Our team will quote the price for your dates.';
+    };
+
+    option.addEventListener('change', () => {
+        updateDate();
+        updateEstimate();
+    });
+    adults.addEventListener('input', updateEstimate);
+    children.addEventListener('input', updateEstimate);
+});
+
+// Admin online booking: label each switch and open or close a whole section at once.
+document.querySelectorAll('[data-online-booking]').forEach((form) => {
+    const label = (input) => {
+        const state = input.closest('label').querySelector('.admin-booking-state');
+
+        state.textContent = input.checked ? state.dataset.openLabel : state.dataset.closedLabel;
+    };
+
+    form.addEventListener('change', (event) => {
+        if (event.target.matches('.admin-booking-toggle input')) {
+            label(event.target);
+        }
+    });
+
+    form.querySelectorAll('[data-booking-bulk]').forEach((button) => {
+        button.addEventListener('click', () => {
+            button.closest('section').querySelectorAll('.admin-booking-toggle input').forEach((input) => {
+                input.checked = button.dataset.bookingBulk === 'open';
+                label(input);
+            });
+        });
+    });
+});
+
+// Admin: a package's online booking switch saves as soon as it is flipped.
+document.querySelectorAll('[data-booking-switch]').forEach((form) => {
+    form.querySelector('input[type="checkbox"]').addEventListener('change', () => {
+        form.querySelector('.admin-booking-state').textContent = 'Saving…';
+        form.requestSubmit();
+    });
+});
+
+// Client guided tour: starts by itself on the homepage after a client's first sign-in, then walks through My Account.
+document.querySelectorAll('[data-portal-tour]').forEach((root) => {
+    const pages = JSON.parse(root.dataset.tourPages);
+    const currentPage = root.dataset.tourPage;
+    const name = root.dataset.tourName;
+    const storageKey = 'cp-tour-step';
+    const steps = [
+        { page: 'home', title: `Welcome to Smart Holidays, ${name}! 👋`, text: 'Let us show you around in about a minute: where to find our tours, your profile and account, and how to book a trip.', next: 'Start the tour' },
+        { page: 'home', target: ['nav', 'nav-toggle'], title: 'Explore our tours', text: 'Browse Group Tours, Ground Destinations, Domestic tours and Smart Muslim packages from this menu. Every package page has a “Book now” button.' },
+        { page: 'home', target: 'whatsapp', title: 'Talk to our team', text: 'Have a question before you book? Message us on WhatsApp and our team will help.' },
+        { page: 'home', target: 'account', title: 'Your profile', text: 'Tap this icon any time to see your profile, your latest bookings and “Open my account”. Press Next and we will open My Account for you.' },
+        { page: 'dashboard', target: 'menu', title: 'This is My Account', text: 'Your own space for trips. Use this menu to move between your overview, bookings, trip requests and profile.' },
+        { page: 'profile', target: 'profile-details', title: 'First, check your details', text: 'Make sure your name and phone number are correct. Our team uses them to confirm your bookings with you.' },
+        { page: 'profile', target: 'profile-password', title: 'Keep your account safe', text: 'You can change your password here at any time. You will need your current password to do it.' },
+        { page: 'bookings', target: 'bookings-tabs', title: 'Your bookings', text: 'Switch between upcoming trips, past trips and cancelled bookings.' },
+        { page: 'bookings', target: 'bookings-list', title: 'Follow every trip', text: 'Open a booking to see its progress (Requested → Confirmed → Completed), dates, travellers and price.' },
+        { page: 'requests', target: 'request-form', title: 'Plan a custom trip', text: 'Not sure which package suits you? Tell us where and when you would like to go, and our team will plan it for you.' },
+        { page: 'requests', target: 'request-history', title: 'Track your requests', text: 'Every request you send appears here with its status: Received, Being planned or Booked.' },
+        { page: 'dashboard', target: 'actions', title: 'Book a package online', text: 'Browse our Smart Muslim packages and press “Book now” on any departure or itinerary. Your request then appears in My bookings.' },
+        { page: 'dashboard', title: 'You are all set! 🎉', text: 'You can replay this tour whenever you like with “Take the tour” in My Account. Have a wonderful trip!', next: 'Finish' },
+    ];
+    const storage = {
+        get: () => { try { return sessionStorage.getItem(storageKey); } catch { return null; } },
+        set: (value) => { try { sessionStorage.setItem(storageKey, String(value)); } catch { /* the tour simply restarts */ } },
+        clear: () => { try { sessionStorage.removeItem(storageKey); } catch { /* nothing to clear */ } },
+    };
+
+    let index = -1;
+    let target = null;
+    let frame = null;
+    let ui = null;
+
+    const build = () => {
+        const backdrop = document.createElement('div');
+        backdrop.className = 'cp-tour-backdrop';
+        const spotlight = document.createElement('div');
+        spotlight.className = 'cp-tour-spotlight';
+        const card = document.createElement('section');
+        card.className = 'cp-tour-card';
+        card.setAttribute('role', 'dialog');
+        card.setAttribute('aria-modal', 'true');
+        card.setAttribute('aria-labelledby', 'cp-tour-title');
+        card.innerHTML = `
+            <div class="cp-tour-progress"><span></span></div>
+            <p class="cp-tour-count"></p>
+            <h2 id="cp-tour-title"></h2>
+            <p class="cp-tour-text"></p>
+            <div class="cp-tour-actions">
+                <button type="button" class="cp-tour-skip" data-tour-skip>Skip tour</button>
+                <span>
+                    <button type="button" class="cp-tour-back" data-tour-back>Back</button>
+                    <button type="button" class="cp-tour-next" data-tour-next></button>
+                </span>
+            </div>`;
+        document.body.append(backdrop, spotlight, card);
+        card.querySelector('[data-tour-skip]').addEventListener('click', () => finish());
+        card.querySelector('[data-tour-back]').addEventListener('click', () => go(index - 1));
+        card.querySelector('[data-tour-next]').addEventListener('click', () => go(index + 1));
+
+        return { backdrop, spotlight, card };
+    };
+
+    const isVisible = (element) => element !== null && element.getClientRects().length > 0;
+    const headerBottom = () => Math.max(0, document.querySelector('.site-header')?.getBoundingClientRect().bottom ?? 0);
+
+    // Phones show the card as a bottom sheet, so the target goes just under the header; larger screens centre it.
+    const bringIntoView = (element) => {
+        const rect = element.getBoundingClientRect();
+        const top = innerWidth < 600
+            ? headerBottom() + 16
+            : Math.max(headerBottom() + 16, (innerHeight - rect.height) / 2);
+
+        window.scrollTo({ top: window.scrollY + rect.top - top, behavior: 'smooth' });
+    };
+
+    const place = () => {
+        frame = null;
+
+        if (!ui) {
+            return;
+        }
+
+        const { spotlight, card, backdrop } = ui;
+        const centered = !isVisible(target);
+
+        document.body.classList.toggle('cp-tour-centered', centered);
+        backdrop.hidden = !centered;
+        spotlight.hidden = centered;
+
+        if (centered) {
+            card.style.top = '';
+            card.style.left = '';
+
+            return;
+        }
+
+        const rect = target.getBoundingClientRect();
+        const pad = 8;
+        Object.assign(spotlight.style, {
+            top: `${rect.top - pad}px`,
+            left: `${rect.left - pad}px`,
+            width: `${rect.width + pad * 2}px`,
+            height: `${rect.height + pad * 2}px`,
+        });
+
+        if (innerWidth < 600) {
+            card.style.top = '';
+            card.style.left = '';
+
+            return;
+        }
+
+        const gap = 16;
+        const minTop = headerBottom() + 12;
+        const cardBox = card.getBoundingClientRect();
+        const below = rect.bottom + pad + gap;
+        const above = rect.top - pad - gap - cardBox.height;
+        let top = below + cardBox.height <= innerHeight - 12 ? below : above >= minTop ? above : innerHeight - cardBox.height - 12;
+        let left = rect.left;
+
+        // A target with no room above or below (such as the sidebar menu) gets the card beside it.
+        if (top !== below && top !== above) {
+            if (rect.right + gap + cardBox.width < innerWidth - 12) {
+                left = rect.right + pad + gap;
+            } else if (rect.left - gap - cardBox.width > 12) {
+                left = rect.left - pad - gap - cardBox.width;
+            }
+
+            top = Math.min(Math.max(minTop, rect.top), innerHeight - cardBox.height - 12);
+        }
+
+        card.style.top = `${Math.max(minTop, top)}px`;
+        card.style.left = `${Math.min(Math.max(12, left), innerWidth - cardBox.width - 12)}px`;
+    };
+
+    const schedulePlace = () => {
+        frame ??= requestAnimationFrame(place);
+    };
+
+    const show = (stepIndex) => {
+        index = stepIndex;
+        storage.set(index);
+        ui ??= build();
+        document.body.classList.add('cp-tour-running');
+
+        const step = steps[index];
+        const { card } = ui;
+        target = [step.target ?? []].flat().map((key) => document.querySelector(`[data-tour="${key}"]`)).find(isVisible) ?? null;
+
+        card.querySelector('.cp-tour-count').textContent = `Step ${index + 1} of ${steps.length}`;
+        card.querySelector('.cp-tour-progress span').style.width = `${((index + 1) / steps.length) * 100}%`;
+        card.querySelector('#cp-tour-title').textContent = step.title;
+        card.querySelector('.cp-tour-text').textContent = step.text;
+        card.querySelector('[data-tour-back]').hidden = index === 0;
+        card.querySelector('[data-tour-skip]').hidden = index === steps.length - 1;
+        card.querySelector('[data-tour-next]').textContent = step.next ?? 'Next →';
+
+        if (isVisible(target)) {
+            bringIntoView(target);
+        }
+
+        place();
+        setTimeout(place, 450);
+        setTimeout(place, 950);
+        card.querySelector('[data-tour-next]').focus({ preventScroll: true });
+    };
+
+    const finish = () => {
+        storage.clear();
+        document.body.classList.remove('cp-tour-running', 'cp-tour-centered');
+        ui?.backdrop.remove();
+        ui?.spotlight.remove();
+        ui?.card.remove();
+        ui = null;
+        target = null;
+
+        fetch(root.dataset.tourCompleteUrl, {
+            method: 'POST',
+            keepalive: true,
+            headers: {
+                'X-CSRF-TOKEN': root.dataset.tourToken,
+                Accept: 'application/json',
+            },
+        }).catch(() => {});
+    };
+
+    // Steps on another page are reached by going to that page; the step number travels in sessionStorage.
+    const go = (stepIndex) => {
+        if (stepIndex < 0) {
+            return;
+        }
+
+        if (stepIndex >= steps.length) {
+            finish();
+
+            return;
+        }
+
+        if (steps[stepIndex].page !== currentPage) {
+            storage.set(stepIndex);
+            window.location.href = pages[steps[stepIndex].page];
+
+            return;
+        }
+
+        show(stepIndex);
+    };
+
+    window.addEventListener('resize', schedulePlace);
+    window.addEventListener('scroll', schedulePlace, { passive: true });
+    document.addEventListener('keydown', (event) => {
+        if (!ui) {
+            return;
+        }
+
+        if (event.key === 'Escape') {
+            finish();
+        } else if (event.key === 'ArrowRight') {
+            go(index + 1);
+        } else if (event.key === 'ArrowLeft') {
+            go(index - 1);
+        }
+    });
+    document.querySelectorAll('[data-tour-start]').forEach((button) => button.addEventListener('click', () => go(0)));
+
+    const saved = Number.parseInt(storage.get() ?? '', 10);
+
+    if (Number.isInteger(saved) && steps[saved]?.page === currentPage) {
+        show(saved);
+    } else {
+        storage.clear();
+
+        if (root.dataset.tourAutostart === 'true') {
+            show(0);
+        }
+    }
+});
+
+// Client portal: summary numbers count up from zero when the page opens.
+if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.querySelectorAll('[data-count-up]').forEach((element) => {
+        const target = Number(element.dataset.countUp);
+
+        if (!Number.isFinite(target) || target <= 0) {
+            return;
+        }
+
+        const duration = 900;
+        let start = null;
+        const tick = (now) => {
+            start ??= now;
+            const progress = Math.min((now - start) / duration, 1);
+
+            element.textContent = Math.round(target * (1 - (1 - progress) ** 3)).toLocaleString();
+
+            if (progress < 1) {
+                requestAnimationFrame(tick);
+            }
+        };
+
+        element.textContent = '0';
+        setTimeout(() => requestAnimationFrame(tick), 250);
+    });
+}
+
+// China Muslim: traveller moments slideshow with autoplay, thumbnails, swipe, keyboard and full screen.
+document.querySelectorAll('[data-moments]').forEach((section) => {
+    const stage = section.querySelector('[data-moments-stage]');
+    const slides = [...section.querySelectorAll('[data-moment]')];
+    const thumbs = [...section.querySelectorAll('[data-moment-thumb]')];
+    const progress = section.querySelector('[data-moments-progress]');
+    const playButton = section.querySelector('[data-moments-play]');
+    const fullscreenButton = section.querySelector('[data-moments-fullscreen]');
+    const interval = 5500;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let current = 0;
+    let playing = !reducedMotion && slides.length > 1;
+    let paused = false;
+    let elapsed = 0;
+    let lastTick = null;
+
+    const show = (index) => {
+        current = (index + slides.length) % slides.length;
+        elapsed = 0;
+
+        slides.forEach((slide, slideIndex) => {
+            const active = slideIndex === current;
+            slide.classList.toggle('is-active', active);
+            slide.setAttribute('aria-hidden', active ? 'false' : 'true');
+        });
+
+        thumbs.forEach((thumb, thumbIndex) => {
+            const active = thumbIndex === current;
+            thumb.classList.toggle('is-active', active);
+            thumb.setAttribute('aria-selected', active ? 'true' : 'false');
+
+            if (active) {
+                const strip = thumb.parentElement;
+                strip.scrollTo({ left: thumb.offsetLeft - strip.offsetLeft - (strip.clientWidth - thumb.clientWidth) / 2, behavior: reducedMotion ? 'auto' : 'smooth' });
+            }
+        });
+    };
+
+    const setPlaying = (value) => {
+        playing = value;
+        playButton.textContent = playing ? '❚❚' : '▶';
+        playButton.setAttribute('aria-label', playing ? 'Pause slideshow' : 'Play slideshow');
+        playButton.setAttribute('aria-pressed', playing ? 'false' : 'true');
+        progress.style.width = '0';
+        elapsed = 0;
+    };
+
+    const tick = (now) => {
+        if (lastTick !== null && playing && !paused && !document.hidden) {
+            elapsed += now - lastTick;
+
+            if (elapsed >= interval) {
+                show(current + 1);
+            }
+
+            progress.style.width = `${Math.min(elapsed / interval, 1) * 100}%`;
+        }
+
+        lastTick = now;
+        requestAnimationFrame(tick);
+    };
+
+    section.querySelector('[data-moments-prev]').addEventListener('click', () => show(current - 1));
+    section.querySelector('[data-moments-next]').addEventListener('click', () => show(current + 1));
+    playButton.addEventListener('click', () => setPlaying(!playing));
+    thumbs.forEach((thumb) => thumb.addEventListener('click', () => show(Number(thumb.dataset.momentThumb))));
+
+    fullscreenButton.addEventListener('click', () => {
+        if (document.fullscreenElement) {
+            document.exitFullscreen();
+        } else {
+            stage.requestFullscreen?.();
+        }
+    });
+    document.addEventListener('fullscreenchange', () => {
+        fullscreenButton.setAttribute('aria-label', document.fullscreenElement === stage ? 'Exit full screen' : 'View full screen');
+    });
+
+    // Pause while the visitor is looking closely or using the controls.
+    stage.addEventListener('pointerenter', () => { paused = true; });
+    stage.addEventListener('pointerleave', () => { paused = false; });
+    section.addEventListener('focusin', () => { paused = true; });
+    section.addEventListener('focusout', () => { paused = false; });
+
+    stage.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowRight') {
+            show(current + 1);
+        } else if (event.key === 'ArrowLeft') {
+            show(current - 1);
+        }
+    });
+
+    let touchStartX = null;
+    stage.addEventListener('touchstart', (event) => { touchStartX = event.touches[0].clientX; }, { passive: true });
+    stage.addEventListener('touchend', (event) => {
+        if (touchStartX === null) {
+            return;
+        }
+
+        const distance = event.changedTouches[0].clientX - touchStartX;
+
+        if (Math.abs(distance) > 40) {
+            show(current + (distance < 0 ? 1 : -1));
+        }
+
+        touchStartX = null;
+    });
+
+    setPlaying(playing);
+    requestAnimationFrame(tick);
+});
+
+// Smart Muslim packages: love / like buttons. Counts load together; buttons sharing a key stay in sync.
+(() => {
+    const buttons = [...document.querySelectorAll('[data-like-key]')];
+
+    if (buttons.length === 0) {
+        return;
+    }
+
+    const xsrfToken = () => decodeURIComponent(document.cookie.split('; ').find((row) => row.startsWith('XSRF-TOKEN='))?.split('=')[1] ?? '');
+    const buttonsFor = (key) => buttons.filter((button) => button.dataset.likeKey === key);
+
+    const render = (key, { count, liked }) => {
+        buttonsFor(key).forEach((button) => {
+            button.setAttribute('aria-pressed', String(liked));
+            button.querySelector('[data-like-count]').textContent = count > 0 ? String(count) : '';
+            button.title = liked ? 'You love this package' : 'Love this package';
+        });
+    };
+
+    const keys = [...new Set(buttons.map((button) => button.dataset.likeKey))];
+    const query = new URLSearchParams();
+    keys.forEach((key) => query.append('keys[]', key));
+
+    fetch(`/package-likes?${query}`, { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
+        .then((response) => (response.ok ? response.json() : {}))
+        .then((summary) => Object.entries(summary).forEach(([key, state]) => render(key, state)))
+        .catch(() => {});
+
+    buttons.forEach((button) => {
+        button.addEventListener('click', async (event) => {
+            // Some buttons sit over a card link; keep the click on the heart.
+            event.preventDefault();
+            event.stopPropagation();
+
+            const key = button.dataset.likeKey;
+            const wasLiked = button.getAttribute('aria-pressed') === 'true';
+            const countLabel = button.querySelector('[data-like-count]');
+            const previous = { count: Number(countLabel.textContent) || 0, liked: wasLiked };
+
+            render(key, { count: Math.max(0, previous.count + (wasLiked ? -1 : 1)), liked: !wasLiked });
+            buttonsFor(key).forEach((sameKey) => { sameKey.disabled = true; });
+
+            if (!wasLiked) {
+                button.classList.remove('is-popping');
+                void button.offsetWidth;
+                button.classList.add('is-popping');
+            }
+
+            try {
+                const response = await fetch('/package-likes', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': xsrfToken() },
+                    body: JSON.stringify({ key }),
+                });
+
+                render(key, response.ok ? await response.json() : previous);
+            } catch {
+                render(key, previous);
+            } finally {
+                buttonsFor(key).forEach((sameKey) => { sameKey.disabled = false; });
+            }
+        });
+    });
+})();
+
+// Admin: stat numbers count up when the page opens, keeping text around the number ("RM 9,450", "31%", "5 / 17").
+if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.querySelectorAll('.admin-stat-value').forEach((element) => {
+        const match = element.textContent.trim().match(/^(\D*?)(\d[\d,]*)(.*)$/s);
+        const target = match ? Number(match[2].replaceAll(',', '')) : NaN;
+
+        if (!Number.isFinite(target) || target <= 0) {
+            return;
+        }
+
+        const [, before, , after] = match;
+        const duration = 800;
+        let start = null;
+        const tick = (now) => {
+            start ??= now;
+            const progress = Math.min((now - start) / duration, 1);
+
+            element.textContent = `${before}${Math.round(target * (1 - (1 - progress) ** 3)).toLocaleString('en-US')}${after}`;
+
+            if (progress < 1) {
+                requestAnimationFrame(tick);
+            }
+        };
+
+        element.textContent = `${before}0${after}`;
+        setTimeout(() => requestAnimationFrame(tick), 200);
+    });
+}

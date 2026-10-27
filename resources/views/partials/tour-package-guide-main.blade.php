@@ -5,6 +5,7 @@
     $gallery = $data['gallery'] ?? [];
     $galleryCount = count($gallery);
     $hotels = $data['hotels'] ?? [];
+    $packageBooking = new \App\Support\BookablePackage($page);
 @endphp
 <main id="{{ $seriesPageMainId ?? 'main' }}">
     <section class="island-hero indonesia-hero" aria-labelledby="{{ $slug }}-title">
@@ -14,7 +15,10 @@
             <span class="island-eyebrow">{{ $page->hero_eyebrow }}</span>
             <h1 id="{{ $slug }}-title">{{ $page->hero_headline }}<br><strong>{{ $page->hero_highlight }}</strong></h1>
             <p>{{ $page->hero_body }}</p>
-            <a class="island-cta" href="#itineraries">{{ $page->hero_cta_label }} <span aria-hidden="true">↓</span></a>
+            <div class="package-hero-actions">
+                <a class="island-cta" href="#itineraries">{{ $page->hero_cta_label }} <span aria-hidden="true">↓</span></a>
+                @include('partials.like-button', ['likeKey' => \App\Support\PackageLikes::key($page), 'likeLabel' => $page->hero_headline.' '.$page->hero_highlight, 'likeClass' => 'package-like--hero'])
+            </div>
         </div>
         <span class="island-hero-note">{{ $page->hero_note }}</span>
     </section>
@@ -71,7 +75,12 @@
                         @endforeach
                     </ol>
                     @endif
-                    <a class="aceh-itinerary-cta" href="{{ $itinerary['cta_url'] }}" target="_blank" rel="noreferrer">{{ $itinerary['cta_label'] }} <span aria-hidden="true">↗</span></a>
+                    <div class="aceh-itinerary-actions">
+                        @if ($itineraryBookingUrl = $packageBooking->bookNowUrl(option: 'itinerary-'.$loop->index))
+                            <a class="package-book-now" href="{{ $itineraryBookingUrl }}">Book now <span aria-hidden="true">→</span></a>
+                        @endif
+                        <a class="aceh-itinerary-cta" href="{{ $itinerary['cta_url'] }}" target="_blank" rel="noreferrer">{{ $itinerary['cta_label'] }} <span aria-hidden="true">↗</span></a>
+                    </div>
                 </article>
             @endforeach
         </div>

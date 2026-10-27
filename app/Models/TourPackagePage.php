@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\Storage;
 
 class TourPackagePage extends Model
@@ -14,9 +15,14 @@ class TourPackagePage extends Model
 
     public const KIND_PACKAGE = 'package';
 
+    public const PLACEHOLDER_IMAGE = 'images/placeholder-photo.svg';
+
+    public const PLACEHOLDER_GALLERY_SIZE = 5;
+
     protected $fillable = [
         'name',
         'kind',
+        'theme',
         'parent_slug',
         'smart_muslim_menu_id',
         'meta_title',
@@ -59,12 +65,23 @@ class TourPackagePage extends Model
             'slides' => 'array',
             'package_data' => 'array',
             'is_custom' => 'boolean',
+            'booking_open' => 'boolean',
         ];
     }
 
     public static function forSlug(string $slug): self
     {
         return static::query()->where('slug', $slug)->firstOrFail();
+    }
+
+    /**
+     * Bookings clients made online for this package.
+     *
+     * @return MorphMany<Booking, $this>
+     */
+    public function bookings(): MorphMany
+    {
+        return $this->morphMany(Booking::class, 'bookable');
     }
 
     public function isPackage(): bool
@@ -77,9 +94,22 @@ class TourPackagePage extends Model
         return $this->belongsTo(SmartMuslimMenu::class);
     }
 
+    /**
+     * Body class for the page's colour theme, e.g. "tour-theme-emerald"; unknown themes fall back to the default.
+     */
+    public function themeClass(): string
+    {
+        return 'tour-theme-'.(isset(self::THEMES[$this->theme]) ? $this->theme : self::DEFAULT_THEME);
+    }
+
     public function isSeries(): bool
     {
-        return ! $this->isPackage() && ! empty($this->package_data['series']);
+        return ! empty($this->package_data['series']);
+    }
+
+    public function hasItineraries(): bool
+    {
+        return $this->isPackage() && ! $this->isSeries();
     }
 
     public function sectionLabel(): string
@@ -141,6 +171,21 @@ class TourPackagePage extends Model
      *
      * @return array<string, mixed>
      */
+    public const DEFAULT_THEME = 'ocean';
+
+    /**
+     * Colour themes for custom pages: name, main colour and dark colour (used for the admin swatches).
+     *
+     * @var array<string, array{0: string, 1: string, 2: string}>
+     */
+    public const THEMES = [
+        'ocean' => ['Ocean Blue', '#2364d2', '#12305e'],
+        'emerald' => ['Emerald Green', '#0f7a5c', '#12304f'],
+        'sunset' => ['Sunset Orange', '#e0662a', '#4a2412'],
+        'royal' => ['Royal Purple', '#6d3fc4', '#2a1a52'],
+        'ruby' => ['Ruby Red', '#c62842', '#3d1220'],
+    ];
+
     public const TEMPLATES = [
         self::KIND_INTRODUCTION => [
             'slideshow' => ['Destination slideshow', 'Hero, introduction, three highlights, a sliding destination carousel and contact — like Thailand or Vietnam.'],
@@ -152,14 +197,30 @@ class TourPackagePage extends Model
         ],
     ];
 
-    public static function defaultTemplate(string $kind): string
+    /**
+     * Templates offered for a page kind. Pages inside a series page get the series template first, whatever their kind.
+     *
+     * @return array<string, array{0: string, 1: string}>
+     */
+    public static function templatesFor(string $kind, bool $isInsideSeries = false): array
     {
-        return array_key_first(self::TEMPLATES[$kind]);
+        $templates = self::TEMPLATES[$kind] ?? [];
+
+        if ($isInsideSeries) {
+            $templates = ['series' => self::TEMPLATES[self::KIND_INTRODUCTION]['series'], ...$templates];
+        }
+
+        return $templates;
+    }
+
+    public static function defaultTemplate(string $kind, bool $isInsideSeries = false): string
+    {
+        return array_key_first(self::templatesFor($kind, $isInsideSeries));
     }
 
     public static function starterContent(string $kind, string $name, ?string $template = null): array
     {
-        $template = array_key_exists((string) $template, self::TEMPLATES[$kind] ?? []) ? $template : self::defaultTemplate($kind);
+        $template = array_key_exists((string) $template, self::templatesFor($kind, true)) ? $template : self::defaultTemplate($kind);
         $whatsapp = 'https://wa.me/60165500590?text='.rawurlencode("Hi, I'd like to plan a private trip to {$name}.");
         $beach = 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=85';
         $coast = 'https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?auto=format&fit=crop&w=1000&q=85';
@@ -205,29 +266,32 @@ class TourPackagePage extends Model
             'contact_href' => $whatsapp,
         ];
 
+        if ($template === 'series') {
+            $content['meta_title'] = "{$name} | Smart Muslim by Roystar Travel & Tours";
+            $content['meta_description'] = "Join our {$name} group series departures.";
+            $content['hero_eyebrow'] = 'SERIES DEPARTURES';
+            $content['destinations_eyebrow'] = 'PICK YOUR DESTINATION';
+            $content['destinations_headline'] = "Where will {$name} take you?";
+            $content['destinations_body'] = 'Choose a destination to see its advantages and photos.';
+            $content['package_data'] = ['series' => [[
+                'name' => 'First destination',
+                'country' => 'Country',
+                'flag' => '',
+                'tagline' => 'A short tagline for this destination.',
+                'intro' => 'Describe this destination here.',
+                'advantages' => [
+                    ['icon' => '💰', 'title' => 'First advantage', 'body' => 'Describe the advantage here.'],
+                    ['icon' => '🧳', 'title' => 'Second advantage', 'body' => 'Describe the advantage here.'],
+                    ['icon' => '👥', 'title' => 'Third advantage', 'body' => 'Describe the advantage here.'],
+                    ['icon' => '🛡️', 'title' => 'Fourth advantage', 'body' => 'Describe the advantage here.'],
+                ],
+                'gallery' => [],
+            ]]];
+
+            return $content;
+        }
+
         if (! $isPackage) {
-            if ($template === 'series') {
-                $content['destinations_eyebrow'] = 'PICK YOUR DESTINATION';
-                $content['destinations_headline'] = "Where will {$name} take you?";
-                $content['destinations_body'] = 'Choose a destination to see its advantages and photos.';
-                $content['package_data'] = ['series' => [[
-                    'name' => 'First destination',
-                    'country' => 'Country',
-                    'flag' => '',
-                    'tagline' => 'A short tagline for this destination.',
-                    'intro' => 'Describe this destination here.',
-                    'advantages' => [
-                        ['icon' => '💰', 'title' => 'First advantage', 'body' => 'Describe the advantage here.'],
-                        ['icon' => '🧳', 'title' => 'Second advantage', 'body' => 'Describe the advantage here.'],
-                        ['icon' => '👥', 'title' => 'Third advantage', 'body' => 'Describe the advantage here.'],
-                        ['icon' => '🛡️', 'title' => 'Fourth advantage', 'body' => 'Describe the advantage here.'],
-                    ],
-                    'gallery' => [],
-                ]]];
-
-                return $content;
-            }
-
             $content['destinations_eyebrow'] = 'A FEW PLACES TO BEGIN';
             $content['destinations_headline'] = "Where will {$name} take you?";
             $content['destinations_body'] = 'Start with a place that speaks to you. We can help you explore the details.';

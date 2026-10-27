@@ -7,6 +7,7 @@
     <meta name="description" content="Manage the service cards on the Smart Muslim homepage.">
     <title>Our Services | Smart Holidays Admin</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>@view-transition { navigation: auto; }</style>
 </head>
 <body class="admin-page">
     <a class="skip-link" href="#homepage-services-main">Skip to Smart Muslim homepage services</a>

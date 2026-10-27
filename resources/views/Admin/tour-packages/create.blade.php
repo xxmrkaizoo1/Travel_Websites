@@ -6,6 +6,7 @@
     <meta name="theme-color" content="#f4f7fc">
     <title>Create new page | Smart Holidays Admin</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>@view-transition { navigation: auto; }</style>
 </head>
 <body class="admin-page">
     <div class="homepage-editor-shell">
@@ -24,7 +25,7 @@
         <main class="homepage-editor-main" id="tour-package-create-main">
             <section class="homepage-editor-heading">
                 <div>
-                    <span class="admin-eyebrow">{{ $smartMuslimMenu ? 'SMART MUSLIM TOUR · '.$smartMuslimMenu->label : 'TOUR PACKAGE (PRIVATE)' }}</span>
+                    <span class="admin-eyebrow">{{ $smartMuslimMenu ? 'SMART MUSLIM TOUR · '.$smartMuslimMenu->label : ($isInsideSeries ? 'TOUR PACKAGE (SERIES)' : 'TOUR PACKAGE (PRIVATE)') }}</span>
                     <h1>Create new page</h1>
                     <p>The page is published at <code>/tour/your-page-name</code> and added to the website navbar and this sidebar{{ $smartMuslimMenu ? ', inside '.$smartMuslimMenu->label : ($parent ? ', inside '.$parent->name : '') }}.</p>
                 </div>
@@ -83,11 +84,11 @@
                         <span class="create-step-number" aria-hidden="true">3</span>
                         <div class="create-step-body">
                             <h2>Pick a template</h2>
-                            @foreach (\App\Models\TourPackagePage::TEMPLATES as $templateKind => $templates)
+                            @foreach (array_keys(\App\Models\TourPackagePage::TEMPLATES) as $templateKind)
                                 <div class="create-template-grid" data-template-group="{{ $templateKind }}" @if ($selectedKind !== $templateKind) hidden @endif>
-                                    @foreach ($templates as $templateKey => [$templateName, $templateDescription])
+                                    @foreach (\App\Models\TourPackagePage::templatesFor($templateKind, $isInsideSeries) as $templateKey => [$templateName, $templateDescription])
                                         <label class="create-template-card">
-                                            <input type="radio" name="template" value="{{ $templateKey }}" @checked(old('template', \App\Models\TourPackagePage::defaultTemplate($templateKind)) === $templateKey) @disabled($selectedKind !== $templateKind)>
+                                            <input type="radio" name="template" value="{{ $templateKey }}" @checked(old('template', \App\Models\TourPackagePage::defaultTemplate($templateKind, $isInsideSeries)) === $templateKey) @disabled($selectedKind !== $templateKind)>
                                             @include('Admin.tour-packages.partials.template-preview', ['key' => $templateKey, 'name' => $templateName])
                                             <strong>{{ $templateName }}</strong>
                                             <small>{{ $templateDescription }}</small>
@@ -96,6 +97,15 @@
                                     @endforeach
                                 </div>
                             @endforeach
+                        </div>
+                    </div>
+
+                    <div class="create-step">
+                        <span class="create-step-number" aria-hidden="true">4</span>
+                        <div class="create-step-body">
+                            <h2>Choose a theme colour</h2>
+                            <p class="create-step-hint">Colours the banner, labels, buttons and contact box on the public page. You can change it later.</p>
+                            @include('Admin.tour-packages.partials.theme-picker', ['selectedTheme' => old('theme', \App\Models\TourPackagePage::DEFAULT_THEME)])
                         </div>
                     </div>
                 </section>

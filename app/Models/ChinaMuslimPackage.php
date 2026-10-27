@@ -5,6 +5,7 @@ namespace App\Models;
 use Database\Factories\ChinaMuslimPackageFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class ChinaMuslimPackage extends Model
 {
@@ -21,12 +22,15 @@ class ChinaMuslimPackage extends Model
         'is_hot',
         'link',
         'details',
+        'about_video_path',
+        'about_video_url',
     ];
 
     protected function casts(): array
     {
         return [
             'is_hot' => 'boolean',
+            'booking_open' => 'boolean',
             'price' => 'integer',
             'days' => 'integer',
             'nights' => 'integer',
@@ -36,6 +40,32 @@ class ChinaMuslimPackage extends Model
     public function imageUrl(): string
     {
         return '/storage/'.ltrim($this->image_path, '/');
+    }
+
+    /**
+     * The video for this card's "About this place" popup. An uploaded file wins over a YouTube link.
+     *
+     * @return array{type: 'file'|'youtube', src: string}|null
+     */
+    public function aboutVideo(): ?array
+    {
+        if (filled($this->about_video_path)) {
+            return ['type' => 'file', 'src' => '/storage/'.ltrim($this->about_video_path, '/')];
+        }
+
+        $youtubeId = self::youtubeId($this->about_video_url);
+
+        return $youtubeId === null ? null : ['type' => 'youtube', 'src' => "https://www.youtube-nocookie.com/embed/{$youtubeId}?rel=0"];
+    }
+
+    /**
+     * Reads the video ID from a youtube.com watch, shorts, embed or live link, or a youtu.be link.
+     */
+    public static function youtubeId(?string $url): ?string
+    {
+        $pattern = '~^https?://(?:www\.|m\.)?(?:youtube\.com/(?:watch\?(?:.*&)?v=|shorts/|embed/|live/)|youtu\.be/)([A-Za-z0-9_-]{11})(?:[?&#/].*)?$~';
+
+        return is_string($url) && preg_match($pattern, trim($url), $match) ? $match[1] : null;
     }
 
     /**
@@ -49,8 +79,15 @@ class ChinaMuslimPackage extends Model
         $headings = [
             'mandatory tours' => 'Mandatory Tours',
             'shopping stop' => 'Shopping Stop',
+            'shopping stops' => 'Shopping Stop',
+            'mandatory shopping stops' => 'Shopping Stop',
             'included' => 'Included',
+            'package includes' => 'Included',
             'excluded' => 'Excluded',
+            'package excludes' => 'Excluded',
+            'accommodation' => 'Accommodation',
+            'departure dates' => 'Departure Dates',
+            'optional tours' => 'Optional Tours',
             'durations' => 'Duration',
             'duration' => 'Duration',
             'language' => 'Language',
@@ -110,8 +147,11 @@ class ChinaMuslimPackage extends Model
     public static function sectionHeadings(): array
     {
         return [
+            'departures' => 'Departure Dates',
+            'accommodation' => 'Accommodation',
             'mandatory' => 'Mandatory Tours',
             'shopping' => 'Shopping Stop',
+            'optional' => 'Optional Tours',
             'included' => 'Included',
             'excluded' => 'Excluded',
             'duration' => 'Duration',
@@ -161,6 +201,16 @@ class ChinaMuslimPackage extends Model
         }
 
         return $lines === [] ? null : implode("\n", $lines);
+    }
+
+    /**
+     * Bookings clients made online for this package.
+     *
+     * @return MorphMany<Booking, $this>
+     */
+    public function bookings(): MorphMany
+    {
+        return $this->morphMany(Booking::class, 'bookable');
     }
 
     public function formattedPrice(): string

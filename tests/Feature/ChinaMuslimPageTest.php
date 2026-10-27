@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\ChinaMuslimPackage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -24,5 +25,20 @@ class ChinaMuslimPageTest extends TestCase
         $this->get(route('china-muslim'))
             ->assertOk()
             ->assertSee('href="'.route('china-muslim').'"', false);
+    }
+
+    public function test_packages_have_search_and_hot_and_duration_filters(): void
+    {
+        ChinaMuslimPackage::query()->delete();
+        ChinaMuslimPackage::factory()->create(['title' => 'Kunming Dali Muslim Tours', 'days' => 9, 'nights' => 7, 'is_hot' => true]);
+        ChinaMuslimPackage::factory()->create(['title' => 'Beijing Muslim Tours', 'days' => 7, 'nights' => 5, 'is_hot' => false]);
+
+        $this->get(route('china-muslim'))
+            ->assertOk()
+            ->assertSee('data-tour-search', false)
+            ->assertSeeInOrder(['data-tour-filter="">All', 'data-tour-filter="hot">🔥 Hot', 'data-tour-filter="7d">7 days', 'data-tour-filter="9d">9 days'], false)
+            ->assertSee('data-category="hot|9d" data-search="kunming dali muslim tours 9d7n"', false)
+            ->assertSee('data-category="7d" data-search="beijing muslim tours 7d5n"', false)
+            ->assertSee('2 packages');
     }
 }

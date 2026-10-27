@@ -43,6 +43,10 @@
                 <h2 id="client-login-title">Welcome back</h2>
                 <p class="admin-login-intro">Sign in to continue with your travel plans.</p>
 
+                @if (session('status'))
+                    <p class="client-auth-status" role="status">{{ session('status') }}</p>
+                @endif
+
                 @if ($errors->any())
                     <div class="admin-login-error" role="alert">
                         <span aria-hidden="true">!</span>
@@ -64,8 +68,9 @@
                         autofocus
                     >
 
-                    <div class="admin-password-label">
+                    <div class="admin-password-label client-password-label">
                         <label for="client-password">Password</label>
+                        <a class="client-forgot-link" href="{{ route('client.password.request') }}">Forgot password?</a>
                     </div>
                     <input
                         id="client-password"

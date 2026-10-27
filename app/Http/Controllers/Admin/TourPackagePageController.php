@@ -34,6 +34,7 @@ class TourPackagePageController extends Controller
 
         return view('Admin.tour-packages.create', [
             'parent' => $parent,
+            'isInsideSeries' => (bool) $parent?->isSeries(),
             'smartMuslimMenu' => null,
             'kind' => in_array($kind, [TourPackagePage::KIND_INTRODUCTION, TourPackagePage::KIND_PACKAGE], true)
                 ? $kind
@@ -47,6 +48,7 @@ class TourPackagePageController extends Controller
 
         return view('Admin.tour-packages.create', [
             'parent' => null,
+            'isInsideSeries' => false,
             'smartMuslimMenu' => $menu,
             'kind' => TourPackagePage::KIND_INTRODUCTION,
         ]);
@@ -80,14 +82,19 @@ class TourPackagePageController extends Controller
 
     private function storePage(Request $request, ?SmartMuslimMenu $menu = null): RedirectResponse
     {
+        $isInsideSeries = $menu === null && (bool) $this->findParent($request->input('parent_slug'))?->isSeries();
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:60'],
             'kind' => ['required', Rule::in([TourPackagePage::KIND_INTRODUCTION, TourPackagePage::KIND_PACKAGE])],
             'parent_slug' => $menu !== null
                 ? ['prohibited']
                 : ['nullable', 'string', $this->parentSlugRule()],
-            'template' => ['nullable', 'string', Rule::in(array_keys(TourPackagePage::TEMPLATES[$request->input('kind')] ?? []))],
+            'template' => ['nullable', 'string', Rule::in(array_keys(TourPackagePage::templatesFor((string) $request->input('kind'), $isInsideSeries)))],
+            'theme' => ['nullable', 'string', Rule::in(array_keys(TourPackagePage::THEMES))],
         ]);
+
+        $validated['template'] ??= TourPackagePage::defaultTemplate($validated['kind'], $isInsideSeries);
 
         $page = DB::transaction(function () use ($validated, $menu): TourPackagePage {
             $baseSlug = Str::slug($validated['name']) ?: 'tour';
@@ -98,10 +105,11 @@ class TourPackagePageController extends Controller
                 $slug = $baseSlug.'-'.$suffix++;
             }
 
-            $page = new TourPackagePage(TourPackagePage::starterContent($validated['kind'], trim($validated['name']), $validated['template'] ?? null));
+            $page = new TourPackagePage(TourPackagePage::starterContent($validated['kind'], trim($validated['name']), $validated['template']));
             $page->slug = $slug;
             $page->parent_slug = $validated['parent_slug'] ?? null;
             $page->smart_muslim_menu_id = $menu?->id;
+            $page->theme = $validated['theme'] ?? TourPackagePage::DEFAULT_THEME;
             $page->is_custom = true;
             $page->save();
 
@@ -155,7 +163,7 @@ class TourPackagePageController extends Controller
                 }
             }
 
-            if ($page->isPackage()) {
+            if ($page->hasItineraries()) {
                 $validated['package_data'] = $this->normalisePackage($request, $validated['package'], $newPaths);
                 $validated['package_data']['template'] = $page->package_data['template'] ?? TourPackagePage::defaultTemplate(TourPackagePage::KIND_PACKAGE);
                 unset($validated['package']);
@@ -551,6 +559,7 @@ class TourPackagePageController extends Controller
 
         if ($page->is_custom) {
             $rules['name'] = ['required', 'string', 'max:60'];
+            $rules['theme'] = ['sometimes', 'required', 'string', Rule::in(array_keys(TourPackagePage::THEMES))];
             $rules['parent_slug'] = $page->smart_muslim_menu_id !== null
                 ? ['prohibited']
                 : ['nullable', 'string', $this->parentSlugRule($page)];

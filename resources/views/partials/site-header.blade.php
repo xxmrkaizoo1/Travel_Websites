@@ -5,14 +5,83 @@
             <span class="brand-caption">ROYSTAR TRAVEL &amp; TOURS</span>
         </a>
 
-        <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" aria-label="Open navigation">
+        <button class="menu-toggle" data-tour="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" aria-label="Open navigation">
             <span></span><span></span><span></span>
         </button>
 
-        <nav class="primary-nav" id="primary-nav" aria-label="Main navigation">
-            <a href="{{ route('smart-muslim') }}#home">Group Tours</a>
-            <a href="{{ route('smart-muslim') }}#services-title">Ground Tours</a>
-            <a href="{{ route('smart-muslim') }}#service-company">Domestic Tour</a>
+        <nav class="primary-nav" id="primary-nav" aria-label="Main navigation" data-tour="nav">
+            <div class="nav-item has-dropdown">
+                <div class="muslim-nav-control">
+                    <a class="muslim-nav{{ request()->routeIs('group-tours', 'group-tours.*') ? ' is-current' : '' }}" href="{{ route('group-tours') }}">Group Tours</a>
+                    <button class="nav-trigger muslim-nav-toggle" type="button" aria-label="Toggle Group Tours menu" aria-expanded="false" aria-controls="group-tours-menu"><span class="nav-chevron" aria-hidden="true"></span></button>
+                </div>
+                <div class="dropdown-menu" id="group-tours-menu">
+                    @if ($groupTourDestinations->isEmpty())
+                        <a class="{{ request()->routeIs('group-tours') ? 'is-current' : '' }}" href="{{ route('group-tours') }}" @if (request()->routeIs('group-tours')) aria-current="page" @endif>Tour Destinations</a>
+                    @else
+                        <div class="nav-subitem has-submenu destination-nav">
+                            <a class="destination-link{{ request()->routeIs('group-tours') ? ' is-current' : '' }}" href="{{ route('group-tours') }}" @if (request()->routeIs('group-tours')) aria-current="page" @endif>Tour Destinations</a>
+                            <button class="submenu-trigger destination-toggle" type="button" aria-label="Show group tour destinations" aria-expanded="false" aria-controls="group-tour-destinations-menu">
+                                <span class="submenu-arrow" aria-hidden="true">›</span>
+                            </button>
+                            <div class="submenu-menu" id="group-tour-destinations-menu">
+                                @foreach ($groupTourDestinations as $groupTourDestination)
+                                    @php($isCurrentDestination = request()->routeIs('group-tours.destination') && request()->route('destination')?->is($groupTourDestination))
+                                    @php($destinationRegions = $groupTourDestination->regionsInUse())
+                                    @if ($destinationRegions === [])
+                                        <a class="{{ $isCurrentDestination ? 'is-current' : '' }}" href="{{ route('group-tours.destination', $groupTourDestination) }}">{{ $groupTourDestination->name }}</a>
+                                    @else
+                                        <div class="nav-subitem has-submenu destination-nav">
+                                            <a class="destination-link{{ $isCurrentDestination ? ' is-current' : '' }}" href="{{ route('group-tours.destination', $groupTourDestination) }}">{{ $groupTourDestination->name }}</a>
+                                            <button class="submenu-trigger destination-toggle" type="button" aria-label="Show {{ $groupTourDestination->name }} regions" aria-expanded="false" aria-controls="group-tour-{{ $groupTourDestination->slug }}-menu">
+                                                <span class="submenu-arrow" aria-hidden="true">›</span>
+                                            </button>
+                                            <div class="submenu-menu" id="group-tour-{{ $groupTourDestination->slug }}-menu">
+                                                @foreach ($destinationRegions as $regionKey => $regionLabel)
+                                                    <a href="{{ route('group-tours.destination', $groupTourDestination) }}#region-{{ $regionKey }}">{{ $regionLabel }}</a>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    @endif
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+                    <a class="{{ request()->routeIs('group-tours.booking-conditions') ? 'is-current' : '' }}" href="{{ route('group-tours.booking-conditions') }}" @if (request()->routeIs('group-tours.booking-conditions')) aria-current="page" @endif>Booking Conditions</a>
+                </div>
+            </div>
+            <div class="nav-item has-dropdown">
+                <div class="muslim-nav-control">
+                    <a class="muslim-nav{{ request()->routeIs('ground-tours') ? ' is-current' : '' }}" href="{{ route('ground-tours') }}">Ground Destination</a>
+                    <button class="nav-trigger muslim-nav-toggle" type="button" aria-label="Toggle Ground Destination menu" aria-expanded="false" aria-controls="ground-tours-menu"><span class="nav-chevron" aria-hidden="true"></span></button>
+                </div>
+                <div class="dropdown-menu" id="ground-tours-menu">
+                    @if (blank($groundToursPage?->tours))
+                        <a class="{{ request()->routeIs('ground-tours') ? 'is-current' : '' }}" href="{{ route('ground-tours') }}" @if (request()->routeIs('ground-tours')) aria-current="page" @endif>Ground Destinations</a>
+                    @else
+                        <div class="nav-subitem has-submenu destination-nav">
+                            <a class="destination-link{{ request()->routeIs('ground-tours') ? ' is-current' : '' }}" href="{{ route('ground-tours') }}" @if (request()->routeIs('ground-tours')) aria-current="page" @endif>Ground Destinations</a>
+                            <button class="submenu-trigger destination-toggle" type="button" aria-label="Show ground tour destinations" aria-expanded="false" aria-controls="ground-tour-destinations-menu">
+                                <span class="submenu-arrow" aria-hidden="true">›</span>
+                            </button>
+                            <div class="submenu-menu" id="ground-tour-destinations-menu">
+                                @foreach ($groundToursPage->tours as $groundTour)
+                                    <a href="{{ $groundToursPage->tourMenuUrl($groundTour) }}">{{ $groundTour['name'] }}</a>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            </div>
+            <div class="nav-item has-dropdown">
+                <div class="muslim-nav-control">
+                    <a class="muslim-nav{{ request()->routeIs('domestic-tours') ? ' is-current' : '' }}" href="{{ route('domestic-tours') }}">Domestic Tour</a>
+                    <button class="nav-trigger muslim-nav-toggle" type="button" aria-label="Toggle Domestic Tour menu" aria-expanded="false" aria-controls="domestic-tours-menu"><span class="nav-chevron" aria-hidden="true"></span></button>
+                </div>
+                <div class="dropdown-menu" id="domestic-tours-menu">
+                    <a class="{{ request()->routeIs('domestic-tours') ? 'is-current' : '' }}" href="{{ route('domestic-tours') }}" @if (request()->routeIs('domestic-tours')) aria-current="page" @endif>Malaysia</a>
+                </div>
+            </div>
             <div class="nav-item has-dropdown">
                 <div class="muslim-nav-control">
                     <a class="muslim-nav{{ request()->routeIs('smart-muslim', 'china-muslim', 'tour-package-private', 'island-honeymoon', 'indonesia', 'indonesia.aceh', 'bali', 'thailand', 'vietnam', 'philippines', 'tour-package.show') ? ' is-current' : '' }}" href="{{ route('smart-muslim') }}">Smart Muslim Tour</a>
@@ -110,6 +179,7 @@
                     @if ($customTourPages->contains('slug', 'series-departures-2026'))
                         @php($seriesNavEntries = $customTourPagesByParent->get('series-departures-2026', collect())->map(fn ($seriesPage) => ['slug' => $seriesPage->slug, 'label' => $seriesPage->name])->values())
                         @php($hasSeriesPageSlides = $seriesNavEntries->isNotEmpty())
+                        @php($seriesIntroductionName = $customTourPages->firstWhere('slug', 'series-departures-2026')?->name ?? 'Series Departures 2026')
                         <div class="nav-subitem has-submenu">
                             <button class="submenu-trigger" type="button" aria-expanded="false" aria-controls="series-tour-menu">
                                 Tour Package (Series)
@@ -117,9 +187,9 @@
                             </button>
                             <div class="submenu-menu" id="series-tour-menu">
                                 @if ($hasSeriesPageSlides)
-                                    <a class="series-nav-page" href="{{ route('tour-package.show', 'series-departures-2026') }}#page-series-departures-2026" data-series-page-target="series-departures-2026" aria-current="page">Introduction</a>
+                                    <a class="series-nav-page" href="{{ route('tour-package.show', 'series-departures-2026') }}#page-series-departures-2026" data-series-page-target="series-departures-2026" aria-current="page">{{ $seriesIntroductionName }}</a>
                                 @else
-                                    <a class="{{ request()->is('tour/series-departures-2026') ? 'is-current' : '' }}" href="{{ route('tour-package.show', 'series-departures-2026') }}">Introduction</a>
+                                    <a class="{{ request()->is('tour/series-departures-2026') ? 'is-current' : '' }}" href="{{ route('tour-package.show', 'series-departures-2026') }}">{{ $seriesIntroductionName }}</a>
                                 @endif
                                 @foreach ($seriesNavEntries->take(4) as $seriesNavEntry)
                                     <a class="series-nav-page" href="{{ route('tour-package.show', 'series-departures-2026') }}#page-{{ $seriesNavEntry['slug'] }}" data-series-page-target="{{ $seriesNavEntry['slug'] }}">{{ $seriesNavEntry['label'] }}</a>
@@ -160,21 +230,21 @@
                     <a href="{{ route('gallery') }}">Our Gallery</a>
                 </div>
             </div>
-            <a href="mailto:tour@roystartravel.com.my">Ticketing</a>
-            <a href="#contact">Contact Us</a>
+            <a class="{{ request()->routeIs('ticketing') ? 'is-current' : '' }}" href="{{ route('ticketing') }}" @if (request()->routeIs('ticketing')) aria-current="page" @endif>Ticketing</a>
+            <a class="{{ request()->routeIs('contact') ? 'is-current' : '' }}" href="{{ route('contact') }}" @if (request()->routeIs('contact')) aria-current="page" @endif>Contact Us</a>
         </nav>
 
         <div class="header-actions">
             @auth
                 @unless (auth()->user()->is_admin)
-                    <button class="profile-button" type="button" data-profile-open aria-haspopup="dialog" aria-label="My profile" title="My profile">
+                    <button class="profile-button" type="button" data-tour="account" data-profile-open aria-haspopup="dialog" aria-label="My profile" title="My profile">
                         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
                             <path d="M20 21v-1.5a4.5 4.5 0 0 0-4.5-4.5h-7A4.5 4.5 0 0 0 4 19.5V21M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </button>
                 @endunless
             @endauth
-            <a class="whatsapp-button" href="https://wa.me/60165500590" target="_blank" rel="noreferrer"><span class="whatsapp-icon" aria-hidden="true">◔</span> WhatsApp Us</a>
+            <a class="whatsapp-button" data-tour="whatsapp" href="https://wa.me/60165500590" target="_blank" rel="noreferrer"><span class="whatsapp-icon" aria-hidden="true">◔</span> WhatsApp Us</a>
             <a class="book-button" href="#contact">Book Now</a>
         </div>
     </div>
@@ -189,6 +259,22 @@
     </a>
 @else
     @unless (auth()->user()->is_admin)
+        @php($tourPage = collect(['home' => 'home', 'dashboard' => 'client.dashboard', 'profile' => 'client.profile.*', 'bookings' => 'client.bookings.index', 'requests' => 'client.enquiries.*'])->search(fn (string $routePattern): bool => request()->routeIs($routePattern)) ?: 'other')
+        {{-- Settings for the client guided tour (resources/js/app.js); it starts by itself on the homepage after a client's first sign-in. --}}
+        <div hidden
+            data-portal-tour
+            data-tour-page="{{ $tourPage }}"
+            data-tour-autostart="{{ $tourPage === 'home' && ! auth()->user()->hasSeenPortalTour() ? 'true' : 'false' }}"
+            data-tour-complete-url="{{ route('client.tour.complete') }}"
+            data-tour-token="{{ csrf_token() }}"
+            data-tour-pages="{{ json_encode([
+                'home' => route('home'),
+                'dashboard' => route('client.dashboard'),
+                'profile' => route('client.profile.edit'),
+                'bookings' => route('client.bookings.index'),
+                'requests' => route('client.enquiries.index'),
+            ]) }}"
+            data-tour-name="{{ \Illuminate\Support\Str::of(auth()->user()->name)->explode(' ')->first() }}"></div>
         <dialog class="profile-dialog" id="profile-dialog" aria-labelledby="profile-dialog-title">
             <div class="profile-cover">
                 <button class="profile-dialog-close" type="button" data-profile-close aria-label="Close profile">×</button>
@@ -214,6 +300,24 @@
                         <span><dt>Member since</dt><dd>{{ auth()->user()->created_at?->format('d M Y') }}</dd></span>
                     </div>
                 </dl>
+                <section class="profile-bookings" aria-labelledby="profile-bookings-title">
+                    <h3 id="profile-bookings-title">My bookings</h3>
+                    @forelse ($clientBookings as $clientBooking)
+                        <article class="profile-booking">
+                            <div>
+                                <strong>{{ $clientBooking->destination }}</strong>
+                                <small>{{ $clientBooking->reference }} · {{ $clientBooking->travel_date->format('d M Y') }} · {{ $clientBooking->guestsLabel() }}</small>
+                            </div>
+                            <span class="profile-booking-status is-{{ $clientBooking->status->value }}">{{ $clientBooking->status->label() }}</span>
+                        </article>
+                    @empty
+                        <p class="profile-bookings-empty">No bookings yet. When our team books a trip for you, it will appear here.</p>
+                    @endforelse
+                    @if ($clientBookings->isNotEmpty())
+                        <a class="profile-bookings-link" href="{{ route('client.bookings.index') }}">See all my bookings →</a>
+                    @endif
+                </section>
+                <a class="profile-account-button" href="{{ route('client.dashboard') }}">Open my account</a>
                 <form method="POST" action="{{ route('client.logout') }}">
                     @csrf
                     <button class="profile-signout" type="submit">Sign out</button>

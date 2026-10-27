@@ -1,16 +1,18 @@
-@component('mail::message')
-# Verify your email
+@extends('emails.layouts.brand')
 
-Hello {{ $clientName }},
+@section('preheader', "Your Smart Holidays verification code is {$code}. It expires in 10 minutes.")
+@section('eyebrow', 'VERIFY YOUR EMAIL')
+@section('title', 'Welcome aboard!')
 
-Use this one-time code to verify your Smart Holidays client account:
+@section('content')
+    <p style="margin: 16px 0 0; color: #3d4f6a; font-size: 15px; line-height: 1.7;">Hello {{ $clientName }},</p>
+    <p style="margin: 10px 0 0; color: #3d4f6a; font-size: 15px; line-height: 1.7;">
+        Thank you for creating a Smart Holidays client account. Enter this code on the verification page to finish setting up your account.
+    </p>
 
-@component('mail::panel')
-<div style="font-size: 30px; font-weight: 700; letter-spacing: 8px; text-align: center;">{{ $code }}</div>
-@endcomponent
+    @include('emails.partials.otp-code', ['code' => $code])
 
-This code expires in **10 minutes**. If you did not request this, you can ignore this email.
-
-Thanks,<br>
-{{ config('app.name', 'Smart Holidays') }}
-@endcomponent
+    <p style="margin: 18px 0 0; color: #66748a; font-size: 13px; line-height: 1.6;">
+        Didn’t sign up? You can safely ignore this email and no account will be created.
+    </p>
+@endsection

@@ -7,6 +7,7 @@
     <meta name="description" content="Manage {{ $page->name }} private tour page content.">
     <title>{{ $page->name }} | Smart Holidays Admin</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>@view-transition { navigation: auto; }</style>
 </head>
 <body class="admin-page">
     <a class="skip-link" href="#tour-package-admin-main">Skip to {{ $page->name }} content</a>
@@ -42,9 +43,9 @@
                 <div>
                     <span class="admin-eyebrow">{{ strtoupper($page->sectionLabel()) }}</span>
                     <h1>{{ $page->name }}</h1>
-                    <p>{{ $page->isPackage() ? 'Update the page text, itineraries, gallery, inclusions and hotels.' : ($page->isSeries() ? 'Update the page text, destinations, advantages, flags and photos.' : 'Update the page text, images and destination slideshow.') }}</p>
+                    <p>{{ $page->hasItineraries() ? 'Update the page text, itineraries, gallery, inclusions and hotels.' : ($page->isSeries() ? 'Update the page text, destinations, advantages, flags and photos.' : 'Update the page text, images and destination slideshow.') }}</p>
                 </div>
-                <span class="homepage-editor-count">{{ $page->isPackage() ? 'Package page' : ($page->isSeries() ? count($page->package_data['series']).' destinations' : count($slides).' slides') }}</span>
+                <span class="homepage-editor-count">{{ $page->hasItineraries() ? 'Package page' : ($page->isSeries() ? count($page->package_data['series']).' destinations' : count($slides).' slides') }}</span>
             </section>
 
             @if (session('status'))
@@ -61,6 +62,8 @@
                     </ul>
                 </div>
             @endif
+
+            @include('Admin.partials.booking-switch', ['package' => $page])
 
             <form class="homepage-campaign-form" data-form-slideshow method="POST" action="{{ route('admin.tour-packages.update', $page) }}" enctype="multipart/form-data">
                 @csrf
@@ -83,6 +86,10 @@
                                     </select>
                                 </label>
                             @endunless
+                            <div class="homepage-form-field homepage-form-field-wide">
+                                <span>Theme colour <small class="homepage-field-hint">Colours the banner, labels, buttons and contact box on the public page</small></span>
+                                @include('Admin.tour-packages.partials.theme-picker', ['selectedTheme' => old('theme', $page->theme ?? \App\Models\TourPackagePage::DEFAULT_THEME)])
+                            </div>
                         </div>
                     </section>
                 @endif
@@ -151,7 +158,7 @@
                     </div>
                 </section>
 
-                @if ($page->isPackage())
+                @if ($page->hasItineraries())
                     @include('Admin.tour-packages.partials.package-fields')
                 @elseif ($page->isSeries())
                     @include('Admin.tour-packages.partials.series-fields')
@@ -171,7 +178,7 @@
                         $slideValues = array_values(array_filter(old('slides', $slides), 'is_array'));
                         $slideValues = $slideValues ?: [['image' => '', 'alt' => '', 'eyebrow' => '', 'title' => '', 'body' => '', 'link_label' => '', 'link_url' => '']];
                     @endphp
-                    <div class="island-gallery-editor" data-gallery-editor data-max-slides="{{ $maxSlides }}" data-field-prefix="slides">
+                    <div class="island-gallery-editor" data-gallery-editor data-max-slides="{{ $maxSlides }}" data-field-prefix="slides" data-gallery-paged="title" data-gallery-columns>
                         <div class="island-destination-fields-grid" data-gallery-slides>
                             @foreach ($slideValues as $index => $slide)
                                 <fieldset class="island-entry-panel" data-gallery-slide>
@@ -216,7 +223,7 @@
 
                 <section class="homepage-form-panel">
                     <div class="homepage-form-panel-heading">
-                        <span class="homepage-form-icon" aria-hidden="true">{{ $page->isPackage() ? '08' : '05' }}</span>
+                        <span class="homepage-form-icon" aria-hidden="true">{{ $page->hasItineraries() ? '08' : '05' }}</span>
                         <div><h2>Contact &amp; page details</h2><p>The enquiry section and the page's browser title and description.</p></div>
                     </div>
                     <div class="homepage-form-grid">

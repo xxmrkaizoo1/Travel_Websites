@@ -7,6 +7,7 @@
     <meta name="description" content="Manage China Muslim series departure cards.">
     <title>China Muslim | Smart Holidays Admin</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>@view-transition { navigation: auto; }</style>
 </head>
 <body class="admin-page">
     <a class="skip-link" href="#china-muslim-admin">Skip to China Muslim cards</a>
@@ -96,6 +97,7 @@
                                 </div>
                             </div>
                             <div class="china-admin-item-actions">
+                                @include('Admin.partials.booking-switch', ['package' => $package, 'compact' => true])
                                 <a class="admin-primary-button" href="{{ route('admin.china-muslim.edit', $package) }}">Edit</a>
                                 <form method="POST" action="{{ route('admin.china-muslim.destroy', $package) }}" onsubmit="return confirm('Delete this China Muslim card?')">
                                     @csrf
@@ -107,6 +109,45 @@
                     @endforeach
                 </div>
                 <p class="china-muslim-empty" data-china-no-results hidden>No cards match your search.</p>
+            @endif
+
+            @if ($about)
+                <form class="homepage-form-panel china-travellers-editor" method="POST" action="{{ route('admin.china-muslim.travellers') }}" enctype="multipart/form-data">
+                    @csrf
+                    @method('PUT')
+                    <div class="homepage-form-panel-heading">
+                        <span class="homepage-form-icon" aria-hidden="true">★</span>
+                        <div>
+                            <h2>Traveller photos slideshow</h2>
+                            <p>Group photos from past trips, shown full width below the packages on the China Muslim page. Edit captions, tick photos to remove, or upload new ones.</p>
+                        </div>
+                    </div>
+
+                    @if (count($about->traveller_photos ?? []) > 0)
+                        <div class="china-travellers-grid">
+                            @foreach ($about->traveller_photos as $index => $photo)
+                                <div class="china-travellers-item">
+                                    <img src="{{ $about->photoUrl($photo['image']) }}" alt="" loading="lazy">
+                                    <input type="hidden" name="photos[{{ $index }}][image]" value="{{ $photo['image'] }}">
+                                    <label class="homepage-form-field"><span>Caption</span><input name="photos[{{ $index }}][caption]" value="{{ old("photos.$index.caption", $photo['caption'] ?? '') }}" maxlength="80"></label>
+                                    <label class="china-travellers-remove"><input type="checkbox" name="photos[{{ $index }}][remove]" value="1"> Remove</label>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <p class="homepage-field-hint">No photos yet. The slideshow appears on the website once you add some.</p>
+                    @endif
+
+                    <label class="homepage-form-field china-travellers-upload">
+                        <span>Add photos <small class="homepage-field-hint">JPG, PNG or WebP, up to 5 MB each. Landscape photos at least 1200px wide look best.</small></span>
+                        <input type="file" name="new_photos[]" multiple accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                    </label>
+
+                    <div class="china-about-editor-actions">
+                        <a class="admin-secondary-button" href="{{ route('china-muslim') }}#china-moments-title" target="_blank" rel="noreferrer">View on website ↗</a>
+                        <button class="admin-primary-button" type="submit">Save photos <span aria-hidden="true">→</span></button>
+                    </div>
+                </form>
             @endif
         </main>
 

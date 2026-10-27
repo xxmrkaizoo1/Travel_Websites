@@ -7,76 +7,79 @@
     <meta name="description" content="How Smart Muslim by Roystar Travel &amp; Tours collects, uses and protects your personal data.">
     <title>Privacy Policy | Smart Muslim by Roystar Travel &amp; Tours</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <style>
-        .privacy-hero { padding: 5rem 1.5rem 3.5rem; text-align: center; color: #fff; background: linear-gradient(135deg, #0b2a4a 0%, #1e4fa8 60%, #3e5dd2 100%); }
-        .privacy-hero span { display: inline-block; margin-bottom: 1rem; padding: .4rem .9rem; border-radius: 999px; background: rgba(255, 255, 255, .14); font-size: .78rem; font-weight: 700; letter-spacing: .22em; }
-        .privacy-hero h1 { margin: 0 0 .75rem; font-size: clamp(2rem, 4.5vw, 3.2rem); font-weight: 800; }
-        .privacy-hero p { max-width: 560px; margin: 0 auto; color: rgba(255, 255, 255, .85); line-height: 1.6; }
-        .privacy-wrap { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 2.5rem; max-width: 1100px; margin: 0 auto; padding: 3.5rem 1.5rem 5rem; }
-        .privacy-toc { position: sticky; top: 100px; align-self: start; padding: 1.25rem; border: 1px solid #e6eaf2; border-radius: 16px; background: #f6f8fb; }
-        .privacy-toc h2 { margin: 0 0 .75rem; font-size: .8rem; letter-spacing: .18em; color: #3e5dd2; }
-        .privacy-toc ol { display: grid; gap: .35rem; margin: 0; padding: 0; list-style: none; }
-        .privacy-toc a { display: block; padding: .4rem .6rem; border-radius: 8px; color: #3f536b; font-size: .9rem; line-height: 1.35; text-decoration: none; }
-        .privacy-toc a:hover { background: #e4ecfb; color: #1e4fa8; }
-        .privacy-body { min-width: 0; color: #3f4a5c; line-height: 1.75; }
-        .privacy-updated { margin: 0 0 2rem; color: #7a8699; font-size: .9rem; }
-        .privacy-body section { margin-bottom: 2.25rem; padding-bottom: 2rem; border-bottom: 1px solid #edf0f6; scroll-margin-top: 100px; }
-        .privacy-body h2 { margin: 0 0 .75rem; font-size: 1.35rem; color: #14213d; }
-        .privacy-body p { margin: 0 0 .85rem; }
-        .privacy-body ul { margin: 0 0 .85rem; padding-left: 1.25rem; }
-        .privacy-body li { margin-bottom: .4rem; }
-        .privacy-body a { color: #1e4fa8; overflow-wrap: anywhere; }
-        .privacy-contact { padding: 1.5rem; border-radius: 16px; background: #f6f8fb; }
-        @media (max-width: 860px) { .privacy-wrap { grid-template-columns: 1fr; padding-top: 2rem; } .privacy-toc { position: static; } }
-    </style>
 </head>
-<body class="island-page">
+<body class="island-page privacy-page">
     <a class="skip-link" href="#main">Skip to content</a>
 
     @include('partials.site-header')
 
     <main id="main">
-        <header class="privacy-hero">
-            <span>LEGAL</span>
-            <h1>Privacy Policy</h1>
-            <p>How Roystar Travel &amp; Tours Sdn Bhd (Smart Muslim / Smart Holidays) collects, uses and protects your personal data.</p>
+        <header class="pp-hero">
+            <div class="pp-hero__inner">
+                <span class="pp-hero__badge">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.6 8 11 4.6-1.4 8-6 8-11V5l-8-3Zm-1.2 14.2-3.5-3.5 1.4-1.4 2.1 2.1 4.6-4.6 1.4 1.4-6 6Z"/></svg>
+                    LEGAL
+                </span>
+                <h1>Privacy Policy</h1>
+                <p>How Roystar Travel &amp; Tours Sdn Bhd (Smart Muslim / Smart Holidays) collects, uses and protects your personal data.</p>
+                <ul class="pp-hero__meta">
+                    <li>Last updated: <time datetime="2026-10-26">26 October 2026</time></li>
+                    <li>Malaysia PDPA 2010</li>
+                    <li>About 3 minutes to read</li>
+                </ul>
+            </div>
         </header>
 
-        <div class="privacy-wrap">
-            <nav class="privacy-toc" aria-label="Privacy policy sections">
-                <h2>ON THIS PAGE</h2>
+        <section class="pp-glance" aria-labelledby="pp-glance-title">
+            <h2 class="visually-hidden" id="pp-glance-title">At a glance</h2>
+            <article>
+                <span aria-hidden="true">🔒</span>
+                <h3>We never sell your data</h3>
+                <p>Your details are shared only with the suppliers needed to deliver your trip.</p>
+            </article>
+            <article>
+                <span aria-hidden="true">🧳</span>
+                <h3>Used to plan your trip</h3>
+                <p>We use your information to quote, book and look after your journey.</p>
+            </article>
+            <article>
+                <span aria-hidden="true">✋</span>
+                <h3>You stay in control</h3>
+                <p>Ask us any time to see, correct or stop using your personal data.</p>
+            </article>
+        </section>
+
+        <div class="pp-layout">
+            <nav class="pp-toc" aria-label="Privacy policy sections" data-privacy-toc>
+                <h2>On this page</h2>
                 <ol>
-                    <li><a href="#collect">Information we collect</a></li>
-                    <li><a href="#use">How we use it</a></li>
-                    <li><a href="#share">Sharing your data</a></li>
-                    <li><a href="#cookies">Cookies</a></li>
-                    <li><a href="#security">Security &amp; retention</a></li>
-                    <li><a href="#rights">Your rights</a></li>
-                    <li><a href="#changes">Changes to this policy</a></li>
-                    <li><a href="#contact">Contact us</a></li>
+                    <li><a href="#collect"><span>01</span> Information we collect</a></li>
+                    <li><a href="#use"><span>02</span> How we use it</a></li>
+                    <li><a href="#share"><span>03</span> Sharing your data</a></li>
+                    <li><a href="#cookies"><span>04</span> Cookies</a></li>
+                    <li><a href="#security"><span>05</span> Security &amp; retention</a></li>
+                    <li><a href="#rights"><span>06</span> Your rights</a></li>
+                    <li><a href="#changes"><span>07</span> Changes to this policy</a></li>
+                    <li><a href="#contact"><span>08</span> Contact us</a></li>
                 </ol>
             </nav>
 
-            <article class="privacy-body">
-                <p class="privacy-updated">Last updated: {{ date('j F Y') }}</p>
+            <article class="pp-body">
+                <p class="pp-intro">Roystar Travel &amp; Tours Sdn Bhd (“we”, “us”) operates Smart Muslim and Smart Holidays. We respect your privacy and handle your personal data in line with Malaysia’s Personal Data Protection Act 2010 (PDPA). This policy explains what we collect when you use our website or enquire about our tours, and how we look after it.</p>
 
-                <section id="intro">
-                    <p>Roystar Travel &amp; Tours Sdn Bhd (“we”, “us”) operates Smart Muslim and Smart Holidays. We respect your privacy and handle your personal data in line with Malaysia’s Personal Data Protection Act 2010 (PDPA). This policy explains what we collect when you use our website or enquire about our tours, and how we look after it.</p>
-                </section>
-
-                <section id="collect">
-                    <h2>1. Information we collect</h2>
-                    <ul>
-                        <li><strong>Contact details</strong> such as your name, phone number, email address and company name when you contact us or request a quotation.</li>
-                        <li><strong>Travel details</strong> such as passport information, travel dates, group size, dietary needs and special requests, when you book or ask us to plan a trip.</li>
-                        <li><strong>Account details</strong> if you sign in, including your name, email address and an encrypted password.</li>
-                        <li><strong>Technical data</strong> such as your browser, device and pages visited, collected through cookies and server logs.</li>
+                <section class="pp-section" id="collect">
+                    <header><span class="pp-section__number" aria-hidden="true">01</span><h2>Information we collect</h2></header>
+                    <ul class="pp-cards">
+                        <li><span aria-hidden="true">👤</span><div><strong>Contact details</strong><p>Your name, phone number, email address and company name when you contact us or request a quotation.</p></div></li>
+                        <li><span aria-hidden="true">✈️</span><div><strong>Travel details</strong><p>Passport information, travel dates, group size, dietary needs and special requests, when you book or ask us to plan a trip.</p></div></li>
+                        <li><span aria-hidden="true">🔑</span><div><strong>Account details</strong><p>If you sign in, your name, email address and an encrypted password.</p></div></li>
+                        <li><span aria-hidden="true">💻</span><div><strong>Technical data</strong><p>Your browser, device and pages visited, collected through cookies and server logs.</p></div></li>
                     </ul>
                 </section>
 
-                <section id="use">
-                    <h2>2. How we use your information</h2>
-                    <ul>
+                <section class="pp-section" id="use">
+                    <header><span class="pp-section__number" aria-hidden="true">02</span><h2>How we use your information</h2></header>
+                    <ul class="pp-checks">
                         <li>To reply to enquiries and prepare quotations and itineraries.</li>
                         <li>To make and manage bookings with airlines, hotels, transport and other suppliers.</li>
                         <li>To send booking confirmations, travel updates and important service notices.</li>
@@ -85,39 +88,52 @@
                     </ul>
                 </section>
 
-                <section id="share">
-                    <h2>3. Sharing your data</h2>
-                    <p>We do not sell your personal data. We share it only when needed to deliver your trip, for example with airlines, hotels, tour guides, visa and insurance providers, or when the law requires it. These parties are expected to protect your data and use it only for the purpose we shared it.</p>
+                <section class="pp-section" id="share">
+                    <header><span class="pp-section__number" aria-hidden="true">03</span><h2>Sharing your data</h2></header>
+                    <p class="pp-callout"><strong>We do not sell your personal data.</strong></p>
+                    <p>We share it only when needed to deliver your trip, for example with airlines, hotels, tour guides, visa and insurance providers, or when the law requires it. These parties are expected to protect your data and use it only for the purpose we shared it.</p>
                     <p>Some suppliers are located outside Malaysia, so your data may be transferred overseas for your booking.</p>
                 </section>
 
-                <section id="cookies">
-                    <h2>4. Cookies</h2>
+                <section class="pp-section" id="cookies">
+                    <header><span class="pp-section__number" aria-hidden="true">04</span><h2>Cookies</h2></header>
                     <p>Our website uses cookies to keep you signed in, remember preferences and understand how the site is used. You can block or delete cookies in your browser settings, but some parts of the site may not work properly without them.</p>
                 </section>
 
-                <section id="security">
-                    <h2>5. Security and retention</h2>
+                <section class="pp-section" id="security">
+                    <header><span class="pp-section__number" aria-hidden="true">05</span><h2>Security and retention</h2></header>
                     <p>We use reasonable technical and organisational measures to protect your data against loss, misuse and unauthorised access. We keep personal data only as long as needed for the purposes above or as required by law, then delete or anonymise it.</p>
                 </section>
 
-                <section id="rights">
-                    <h2>6. Your rights</h2>
+                <section class="pp-section" id="rights">
+                    <header><span class="pp-section__number" aria-hidden="true">06</span><h2>Your rights</h2></header>
+                    <ul class="pp-rights">
+                        <li>Access your data</li>
+                        <li>Correct your data</li>
+                        <li>Withdraw consent</li>
+                        <li>Stop marketing</li>
+                    </ul>
                     <p>You may ask to access or correct the personal data we hold about you, withdraw your consent, or ask us to stop using your data for marketing. Contact us using the details below and we will respond as soon as reasonably possible.</p>
                 </section>
 
-                <section id="changes">
-                    <h2>7. Changes to this policy</h2>
+                <section class="pp-section" id="changes">
+                    <header><span class="pp-section__number" aria-hidden="true">07</span><h2>Changes to this policy</h2></header>
                     <p>We may update this policy from time to time. The latest version is always published on this page with its date.</p>
                 </section>
 
-                <section id="contact">
-                    <h2>8. Contact us</h2>
-                    <div class="privacy-contact">
-                        <p><strong>Roystar Travel &amp; Tours Sdn Bhd</strong><br>
-                            No.16A &amp; 16B, Lorong Brunei 3, Off Jalan Pudu,<br>55100 Kuala Lumpur, WPKL, Malaysia.</p>
-                        <p>Tel: <a href="tel:+60321430188">+603 2143 0188</a> / <a href="tel:+60321430288">0288</a><br>
-                            Email: <a href="mailto:smart_muslim@roystartravel.com.my">smart_muslim@roystartravel.com.my</a></p>
+                <section class="pp-section pp-section--contact" id="contact">
+                    <header><span class="pp-section__number" aria-hidden="true">08</span><h2>Contact us</h2></header>
+                    <div class="pp-contact">
+                        <div>
+                            <strong>Roystar Travel &amp; Tours Sdn Bhd</strong>
+                            <address>No.16A &amp; 16B, Lorong Brunei 3, Off Jalan Pudu,<br>55100 Kuala Lumpur, WPKL, Malaysia.</address>
+                        </div>
+                        <div class="pp-contact__actions">
+                            <a href="tel:+60321430188"><span aria-hidden="true">📞</span> +603 2143 0188</a>
+                            <a href="tel:+60321430288"><span aria-hidden="true">📞</span> +603 2143 0288</a>
+                            <a href="mailto:smart_muslim@roystartravel.com.my"><span aria-hidden="true">✉️</span> smart_muslim@roystartravel.com.my</a>
+                            <a class="pp-contact__primary" href="{{ route('contact') }}">All contact details <span aria-hidden="true">→</span></a>
+                        </div>
                     </div>
                 </section>
             </article>

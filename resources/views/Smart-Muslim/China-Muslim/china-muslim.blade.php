@@ -14,28 +14,94 @@
     @include('partials.site-header')
 
     <main class="china-muslim-main" id="main">
-        <p class="china-muslim-kicker">GALLERY SERIES DEPARTURES</p>
-        <h1>CHINA MUSLIM PACKAGE TOURS</h1>
+        @php
+            $heroPhotos = $packages->map(fn ($package) => ['url' => $package->imageUrl(), 'alt' => $package->title])->unique('url')->take(3)->values();
+            $shortestTrip = $packages->min('days');
+            $longestTrip = $packages->max('days');
+            $chinaWhatsappUrl = 'https://wa.me/60165500590?text='.rawurlencode('Hi, I would like to ask about China Muslim group tours.');
+        @endphp
+        <header class="china-hero">
+            <div class="china-hero__text">
+                <p class="china-muslim-kicker">GALLERY SERIES DEPARTURES</p>
+                <h1>CHINA MUSLIM PACKAGE TOURS</h1>
+                <p class="china-hero__lead">Group journeys across China planned for Muslim travellers, with halal meals and time for prayer along the way.</p>
+                @if ($packages->isNotEmpty())
+                    <dl class="china-hero__stats">
+                        <div><dt>Packages</dt><dd>{{ $packages->count() }}</dd></div>
+                        <div><dt>From</dt><dd>RM{{ number_format($packages->min('price')) }}</dd></div>
+                        <div><dt>Duration</dt><dd>{{ $shortestTrip === $longestTrip ? $shortestTrip : $shortestTrip.'–'.$longestTrip }} days</dd></div>
+                    </dl>
+                @endif
+                <div class="china-hero__actions">
+                    <a class="china-hero__primary" href="#china-series-title">View packages <span aria-hidden="true">↓</span></a>
+                    @if ($about)
+                        <button class="china-hero__secondary" type="button" data-about-open="china-about-modal"><span aria-hidden="true">🌏</span> About China</button>
+                    @endif
+                    <a class="china-hero__secondary" href="{{ $chinaWhatsappUrl }}" target="_blank" rel="noreferrer">Ask on WhatsApp <span aria-hidden="true">↗</span></a>
+                </div>
+            </div>
+            @if ($heroPhotos->isNotEmpty())
+                <div class="china-hero__collage" aria-hidden="true">
+                    @foreach ($heroPhotos as $photo)
+                        <img src="{{ $photo['url'] }}" alt="" loading="{{ $loop->first ? 'eager' : 'lazy' }}">
+                    @endforeach
+                </div>
+            @endif
+        </header>
+
+        <ul class="china-perks" aria-label="Why travel with us">
+            <li><span aria-hidden="true">🍽️</span> Halal meals</li>
+            <li><span aria-hidden="true">🕌</span> Mosque visits</li>
+            <li><span aria-hidden="true">🧳</span> Flights &amp; hotels arranged</li>
+            <li><span aria-hidden="true">👥</span> Group departures</li>
+        </ul>
 
         <section class="china-muslim-series" aria-labelledby="china-series-title">
-            <h2 id="china-series-title">SERIES DEPARTURE CHINA MUSLIM</h2>
-
-            @auth
-                @if (auth()->user()->is_admin)
-                    <a class="china-card-new" href="{{ route('admin.china-muslim.create') }}">
-                        <span aria-hidden="true">＋</span> New
-                    </a>
-                @endif
-            @endauth
+            <div class="china-series-heading">
+                <div>
+                    <p class="china-series-heading__kicker">Choose your journey</p>
+                    <h2 id="china-series-title">SERIES DEPARTURE CHINA MUSLIM</h2>
+                </div>
+                @auth
+                    @if (auth()->user()->is_admin)
+                        <a class="china-card-new" href="{{ route('admin.china-muslim.create') }}">
+                            <span aria-hidden="true">＋</span> New
+                        </a>
+                    @endif
+                @endauth
+            </div>
 
             @if ($packages->isEmpty())
                 <p class="china-muslim-empty">Series departures will be announced soon.</p>
             @else
-                <div class="china-card-grid">
+                @php
+                    $packageFilters = collect($packages->contains('is_hot', true) ? ['hot' => '🔥 Hot'] : [])
+                        ->merge($packages->pluck('days')->unique()->sort()->mapWithKeys(fn (int $days): array => [$days.'d' => $days.' days']));
+                @endphp
+                <div class="focus-tours__toolbar china-series-toolbar" data-tour-finder data-item-singular="package" data-item-plural="packages">
+                    <label class="focus-tours__search">
+                        <span class="visually-hidden">Search packages</span>
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                        <input type="search" placeholder="Search cities or packages…" autocomplete="off" data-tour-search>
+                    </label>
+                    @if ($packageFilters->count() > 1)
+                        <div class="focus-tours__filters" role="group" aria-label="Filter packages">
+                            <button type="button" aria-pressed="true" data-tour-filter="">All</button>
+                            @foreach ($packageFilters as $filterKey => $filterLabel)
+                                <button type="button" aria-pressed="false" data-tour-filter="{{ $filterKey }}">{{ $filterLabel }}</button>
+                            @endforeach
+                        </div>
+                    @endif
+                    <p class="focus-tours__count" aria-live="polite" data-tour-count>{{ $packages->count() }} {{ \Illuminate\Support\Str::plural('package', $packages->count()) }}</p>
+                </div>
+
+                <div class="focus-tours__slider china-series-slider" data-card-slider>
+                    <button class="focus-tours__arrow focus-tours__arrow--prev" type="button" aria-label="Previous packages" data-slider-prev hidden><span aria-hidden="true">‹</span></button>
+                    <div class="focus-tours__track" data-slider-track>
                     @foreach ($packages as $package)
                         @php($info = $package->parsedDetails())
                         @php($hasDetails = $info['days'] !== [] || $info['sections'] !== [])
-                        <article class="china-card">
+                        <article class="china-card" data-tour-card data-category="{{ implode('|', array_filter([$package->is_hot ? 'hot' : null, $package->days.'d'])) }}" data-search="{{ \Illuminate\Support\Str::lower($package->title.' '.$package->days.'d'.$package->nights.'n') }}">
                             <a class="china-card-link" href="{{ $package->link ?: '#contact' }}" @if ($hasDetails) data-china-open="china-modal-{{ $package->id }}" @elseif ($package->link) target="_blank" rel="noreferrer" @endif>
                                 <div class="china-card-media">
                                     <img src="{{ $package->imageUrl() }}" alt="{{ $package->title }}" loading="lazy">
@@ -50,9 +116,10 @@
                                         <small>From</small>
                                         <strong class="china-card-price">{{ $package->formattedPrice() }}</strong>
                                     </div>
-                                    <span class="china-card-cta" aria-hidden="true">→</span>
+                                    <span class="china-card-cta" aria-hidden="true">Details <span>→</span></span>
                                 </div>
                             </a>
+                            @include('partials.like-button', ['likeKey' => \App\Support\PackageLikes::key($package), 'likeLabel' => $package->title, 'likeClass' => 'package-like--card'])
                             @auth
                                 @if (auth()->user()->is_admin)
                                     <a class="china-card-edit" href="{{ route('admin.china-muslim.edit', $package) }}">Edit</a>
@@ -61,7 +128,7 @@
 
                             @if ($hasDetails)
                                 @php($slides = collect($info['days'])->map(fn ($day) => ['type' => 'day', 'day' => $day]))
-                                @foreach (['Mandatory Tours' => '🏛️', 'Shopping Stop' => '🛍️', 'Included' => '✅', 'Excluded' => '❌'] as $sectionTitle => $sectionIcon)
+                                @foreach (['Departure Dates' => '📅', 'Accommodation' => '🏨', 'Mandatory Tours' => '🏛️', 'Shopping Stop' => '🛍️', 'Optional Tours' => '🎟️', 'Included' => '✅', 'Excluded' => '❌'] as $sectionTitle => $sectionIcon)
                                     @if (! empty($info['sections'][$sectionTitle]))
                                         @php($slides->push(['type' => 'list', 'title' => $sectionTitle, 'icon' => $sectionIcon, 'items' => $info['sections'][$sectionTitle]]))
                                     @endif
@@ -132,14 +199,25 @@
                                             </div>
                                             <button type="button" class="china-modal-arrow" data-china-next aria-label="Next slide">→</button>
                                         </footer>
+                                        @if ($chinaBookingUrl = (new \App\Support\BookablePackage($package))->bookNowUrl())
+                                            <a class="china-modal-book china-modal-book--online" href="{{ $chinaBookingUrl }}">Book now →</a>
+                                        @endif
                                         <a class="china-modal-book" href="https://wa.me/60165500590?text={{ rawurlencode('Hi, I am interested in '.$package->title) }}" target="_blank" rel="noreferrer">Enquire on WhatsApp</a>
-                                        <button class="china-modal-about" type="button" data-about-open="china-about-modal">🌏 About this place</button>
+                                        <button class="china-modal-about" type="button" data-about-open="china-about-modal"
+                                            @if ($aboutVideo = $package->aboutVideo()) data-about-video-type="{{ $aboutVideo['type'] }}" data-about-video-src="{{ $aboutVideo['src'] }}" data-about-video-title="{{ $package->title }}" @endif>🌏 About this place @if ($aboutVideo) <span class="china-modal-about-video-tag">▶ Video</span> @endif</button>
                                     </div>
                                 </dialog>
                             @endif
                         </article>
                     @endforeach
+                    </div>
+                    <button class="focus-tours__arrow focus-tours__arrow--next" type="button" aria-label="Next packages" data-slider-next hidden><span aria-hidden="true">›</span></button>
                 </div>
+                <div class="focus-tours__dots" data-slider-dots hidden></div>
+
+                <p class="focus-tours__empty" data-tour-empty hidden>
+                    No packages match your search. <button type="button" data-tour-reset>Show all packages</button>
+                </p>
             @endif
 
             <?php
@@ -158,6 +236,7 @@
                         <h3>{{ $about->title }}</h3>
                     </header>
                     <div class="china-about-body">
+                        <div class="china-about-video" data-about-video hidden></div>
                         @if ($aboutPhotos->isNotEmpty())
                             <div class="china-about-gallery" data-about-gallery>
                                 <img class="china-about-main" src="{{ $aboutPhotos[0]['url'] }}" alt="{{ $aboutPhotos[0]['alt'] }}" data-about-main>
@@ -183,6 +262,16 @@
                 </div>
             </dialog>
             @endif
+        </section>
+
+        @include('Smart-Muslim.China-Muslim.partials.traveller-moments', ['about' => $about])
+
+        <section class="china-cta" aria-labelledby="china-cta-title">
+            <div>
+                <h2 id="china-cta-title">Planning a group trip to China?</h2>
+                <p>Tell us your dates and group size, and our team will suggest the best departure for you.</p>
+            </div>
+            <a href="{{ $chinaWhatsappUrl }}" target="_blank" rel="noreferrer">Chat on WhatsApp <span aria-hidden="true">↗</span></a>
         </section>
     </main>
 

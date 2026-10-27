@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#ffffff">
-    <meta name="description" content="Explore the destinations of Smart Muslim by Roystar Travel &amp; Tours.">
-    <title>Our Gallery | Smart Muslim by Roystar Travel &amp; Tours</title>
+    <meta name="description" content="{{ $page->meta_description }}">
+    <title>{{ $page->meta_title }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="gallery-page">
@@ -14,10 +14,10 @@
     @include('partials.site-header')
 
     <main id="main">
-        <header class="smart-muslim-gallery-hero" style="background-image: url('{{ asset('images/series/danang-1.jpg') }}')">
-            <span>OUR JOURNEYS</span>
-            <h1 id="gallery-title">Smart Muslim Gallery</h1>
-            <p>A glimpse of the places and experiences waiting for you.</p>
+        <header class="smart-muslim-gallery-hero" style="background-image: url('{{ $page->imageUrl($page->hero_image) }}')">
+            <span>{{ $page->hero_eyebrow }}</span>
+            <h1 id="gallery-title">{{ $page->hero_title }}</h1>
+            <p>{{ $page->hero_body }}</p>
         </header>
 
         <section class="smart-muslim-gallery smart-muslim-gallery-page" aria-labelledby="gallery-title">
@@ -25,9 +25,9 @@
                 <div class="gallery-marquee" aria-label="Destination gallery">
                     <div class="gallery-marquee-track">
                         @foreach ([false, true] as $isCopy)
-                            @foreach ($destinations as $destination)
+                            @foreach ($page->destinations as $destination)
                                 <figure class="smart-muslim-gallery-card" @if ($isCopy) aria-hidden="true" @endif>
-                                    <img src="{{ asset($destination['image']) }}" alt="{{ $isCopy ? '' : 'Flag of '.$destination['country'] }}" loading="lazy">
+                                    <img src="{{ $page->imageUrl($destination['flag']) }}" alt="{{ $isCopy ? '' : 'Flag of '.$destination['country'] }}" loading="lazy">
                                     <figcaption>{{ $destination['country'] }}</figcaption>
                                 </figure>
                             @endforeach
@@ -41,35 +41,48 @@
             <div class="travel-moments__inner">
                 <header class="travel-moments__heading">
                     <div>
-                        <span class="travel-moments__eyebrow">POSTCARDS FROM EVERYWHERE</span>
-                        <h2 id="travel-moments-title">A closer look at the journey</h2>
+                        <span class="travel-moments__eyebrow">{{ $page->moments_eyebrow }}</span>
+                        <h2 id="travel-moments-title">{{ $page->moments_heading }}</h2>
                     </div>
-                    <p>Take a little inspiration from the places, colors, and moments that make every trip unforgettable.</p>
+                    <p>{{ $page->moments_body }}</p>
                 </header>
 
                 <div class="travel-moments__grid">
-                    @foreach ($destinations as $destination)
+                    @foreach ($page->destinations as $destination)
                         <article class="travel-moment-card">
                             <div class="travel-moment-card__image">
-                                <img src="{{ asset($destination['gallery_image']) }}" alt="{{ $destination['gallery_alt'] }}" loading="lazy">
+                                <img src="{{ $page->imageUrl($destination['photo']) }}" alt="{{ $destination['photo_alt'] }}" loading="lazy">
                                 <span class="travel-moment-card__number" aria-hidden="true">{{ sprintf('%02d', $loop->iteration) }}</span>
                                 <span class="travel-moment-card__flag" aria-hidden="true">
-                                    <img src="{{ asset($destination['image']) }}" alt="">
+                                    <img src="{{ $page->imageUrl($destination['flag']) }}" alt="">
                                 </span>
-                                <span class="travel-moment-card__label">A JOURNEY TO REMEMBER</span>
+                                <span class="travel-moment-card__label">{{ $page->moments_card_label }}</span>
                             </div>
                             <div class="travel-moment-card__caption">
                                 <div>
-                                    <span class="travel-moment-card__eyebrow">EXPLORE</span>
+                                    <span class="travel-moment-card__eyebrow">{{ $page->moments_card_eyebrow }}</span>
                                     <h3>{{ $destination['country'] }}</h3>
                                 </div>
                                 <span aria-hidden="true">↗</span>
                             </div>
+                            <button class="travel-moment-card__open" type="button" data-gallery-album-open="{{ $loop->index }}" aria-haspopup="dialog" aria-controls="gallery-album">
+                                <span class="visually-hidden">View {{ $destination['country'] }} photo gallery</span>
+                            </button>
                         </article>
                     @endforeach
                 </div>
             </div>
         </section>
+
+        @include('partials.gallery-album', ['eyebrow' => $page->moments_eyebrow, 'footerNote' => $page->moments_card_label])
+        @php
+            $albums = array_map(fn (array $destination): array => [
+                'country' => $destination['country'],
+                'flag' => $page->imageUrl($destination['flag']),
+                'photos' => $page->albumPhotos($destination),
+            ], $page->destinations);
+        @endphp
+        <script type="application/json" id="gallery-album-data">@json($albums)</script>
     </main>
 
     <footer class="site-footer">

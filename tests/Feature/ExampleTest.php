@@ -29,12 +29,12 @@ class ExampleTest extends TestCase
         $this->get(route('smart-muslim'))
             ->assertOk()
             ->assertSee('href="'.route('gallery').'">Our Gallery</a>', false)
-            ->assertSee('href="#contact">Contact Us</a>', false);
+            ->assertSee('href="'.route('contact').'" >Contact Us</a>', false);
 
         $this->get(route('home'))
             ->assertOk()
             ->assertSee('href="'.route('gallery').'">Our Gallery</a>', false)
-            ->assertSee('href="#contact">Contact Us</a>', false);
+            ->assertSee('href="'.route('contact').'" >Contact Us</a>', false);
 
         $this->get(route('gallery'))
             ->assertOk()

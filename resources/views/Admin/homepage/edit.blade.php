@@ -7,6 +7,7 @@
     <meta name="description" content="Edit a featured campaign on the Smart Muslim homepage.">
     <title>Edit Smart Muslim Homepage Campaign | Smart Holidays Admin</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>@view-transition { navigation: auto; }</style>
 </head>
 <body class="admin-page">
     <a class="skip-link" href="#homepage-campaign-form">Skip to campaign form</a>
@@ -66,6 +67,45 @@
 
                 <section class="homepage-form-panel">
                     <div class="homepage-form-panel-heading">
+                        <span class="homepage-form-icon" aria-hidden="true">01</span>
+                        <div>
+                            <h2>Slide design</h2>
+                            <p>Choose how this slide looks on the Smart Muslim homepage. You can switch at any time.</p>
+                        </div>
+                    </div>
+
+                    @php($selectedLayout = old('layout', $campaign?->layout ?? 'collage'))
+                    <div class="campaign-layout-picker" role="radiogroup" aria-label="Slide design" data-campaign-layout>
+                        <label class="campaign-layout-option">
+                            <input type="radio" name="layout" value="collage" @checked($selectedLayout === 'collage') required>
+                            <span class="campaign-layout-mock campaign-layout-mock-collage" aria-hidden="true">
+                                <span class="mock-photo"></span>
+                                <span class="mock-circle mock-circle-top"></span>
+                                <span class="mock-circle mock-circle-bottom"></span>
+                                <span class="mock-panel"><i></i><i></i><i></i><b></b></span>
+                            </span>
+                            <span class="campaign-layout-copy">
+                                <strong>Collage</strong>
+                                <small>Main photo with two round photos, sticker, ribbon and brand stamp. Text sits on a blue panel. Needs 3 images.</small>
+                            </span>
+                        </label>
+                        <label class="campaign-layout-option">
+                            <input type="radio" name="layout" value="banner" @checked($selectedLayout === 'banner')>
+                            <span class="campaign-layout-mock campaign-layout-mock-banner" aria-hidden="true">
+                                <span class="mock-photo"></span>
+                                <span class="mock-text"><i></i><i></i><i></i><b></b></span>
+                            </span>
+                            <span class="campaign-layout-copy">
+                                <strong>Single image</strong>
+                                <small>One full-width photo with the text over it. Simple and bold. Needs 1 image.</small>
+                            </span>
+                        </label>
+                    </div>
+                    @error('layout') <small class="campaign-layout-error">{{ $message }}</small> @enderror
+                </section>
+
+                <section class="homepage-form-panel">
+                    <div class="homepage-form-panel-heading">
                         <span class="homepage-form-icon" aria-hidden="true">Aa</span>
                         <div>
                             <h2>Campaign text</h2>
@@ -93,15 +133,6 @@
                             <span>Button text</span>
                             <input name="cta_label" value="{{ old('cta_label', $campaign?->cta_label) }}" maxlength="100" required>
                             @error('cta_label') <small>{{ $message }}</small> @enderror
-                        </label>
-                        <label class="homepage-form-field">
-                            <span>Slide type</span>
-                            <select name="layout" data-campaign-layout required>
-                                @foreach (['collage' => 'Current (3-image collage)', 'banner' => 'Normal (single banner image)'] as $key => $label)
-                                    <option value="{{ $key }}" @selected(old('layout', $campaign?->layout ?? 'collage') === $key)>{{ $label }}</option>
-                                @endforeach
-                            </select>
-                            @error('layout') <small>{{ $message }}</small> @enderror
                         </label>
                         <label class="homepage-form-field">
                             <span>Campaign visual style</span>

@@ -4,88 +4,113 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#ffffff">
-    <meta name="description" content="Explore private tours by Smart Muslim, with thoughtfully planned journeys across Southeast Asia.">
-    <title>Private Tour Packages | Smart Muslim by Roystar Travel &amp; Tours</title>
+    <meta name="description" content="{{ $page->meta_description }}">
+    <title>{{ $page->meta_title }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="island-page">
+<body class="island-page private-tours-page">
     <a class="skip-link" href="#main">Skip to content</a>
 
     @include('partials.site-header')
 
     <main id="main">
-        <section class="island-hero" aria-labelledby="private-tour-title">
-            <img class="island-hero-image" src="https://images.unsplash.com/photo-1528181304800-259b08848526?auto=format&fit=crop&w=2000&q=90" alt="" aria-hidden="true">
-            <div class="island-hero-shade"></div>
-            <div class="island-hero-content">
-                <span class="island-eyebrow">SMART MUSLIM · PRIVATE TOURS</span>
-                <h1 id="private-tour-title">Travel your way.<br><strong>Make it meaningful.</strong></h1>
-                <p>Discover thoughtfully planned private journeys, with the flexibility to explore at your own pace and enjoy experiences that matter to you.</p>
-                <a class="island-cta" href="#destinations">Explore destinations <span aria-hidden="true">↓</span></a>
+        <section class="pt-hero" aria-labelledby="private-tour-title">
+            <img class="pt-hero__image" src="{{ $page->heroImageUrl() }}" alt="" aria-hidden="true" fetchpriority="high">
+            <div class="pt-hero__shade" aria-hidden="true"></div>
+            <div class="pt-hero__inner">
+                <div class="pt-hero__content">
+                    <span class="pt-hero__eyebrow"><span aria-hidden="true">☪</span> {{ $page->hero_eyebrow }}</span>
+                    <h1 id="private-tour-title">{{ $page->hero_title }} <strong>{{ $page->hero_highlight }}</strong></h1>
+                    <p>{{ $page->hero_body }}</p>
+                    <div class="pt-hero__actions">
+                        <a class="pt-button pt-button--light" href="#destinations">{{ $page->hero_cta_label }} <span aria-hidden="true">↓</span></a>
+                        <a class="pt-button pt-button--ghost" href="{{ $page->contactUrl() }}" target="_blank" rel="noreferrer">{{ $page->contact_cta_label }} <span aria-hidden="true">↗</span></a>
+                    </div>
+                </div>
+                <a class="pt-hero__card" href="#destinations">
+                    <span class="pt-hero__thumbs" aria-hidden="true">
+                        @foreach (array_slice($page->destinations, 0, 4) as $destination)
+                            <img src="{{ $page->imageUrl($destination['image']) }}" alt="">
+                        @endforeach
+                    </span>
+                    <strong>{{ count($page->destinations) }} {{ \Illuminate\Support\Str::plural('destination', count($page->destinations)) }}</strong>
+                    <small>Private itineraries, planned around you</small>
+                </a>
             </div>
-            <span class="island-hero-note">PRIVATE JOURNEYS · THOUGHTFUL TRAVEL</span>
+            @if (filled($page->hero_note))
+                <span class="pt-hero__note">{{ $page->hero_note }}</span>
+            @endif
         </section>
 
-        <section class="island-intro" aria-labelledby="private-tour-intro-title">
-            <div class="island-intro-copy">
-                <span class="island-section-label">TOUR PACKAGE (PRIVATE)</span>
-                <h2 id="private-tour-intro-title">A journey planned around <span>you.</span></h2>
-                <p>Choose the destinations that inspire you, travel with your own private itinerary and let our team help take care of the details. From island escapes to cultural discoveries, find a trip that fits your pace and interests.</p>
-                <a class="island-text-link" href="#destinations">Choose your destination <span aria-hidden="true">→</span></a>
+        @if ($page->perks !== [])
+            <section class="pt-perks" aria-label="Why travel privately with Smart Muslim">
+                <ul>
+                    @foreach ($page->perks as $perk)
+                        <li>
+                            @if (filled($perk['icon']))
+                                <span class="pt-perks__icon" aria-hidden="true">{{ $perk['icon'] }}</span>
+                            @endif
+                            <div>
+                                <strong>{{ $perk['title'] }}</strong>
+                                @if (filled($perk['body']))
+                                    <small>{{ $perk['body'] }}</small>
+                                @endif
+                            </div>
+                        </li>
+                    @endforeach
+                </ul>
+            </section>
+        @endif
+
+        <section class="pt-intro" aria-labelledby="private-tour-intro-title">
+            <div class="pt-intro__copy">
+                <span class="pt-label">{{ $page->intro_label }}</span>
+                <h2 id="private-tour-intro-title">{{ $page->intro_heading }} @if (filled($page->intro_highlight))<span>{{ $page->intro_highlight }}</span>@endif</h2>
+                <p>{{ $page->intro_body }}</p>
+                <a class="pt-text-link" href="#destinations">{{ $page->intro_link_label }} <span aria-hidden="true">→</span></a>
             </div>
-            <div class="island-photo-stack">
-                <img src="https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1000&q=85" alt="Tropical island scenery in Southeast Asia" loading="lazy" decoding="async">
-                <span class="island-photo-caption">Thoughtful journeys, made personal.</span>
+            <figure class="pt-intro__media">
+                <img src="{{ $page->introImageUrl() }}" alt="{{ $page->intro_image_alt }}" loading="lazy" decoding="async">
+                @if (filled($page->intro_caption))
+                    <figcaption><span aria-hidden="true">✦</span> {{ $page->intro_caption }}</figcaption>
+                @endif
+            </figure>
+        </section>
+
+        <section class="pt-destinations" id="destinations" aria-labelledby="private-tour-destinations-title">
+            <div class="pt-section-heading">
+                <span class="pt-label">{{ $page->destinations_label }}</span>
+                <h2 id="private-tour-destinations-title">{{ $page->destinations_heading }}</h2>
+                @if (filled($page->destinations_body))
+                    <p>{{ $page->destinations_body }}</p>
+                @endif
+            </div>
+            <div class="pt-destination-grid">
+                @foreach ($page->destinations as $destination)
+                    <a class="pt-destination" href="{{ $destination['link_url'] }}">
+                        <img src="{{ $page->imageUrl($destination['image']) }}" alt="{{ $destination['alt'] }}" loading="lazy" decoding="async">
+                        <span class="pt-destination__number" aria-hidden="true">{{ sprintf('%02d', $loop->iteration) }}</span>
+                        <span class="pt-destination__body">
+                            <strong>{{ $destination['name'] }}</strong>
+                            @if (filled($destination['tagline']))
+                                <small>{{ $destination['tagline'] }}</small>
+                            @endif
+                            <span class="pt-destination__link">{{ filled($destination['link_label']) ? $destination['link_label'] : 'Explore' }} <span aria-hidden="true">→</span></span>
+                        </span>
+                    </a>
+                @endforeach
             </div>
         </section>
 
-        <section class="island-highlights" id="destinations" aria-labelledby="private-tour-destinations-title">
-            <div class="island-section-heading">
-                <span class="island-section-label">FIND YOUR NEXT JOURNEY</span>
-                <h2 id="private-tour-destinations-title">Explore our destinations.</h2>
-                <p>Start with a place that speaks to you. Each destination offers its own experiences, with private tour options to help you make the most of your stay.</p>
+        <section class="pt-contact" id="contact" aria-labelledby="private-tour-contact-title">
+            <div class="pt-contact__inner">
+                <div>
+                    <span class="pt-label pt-label--light">{{ $page->contact_label }}</span>
+                    <h2 id="private-tour-contact-title">{{ $page->contact_heading }}</h2>
+                    <p>{{ $page->contact_body }}</p>
+                </div>
+                <a class="pt-button pt-button--light" href="{{ $page->contactUrl() }}" target="_blank" rel="noreferrer">{{ $page->contact_cta_label }} <span aria-hidden="true">↗</span></a>
             </div>
-            <div class="island-highlight-grid">
-                <article class="island-highlight">
-                    <span class="island-highlight-number">01</span>
-                    <h3>Island &amp; Honeymoon</h3>
-                    <p>Find a slower pace with romantic stays, island scenery and time to unwind.</p>
-                    <a class="island-text-link" href="{{ route('island-honeymoon') }}">Explore island escapes <span aria-hidden="true">→</span></a>
-                </article>
-                <article class="island-highlight">
-                    <span class="island-highlight-number">02</span>
-                    <h3>Indonesia</h3>
-                    <p>Discover Indonesia’s culture, coastlines, highlands and island landscapes.</p>
-                    <a class="island-text-link" href="{{ route('indonesia') }}">Explore Indonesia <span aria-hidden="true">→</span></a>
-                </article>
-                <article class="island-highlight">
-                    <span class="island-highlight-number">03</span>
-                    <h3>Thailand</h3>
-                    <p>Explore lively cities, northern scenery, local markets and tropical shores.</p>
-                    <a class="island-text-link" href="{{ route('thailand') }}">Explore Thailand <span aria-hidden="true">→</span></a>
-                </article>
-                <article class="island-highlight">
-                    <span class="island-highlight-number">04</span>
-                    <h3>Vietnam</h3>
-                    <p>Experience a rich blend of city life, heritage, scenery and local flavour.</p>
-                    <a class="island-text-link" href="{{ route('vietnam') }}">Explore Vietnam <span aria-hidden="true">→</span></a>
-                </article>
-                <article class="island-highlight">
-                    <span class="island-highlight-number">05</span>
-                    <h3>Philippines</h3>
-                    <p>Make time for island scenery, welcoming communities and coastal discoveries.</p>
-                    <a class="island-text-link" href="{{ route('philippines') }}">Explore the Philippines <span aria-hidden="true">→</span></a>
-                </article>
-            </div>
-        </section>
-
-        <section class="island-contact" id="contact" aria-labelledby="private-tour-contact-title">
-            <div>
-                <span class="island-section-label">LET’S PLAN YOUR TRIP</span>
-                <h2 id="private-tour-contact-title">Your next journey starts here.</h2>
-                <p>Tell us where you would like to go and what you would love to experience. Our team will help you plan a private tour that feels right for you.</p>
-            </div>
-            <a class="island-cta" href="https://wa.me/60165500590?text=Hi%2C%20I%27d%20like%20to%20ask%20about%20private%20tour%20packages." target="_blank" rel="noreferrer">Talk to our team <span aria-hidden="true">↗</span></a>
         </section>
     </main>
 

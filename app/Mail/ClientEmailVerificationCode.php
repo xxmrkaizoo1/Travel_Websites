@@ -27,7 +27,8 @@ class ClientEmailVerificationCode extends Mailable
     public function content(): Content
     {
         return new Content(
-            markdown: 'emails.client-email-verification-code',
+            view: 'emails.client-email-verification-code',
+            text: 'emails.client-email-verification-code-text',
         );
     }
 }

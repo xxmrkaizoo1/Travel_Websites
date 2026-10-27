@@ -70,6 +70,16 @@ class ClientAuthController extends Controller
             ]);
         }
 
+        if ($request->user()->isSuspended()) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            throw ValidationException::withMessages([
+                'email' => 'This account has been suspended. Please contact us for help.',
+            ]);
+        }
+
         $request->session()->regenerate();
 
         return redirect()->intended(route('home'));

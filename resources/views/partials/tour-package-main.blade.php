@@ -2,7 +2,7 @@
     $slug = $page->slug;
     $slideCount = count($page->slides);
 @endphp
-<main id="{{ $seriesPageMainId ?? 'main' }}">
+<main id="{{ $seriesPageMainId ?? 'main' }}" @if (! empty($page->package_data['series'])) class="tour-main--series" @endif>
     <section class="island-hero {{ $slug }}-hero" aria-labelledby="{{ $slug }}-title">
         <img class="island-hero-image" src="{{ $page->imageUrl($page->hero_image) }}" alt="" aria-hidden="true">
         <div class="island-hero-shade"></div>
@@ -10,7 +10,12 @@
             <span class="island-eyebrow">{{ $page->hero_eyebrow }}</span>
             <h1 id="{{ $slug }}-title">{{ $page->hero_headline }}<br><strong>{{ $page->hero_highlight }}</strong></h1>
             <p>{{ $page->hero_body }}</p>
-            <a class="island-cta" href="#contact">{{ $page->hero_cta_label }} <span aria-hidden="true">↗</span></a>
+            <div class="package-hero-actions">
+                <a class="island-cta" href="#contact">{{ $page->hero_cta_label }} <span aria-hidden="true">↗</span></a>
+                @if (empty($page->package_data['series']))
+                    @include('partials.like-button', ['likeKey' => \App\Support\PackageLikes::key($page), 'likeLabel' => $page->hero_headline.' '.$page->hero_highlight, 'likeClass' => 'package-like--hero'])
+                @endif
+            </div>
         </div>
         <span class="island-hero-note">{{ $page->hero_note }}</span>
     </section>
@@ -59,7 +64,7 @@
                     @foreach ($page->slides as $slide)
                         <article class="destination-card" role="group" aria-roledescription="slide" aria-label="{{ $loop->iteration }} of {{ $slideCount }}">
                             <img src="{{ $page->imageUrl($slide['image']) }}" alt="{{ $slide['alt'] }}" loading="lazy">
-                            <div><span>{{ $slide['eyebrow'] }}</span><h3>{{ $slide['title'] }}</h3><p>{{ $slide['body'] }}</p>@if (! empty($slide['link_url']) && ! empty($slide['link_label']))<a class="aceh-card-link" href="{{ $slide['link_url'] }}">{{ $slide['link_label'] }} <span aria-hidden="true">→</span></a>@endif</div>
+                            <div><span>{{ $slide['eyebrow'] }}</span><h3>{{ $slide['title'] }}</h3><p>{{ $slide['body'] }}</p>@if (! empty($slide['link_url']) && ! empty($slide['link_label']))<a class="aceh-card-link" href="{{ $slide['link_url'] }}"@if (str_starts_with($slide['link_url'], 'http')) target="_blank" rel="noreferrer"@endif>{{ $slide['link_label'] }} <span aria-hidden="true">→</span></a>@endif</div>
                         </article>
                     @endforeach
                 </div>

@@ -36,7 +36,7 @@ class TourPackagePrivateIntroductionTest extends TestCase
 
         $adminPage = $this->actingAs($admin)->get(route('admin.dashboard'))->assertOk();
 
-        $this->assertSame(1, substr_count($adminPage->getContent(), $introductionLink));
+        $this->assertSame(1, substr_count($adminPage->getContent(), 'href="'.route('admin.private-tours.edit').'"'));
         $adminPage->assertSee('aria-label="Tour Package (Private)"', false);
     }
 }

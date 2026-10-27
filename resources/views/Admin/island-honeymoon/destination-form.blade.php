@@ -7,6 +7,7 @@
     <meta name="description" content="Edit an Island & Honeymoon destination spotlight.">
     <title>{{ $destination ? 'Edit '.$destination->name : 'Add destination' }} | Smart Holidays Admin</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>@view-transition { navigation: auto; }</style>
 </head>
 <body class="admin-page">
     <a class="skip-link" href="#destination-form">Skip to destination form</a>
@@ -127,7 +128,7 @@
                         <span class="homepage-form-icon" aria-hidden="true">04</span>
                         <div><h2>Slideshow</h2><p>Add or remove slides. Use publicly accessible HTTP or HTTPS image URLs, up to five slides.</p></div>
                     </div>
-                    <div class="island-gallery-editor" data-gallery-editor data-max-slides="5">
+                    <div class="island-gallery-editor" data-gallery-editor data-max-slides="5" data-gallery-paged="title" data-gallery-columns>
                         <div class="island-destination-fields-grid" data-gallery-slides>
                             @foreach ($galleryValues as $index => $slide)
                                 <fieldset class="island-entry-panel" data-gallery-slide>
