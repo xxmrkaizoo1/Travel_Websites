@@ -269,26 +269,6 @@ button:focus-visible {
     object-fit: contain;
 }
 
-.brand-tile__logo--badge {
-    align-content: center;
-    gap: 2px;
-    border-color: rgb(255 255 255 / 35%);
-    background: rgb(255 255 255 / 16%);
-    color: #fff;
-    backdrop-filter: blur(10px);
-}
-
-.brand-tile__logo--badge strong {
-    font-size: 18px;
-    letter-spacing: 1.5px;
-}
-
-.brand-tile__logo--badge span {
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 2.5px;
-}
-
 .brand-tile__index {
     color: transparent;
     font-size: 56px;
@@ -26604,5 +26584,1864 @@ a.admin-customer:hover strong {
 
     .admin-settings-jump {
         display: none;
+    }
+}
+
+/* Package pages (private / custom tour pages): refreshed look, same layout. Colours follow the page's theme. */
+.package-page {
+    --pk-main: var(--tt-main, #2364d2);
+    --pk-dark: var(--tt-dark, #12305e);
+    --pk-light: var(--tt-light, #cfe0ff);
+    --pk-shade: var(--tt-shade, 9 30 66);
+    --pk-soft: color-mix(in srgb, var(--pk-main) 9%, white);
+    --pk-line: color-mix(in srgb, var(--pk-main) 14%, white);
+}
+
+@keyframes pk-rise {
+    from { opacity: 0; transform: translateY(18px); }
+}
+
+@keyframes pk-hero-zoom {
+    from { transform: scale(1.1); }
+}
+
+@keyframes pk-reveal {
+    from { opacity: 0; transform: translateY(28px); }
+}
+
+/* Hero */
+.package-page .island-hero {
+    isolation: isolate;
+    border-radius: 0 0 clamp(22px, 4vw, 44px) clamp(22px, 4vw, 44px);
+}
+
+.package-page .island-hero-shade {
+    background:
+        linear-gradient(0deg, rgb(var(--pk-shade) / 62%) 0%, transparent 42%),
+        linear-gradient(90deg, rgb(var(--pk-shade) / 90%) 0%, rgb(var(--pk-shade) / 62%) 45%, rgb(var(--pk-shade) / 12%) 100%);
+}
+
+.package-page .island-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    border: 1px solid rgb(255 255 255 / 24%);
+    border-radius: 999px;
+    background: rgb(255 255 255 / 10%);
+    backdrop-filter: blur(8px);
+    color: #fff;
+}
+
+.package-page .island-eyebrow::before {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--pk-light);
+    box-shadow: 0 0 0 4px rgb(255 255 255 / 14%);
+    content: "";
+}
+
+.package-page .island-hero h1 strong {
+    background: linear-gradient(100deg, #fff 0%, var(--pk-light) 70%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.package-page .island-hero-content > p {
+    color: rgb(255 255 255 / 86%);
+}
+
+.package-page .island-cta {
+    border: 0;
+    color: var(--pk-dark);
+    box-shadow: 0 14px 30px rgb(0 0 0 / 22%);
+}
+
+.package-page .island-cta span {
+    transition: transform 0.2s ease;
+}
+
+.package-page .island-hero .island-cta:hover span {
+    transform: translateY(2px);
+}
+
+.package-page .island-contact .island-cta:hover span {
+    transform: translate(2px, -2px);
+}
+
+.package-page .island-hero-note {
+    padding: 8px 14px;
+    border: 1px solid rgb(255 255 255 / 22%);
+    border-radius: 999px;
+    background: rgb(255 255 255 / 12%);
+    backdrop-filter: blur(8px);
+}
+
+/* Section labels become small pills */
+.package-page .island-section-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--pk-soft);
+    color: var(--pk-main);
+}
+
+.package-page .island-section-label::before {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    content: "";
+}
+
+.package-page .island-contact .island-section-label {
+    background: rgb(255 255 255 / 14%);
+    color: #fff;
+}
+
+.package-page .island-section-heading h2,
+.package-page .island-intro h2 {
+    color: var(--pk-dark);
+}
+
+.package-page .island-intro h2 span {
+    color: var(--pk-main);
+}
+
+/* Intro photo */
+.package-page .island-photo-stack img {
+    border-radius: 26px;
+    box-shadow: 0 30px 60px rgb(var(--pk-shade) / 22%);
+    transition: transform 0.5s ease;
+}
+
+.package-page .island-photo-stack:hover img {
+    transform: scale(1.02) rotate(-0.4deg);
+}
+
+.package-page .island-photo-stack::before {
+    background: color-mix(in srgb, var(--pk-main) 20%, white);
+}
+
+.package-page .island-photo-caption {
+    border-radius: 999px;
+    box-shadow: 0 10px 24px rgb(var(--pk-shade) / 16%);
+}
+
+.package-page .island-text-link {
+    color: var(--pk-main);
+    background: linear-gradient(currentColor, currentColor) 0 100% / 0 2px no-repeat;
+    transition: background-size 0.3s ease;
+}
+
+.package-page .island-text-link:hover {
+    background-size: 100% 2px;
+}
+
+/* Highlights */
+.package-page .island-highlights {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--pk-main) 7%, white), color-mix(in srgb, var(--pk-main) 2%, white));
+}
+
+.package-page .island-highlight {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--pk-line);
+    border-radius: 22px;
+    background: #fff;
+    box-shadow: 0 12px 30px rgb(var(--pk-shade) / 7%);
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.package-page .island-highlight::before {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--pk-main), var(--pk-light));
+    content: "";
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s ease;
+}
+
+.package-page .island-highlight:hover {
+    border-color: color-mix(in srgb, var(--pk-main) 30%, white);
+    box-shadow: 0 22px 44px rgb(var(--pk-shade) / 13%);
+    transform: translateY(-5px);
+}
+
+.package-page .island-highlight:hover::before {
+    transform: scaleX(1);
+}
+
+.package-page .island-highlight-number {
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--pk-main), var(--pk-dark));
+    box-shadow: 0 8px 18px color-mix(in srgb, var(--pk-main) 35%, transparent);
+    color: #fff;
+}
+
+.package-page .island-highlight h3 {
+    color: var(--pk-dark);
+}
+
+/* Destination carousel cards */
+.package-page .destination-card {
+    overflow: hidden;
+    border-radius: 22px;
+    box-shadow: 0 16px 36px rgb(var(--pk-shade) / 10%);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.package-page .destination-card img {
+    transition: transform 0.6s ease;
+}
+
+.package-page .destination-card:hover {
+    box-shadow: 0 24px 48px rgb(var(--pk-shade) / 16%);
+    transform: translateY(-4px);
+}
+
+.package-page .destination-card:hover img {
+    transform: scale(1.06);
+}
+
+.package-page .destination-card span,
+.package-page .aceh-card-link {
+    color: var(--pk-main);
+}
+
+/* Itinerary cards */
+.package-page .aceh-itinerary-card {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--pk-line);
+    border-radius: 26px;
+    background: #fff;
+    box-shadow: 0 18px 44px rgb(var(--pk-shade) / 9%);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.package-page .aceh-itinerary-card::before {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 5px;
+    background: linear-gradient(90deg, var(--pk-main), var(--pk-light));
+    content: "";
+}
+
+.package-page .aceh-itinerary-card:hover {
+    box-shadow: 0 26px 56px rgb(var(--pk-shade) / 14%);
+    transform: translateY(-4px);
+}
+
+.package-page .aceh-itinerary-card-featured {
+    border-color: color-mix(in srgb, var(--pk-main) 40%, white);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--pk-main) 14%, transparent), 0 18px 44px rgb(var(--pk-shade) / 12%);
+}
+
+.package-page .aceh-itinerary-heading > span {
+    display: inline-flex;
+    padding: 5px 11px;
+    border-radius: 999px;
+    background: var(--pk-soft);
+    color: var(--pk-main);
+}
+
+.package-page .aceh-itinerary-heading h3,
+.package-page .aceh-details-card h3,
+.package-page .aceh-hotel-card h3 {
+    color: var(--pk-dark);
+}
+
+.package-page .aceh-day-list::before {
+    width: 2px;
+    background: linear-gradient(180deg, var(--pk-main), color-mix(in srgb, var(--pk-main) 10%, white));
+}
+
+.package-page .aceh-day-number {
+    border: 0;
+    background: linear-gradient(135deg, var(--pk-main), var(--pk-dark));
+    box-shadow: 0 0 0 4px #fff, 0 8px 18px color-mix(in srgb, var(--pk-main) 30%, transparent);
+    color: #fff;
+    transition: transform 0.25s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.package-page .aceh-day:hover .aceh-day-number {
+    transform: scale(1.1);
+}
+
+.package-page .aceh-day h4 {
+    color: var(--pk-dark);
+    transition: color 0.2s ease;
+}
+
+.package-page .aceh-day:hover h4 {
+    color: var(--pk-main);
+}
+
+.package-page .aceh-meals {
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--pk-soft);
+    color: var(--pk-main);
+}
+
+.package-page .aceh-itinerary-cta {
+    background: var(--pk-soft);
+    color: var(--pk-main);
+}
+
+.package-page .aceh-itinerary-cta:hover {
+    background: var(--pk-main);
+    color: #fff;
+}
+
+/* Included / not included */
+.package-page .aceh-details-card {
+    border: 1px solid var(--pk-line);
+    border-radius: 24px;
+    background: #fff;
+    box-shadow: 0 14px 34px rgb(var(--pk-shade) / 7%);
+}
+
+.package-page .aceh-details-kicker,
+.package-page .aceh-hotel-label {
+    color: var(--pk-main);
+}
+
+.package-page .aceh-inclusion-list li::before {
+    background: var(--pk-soft);
+    color: var(--pk-main);
+}
+
+.package-page .aceh-inclusion-list li,
+.package-page .aceh-exclusion-list li {
+    padding-bottom: 12px;
+    border-bottom: 1px dashed var(--pk-line);
+}
+
+.package-page .aceh-inclusion-list li:last-child,
+.package-page .aceh-exclusion-list li:last-child {
+    padding-bottom: 0;
+    border-bottom: 0;
+}
+
+/* Hotels */
+.package-page .aceh-hotel-card {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--pk-line);
+    border-radius: 22px;
+    background: #fff;
+    box-shadow: 0 12px 30px rgb(var(--pk-shade) / 7%);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.package-page .aceh-hotel-card::before {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 4px;
+    background: linear-gradient(180deg, var(--pk-main), var(--pk-light));
+    content: "";
+}
+
+.package-page .aceh-hotel-card:hover {
+    box-shadow: 0 20px 40px rgb(var(--pk-shade) / 12%);
+    transform: translateY(-4px);
+}
+
+.package-page .aceh-hotel-card > a {
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--pk-soft);
+    color: var(--pk-main);
+}
+
+/* Closing banner */
+.package-page .island-contact {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    border-radius: 30px;
+    background:
+        radial-gradient(circle at 88% 12%, rgb(255 255 255 / 16%), transparent 32%),
+        linear-gradient(130deg, var(--pk-dark), var(--pk-main));
+    box-shadow: 0 24px 54px color-mix(in srgb, var(--pk-main) 26%, transparent);
+}
+
+.package-page .island-contact::after {
+    position: absolute;
+    z-index: -1;
+    right: -60px;
+    bottom: -90px;
+    width: 260px;
+    height: 260px;
+    border: 36px solid rgb(255 255 255 / 7%);
+    border-radius: 50%;
+    content: "";
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .package-page .island-hero-image {
+        animation: pk-hero-zoom 1.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    }
+
+    .package-page .island-hero-content > * {
+        animation: pk-rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+    }
+
+    .package-page .island-hero-content > :nth-child(2) { animation-delay: 0.08s; }
+    .package-page .island-hero-content > :nth-child(3) { animation-delay: 0.16s; }
+    .package-page .island-hero-content > :nth-child(n + 4) { animation-delay: 0.24s; }
+
+    .package-page .island-hero-note {
+        animation: pk-rise 0.7s 0.4s ease backwards;
+    }
+
+    /* Content fades up as it scrolls into view, where the browser supports scroll-driven animations. */
+    @supports (animation-timeline: view()) {
+        .package-page :is(.island-section-heading, .island-intro-copy, .island-photo-stack, .island-highlight, .destination-carousel, .aceh-itinerary-card, .bali-gallery, .aceh-details-card, .aceh-hotel-card, .island-contact) {
+            animation: pk-reveal linear both;
+            animation-timeline: view();
+            animation-range: entry 0% entry 35%;
+        }
+    }
+}
+
+@media (max-width: 640px) {
+    .package-page .island-hero-note {
+        display: none;
+    }
+
+    .package-page .island-contact {
+        border-radius: 24px;
+    }
+}
+
+/* Package pages: itinerary slider controls follow the page theme */
+.package-page .itinerary-slider-arrow {
+    border-color: var(--pk-line);
+    color: var(--pk-main);
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.package-page .itinerary-slider-arrow:hover:not(:disabled) {
+    background: var(--pk-main);
+    color: #fff;
+}
+
+.package-page .itinerary-slider-dot {
+    background: color-mix(in srgb, var(--pk-main) 22%, white);
+    transition: width 0.25s ease, background 0.25s ease;
+}
+
+.package-page .itinerary-slider-dot.is-active {
+    background: var(--pk-main);
+}
+
+/* Package pages: full-screen photo showcase (heading over the photos, thumbnails with a progress bar) */
+@keyframes pk-progress {
+    from { width: 0; }
+    to { width: 100%; }
+}
+
+.package-page .pk-showcase {
+    padding: clamp(48px, 7vw, 96px) 0 0;
+}
+
+.package-page .pk-showcase-stage {
+    --pk-edge: max(24px, calc((100% - 1180px) / 2));
+    position: relative;
+    width: 100%;
+    height: clamp(540px, 92svh, 900px);
+    margin: 0;
+    overflow: hidden;
+    background: var(--pk-dark);
+}
+
+.package-page .pk-showcase-stage:fullscreen {
+    height: 100vh;
+}
+
+.package-page .pk-showcase-stage:focus-visible {
+    outline: 3px solid var(--pk-light);
+    outline-offset: -3px;
+}
+
+.package-page .pk-showcase .bali-slides {
+    position: absolute;
+    inset: 0;
+    aspect-ratio: auto;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.package-page .pk-showcase .bali-slide {
+    transform: none;
+    transition: opacity 1.1s ease;
+}
+
+.package-page .pk-showcase .bali-slide img {
+    transform: scale(1.12);
+    transition: transform 7.5s cubic-bezier(0.2, 0.6, 0.3, 1);
+}
+
+.package-page .pk-showcase .bali-slide.is-active img {
+    transform: scale(1);
+}
+
+.package-page .pk-showcase .bali-slide::after {
+    background:
+        linear-gradient(180deg, rgb(var(--pk-shade) / 72%) 0%, rgb(var(--pk-shade) / 0%) 36%),
+        linear-gradient(0deg, rgb(var(--pk-shade) / 86%) 0%, rgb(var(--pk-shade) / 0%) 50%),
+        linear-gradient(90deg, rgb(var(--pk-shade) / 40%) 0%, transparent 60%);
+}
+
+/* Caption: number, place label and a large title, bottom left */
+.package-page .pk-showcase .bali-slide figcaption {
+    bottom: clamp(44px, 7vh, 72px);
+    left: var(--pk-edge);
+    gap: 12px;
+    max-width: min(640px, calc(100% - 48px));
+}
+
+.package-page .pk-showcase .bali-slide figcaption > * {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.package-page .pk-showcase .bali-slide.is-active figcaption > * {
+    opacity: 1;
+    transform: none;
+}
+
+.package-page .pk-showcase .bali-slide.is-active figcaption > :nth-child(2) { transition-delay: 0.12s; }
+.package-page .pk-showcase .bali-slide.is-active figcaption > :nth-child(3) { transition-delay: 0.22s; }
+
+.package-page .pk-showcase .bali-slide figcaption em {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--pk-light);
+    font-size: 13px;
+    font-style: normal;
+    font-weight: 800;
+    letter-spacing: 2px;
+}
+
+.package-page .pk-showcase .bali-slide figcaption em::after {
+    width: 48px;
+    height: 2px;
+    background: currentColor;
+    content: "";
+}
+
+.package-page .pk-showcase .bali-slide figcaption span {
+    justify-self: start;
+    padding: 6px 12px;
+    border: 1px solid rgb(255 255 255 / 24%);
+    border-radius: 999px;
+    background: rgb(255 255 255 / 12%);
+    backdrop-filter: blur(8px);
+    color: #fff;
+}
+
+.package-page .pk-showcase .bali-slide figcaption strong {
+    font-size: clamp(44px, 7.5vw, 104px);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 0.98;
+    text-shadow: 0 6px 30px rgb(0 0 0 / 25%);
+}
+
+/* Leave room for the thumbnail strip on the right. */
+@media (min-width: 761px) {
+    .package-page .pk-showcase-stage:has(.pk-showcase-thumbs) .bali-slide figcaption {
+        max-width: min(560px, 42%);
+    }
+
+    .package-page .pk-showcase-stage:has(.pk-showcase-thumbs) .bali-slide figcaption strong {
+        font-size: clamp(40px, 5.6vw, 84px);
+    }
+}
+
+/* Section heading over the photos, top left */
+.package-page .pk-showcase-heading {
+    position: absolute;
+    z-index: 3;
+    top: clamp(28px, 6vh, 64px);
+    left: var(--pk-edge);
+    display: grid;
+    gap: 10px;
+    max-width: min(560px, calc(100% - 120px));
+    color: #fff;
+    text-align: left;
+}
+
+.package-page .pk-showcase-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    justify-self: start;
+    gap: 8px;
+    padding: 7px 14px;
+    border: 1px solid rgb(255 255 255 / 24%);
+    border-radius: 999px;
+    background: rgb(255 255 255 / 10%);
+    backdrop-filter: blur(8px);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.6px;
+}
+
+.package-page .pk-showcase-eyebrow::before {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--pk-light);
+    content: "";
+}
+
+.package-page .pk-showcase-heading h2 {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(26px, 3.4vw, 44px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+}
+
+.package-page .pk-showcase-heading p {
+    margin: 0;
+    color: rgb(255 255 255 / 82%);
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+/* Controls */
+.package-page .pk-showcase-fullscreen,
+.package-page .pk-showcase .bali-carousel-arrow,
+.package-page .pk-showcase .bali-carousel-toggle {
+    display: grid;
+    place-items: center;
+    border: 1px solid rgb(255 255 255 / 30%);
+    border-radius: 50%;
+    background: rgb(255 255 255 / 12%);
+    backdrop-filter: blur(10px);
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.package-page .pk-showcase-fullscreen:hover,
+.package-page .pk-showcase .bali-carousel-arrow:hover,
+.package-page .pk-showcase .bali-carousel-toggle:hover {
+    border-color: var(--pk-main);
+    background: var(--pk-main);
+    color: #fff;
+}
+
+.package-page .pk-showcase-fullscreen {
+    position: absolute;
+    z-index: 3;
+    top: clamp(28px, 6vh, 64px);
+    right: var(--pk-edge);
+    width: 46px;
+    height: 46px;
+    font-size: 18px;
+}
+
+.package-page .pk-showcase-fullscreen[hidden] {
+    display: none;
+}
+
+.package-page .pk-showcase .bali-carousel-arrow {
+    z-index: 3;
+    width: 54px;
+    height: 54px;
+}
+
+.package-page .pk-showcase .bali-carousel-prev {
+    left: 22px;
+}
+
+.package-page .pk-showcase .bali-carousel-next {
+    right: 22px;
+}
+
+.package-page .pk-showcase .bali-carousel-toolbar {
+    position: absolute;
+    z-index: 3;
+    right: var(--pk-edge);
+    bottom: clamp(36px, 6vh, 64px);
+    align-items: flex-end;
+    gap: 14px;
+    min-height: 0;
+    padding: 0;
+}
+
+.package-page .pk-showcase .bali-carousel-toggle {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+}
+
+.package-page .pk-showcase .bali-slide-count {
+    align-self: center;
+    color: rgb(255 255 255 / 70%);
+}
+
+.package-page .pk-showcase .bali-slide-count strong {
+    color: #fff;
+    font-size: 18px;
+}
+
+/* Thumbnails with a progress bar on the current photo */
+.package-page .pk-showcase-thumbs {
+    gap: 10px;
+    max-width: min(560px, 46vw);
+    overflow-x: auto;
+    padding: 6px 2px 2px;
+    scrollbar-width: none;
+}
+
+.package-page .pk-showcase-thumbs button {
+    position: relative;
+    flex: 0 0 auto;
+    width: 128px;
+    height: 80px;
+    overflow: hidden;
+    padding: 0;
+    border: 2px solid rgb(255 255 255 / 22%);
+    border-radius: 14px;
+    background: rgb(0 0 0 / 30%);
+    opacity: 0.72;
+    transition: opacity 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+}
+
+.package-page .pk-showcase-thumbs button:hover {
+    opacity: 1;
+    transform: translateY(-3px);
+}
+
+.package-page .pk-showcase-thumbs button.is-active {
+    width: 128px;
+    border-color: var(--pk-light);
+    background: rgb(0 0 0 / 30%);
+    opacity: 1;
+    transform: translateY(-5px);
+}
+
+.package-page .pk-showcase-thumbs img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.package-page .pk-showcase-thumbs span {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    overflow: hidden;
+    padding: 18px 8px 7px;
+    background: linear-gradient(transparent, rgb(0 0 0 / 72%));
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.package-page .pk-showcase-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--pk-main), var(--pk-light));
+}
+
+.package-page .pk-showcase-thumbs button.is-active .pk-showcase-progress {
+    width: 100%;
+}
+
+.package-page .pk-showcase-stage.is-playing .pk-showcase-thumbs button.is-active .pk-showcase-progress {
+    animation: pk-progress 6s linear both;
+}
+
+@media (max-width: 760px) {
+    .package-page .pk-showcase-stage {
+        --pk-edge: 20px;
+        height: clamp(560px, 88svh, 760px);
+    }
+
+    .package-page .pk-showcase-heading {
+        max-width: calc(100% - 90px);
+    }
+
+    .package-page .pk-showcase-heading p {
+        font-size: 13px;
+    }
+
+    .package-page .pk-showcase .bali-slide figcaption {
+        bottom: 132px;
+    }
+
+    .package-page .pk-showcase .bali-slide figcaption strong {
+        font-size: clamp(38px, 11vw, 52px);
+    }
+
+    .package-page .pk-showcase .bali-carousel-arrow,
+    .package-page .pk-showcase .bali-slide-count {
+        display: none;
+    }
+
+    .package-page .pk-showcase .bali-carousel-toolbar {
+        left: var(--pk-edge);
+        bottom: 22px;
+        align-items: center;
+    }
+
+    .package-page .pk-showcase-thumbs {
+        max-width: none;
+        flex: 1 1 auto;
+    }
+
+    .package-page .pk-showcase-thumbs button,
+    .package-page .pk-showcase-thumbs button.is-active {
+        width: 88px;
+        height: 60px;
+    }
+
+    .package-page .pk-showcase-thumbs span {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .package-page .pk-showcase .bali-slide img,
+    .package-page .pk-showcase .bali-slide figcaption > * {
+        transform: none;
+        transition: none;
+    }
+
+    .package-page .pk-showcase .bali-slide figcaption > * {
+        opacity: 1;
+    }
+}
+
+/* Floating language switcher (every public page) */
+.language-switcher {
+    position: fixed;
+    z-index: 40;
+    left: 22px;
+    bottom: 22px;
+    font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+}
+
+.language-switcher-button {
+    display: inline-flex;
+    min-height: 46px;
+    align-items: center;
+    gap: 8px;
+    padding: 0 16px 0 13px;
+    border: 1px solid rgb(255 255 255 / 18%);
+    border-radius: 999px;
+    background: linear-gradient(135deg, #2764b6, #173a74);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    cursor: pointer;
+    box-shadow: 0 10px 26px rgb(20 54 95 / 30%);
+    transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.language-switcher-button:hover,
+.language-switcher.is-open .language-switcher-button {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 30px rgb(20 54 95 / 36%);
+}
+
+.language-switcher-button:focus-visible,
+.language-switcher-menu button:focus-visible {
+    outline: 3px solid #ffe500;
+    outline-offset: 2px;
+}
+
+.language-switcher-button svg {
+    width: 20px;
+    height: 20px;
+}
+
+.language-switcher-menu {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 0;
+    display: grid;
+    min-width: 210px;
+    gap: 4px;
+    padding: 8px;
+    border: 1px solid #d8e4f3;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 18px 40px rgb(20 54 95 / 22%);
+    animation: language-menu-in 180ms ease both;
+}
+
+.language-switcher-menu[hidden] {
+    display: none;
+}
+
+@keyframes language-menu-in {
+    from { opacity: 0; transform: translateY(8px) scale(0.97); }
+    to { opacity: 1; transform: none; }
+}
+
+.language-switcher-menu button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 12px 9px 9px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: #173a74;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+}
+
+.language-switcher-menu button span {
+    display: grid;
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
+    place-items: center;
+    border-radius: 50%;
+    background: #eef4fc;
+    color: #2764b6;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.language-switcher-menu button:hover {
+    background: #f4f8ff;
+}
+
+.language-switcher-menu button[aria-checked="true"] {
+    background: #eaf1fb;
+}
+
+.language-switcher-menu button[aria-checked="true"] span {
+    background: #2764b6;
+    color: #fff;
+}
+
+.language-switcher-menu button[aria-checked="true"]::after {
+    margin-left: auto;
+    color: #2764b6;
+    content: "✓";
+}
+
+/* Hide Google Translate's own banner, tooltip and highlight so only our switcher shows */
+body > .skiptranslate,
+.goog-te-banner-frame,
+#goog-gt-tt,
+.goog-te-balloon-frame,
+#google-translate-element {
+    display: none !important;
+}
+
+body {
+    top: 0 !important;
+}
+
+.goog-text-highlight {
+    background: none !important;
+    box-shadow: none !important;
+}
+
+@media (max-width: 760px) {
+    .language-switcher {
+        left: 14px;
+        bottom: 14px;
+    }
+
+    .language-switcher-button {
+        min-height: 42px;
+        padding: 0 13px 0 11px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .language-switcher-menu {
+        animation: none;
+    }
+}
+
+/* Package likes: "log in or sign up" popup for guests */
+.like-signin-dialog {
+    position: fixed;
+    inset: 0;
+    width: min(380px, calc(100% - 32px));
+    height: fit-content;
+    margin: auto;
+    padding: 32px 28px 26px;
+    border: 0;
+    border-radius: 24px;
+    background: #fff;
+    color: #172f4b;
+    text-align: center;
+    box-shadow: 0 30px 70px rgb(20 54 95 / 30%);
+}
+
+.like-signin-dialog[open] {
+    animation: like-signin-in 220ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.like-signin-dialog::backdrop {
+    background: rgb(15 32 58 / 52%);
+    backdrop-filter: blur(3px);
+}
+
+@keyframes like-signin-in {
+    from { opacity: 0; transform: translateY(14px) scale(0.96); }
+    to { opacity: 1; transform: none; }
+}
+
+.like-signin-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: grid;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: #f1f5fb;
+    color: #4a5a72;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.like-signin-close:hover {
+    background: #e3ebf7;
+}
+
+.like-signin-icon {
+    display: grid;
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 14px;
+    place-items: center;
+    border-radius: 50%;
+    background: #ffe9ee;
+}
+
+.like-signin-icon svg {
+    width: 30px;
+    height: 30px;
+    fill: #e8445e;
+}
+
+.like-signin-dialog h2 {
+    margin: 0 0 8px;
+    color: #173a74;
+    font-size: 22px;
+    font-weight: 800;
+}
+
+.like-signin-dialog p {
+    margin: 0 0 22px;
+    color: #5b6475;
+    font-size: 15px;
+    line-height: 1.55;
+}
+
+.like-signin-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.like-signin-actions[hidden] {
+    display: none;
+}
+
+.like-signin-actions a {
+    display: grid;
+    min-height: 46px;
+    place-items: center;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 800;
+    text-decoration: none;
+    transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.like-signin-actions a:hover {
+    transform: translateY(-2px);
+}
+
+.like-signin-login {
+    border: 1px solid #c9d8ee;
+    background: #fff;
+    color: #173a74;
+}
+
+.like-signin-register {
+    background: linear-gradient(135deg, #2764b6, #173a74);
+    color: #fff;
+    box-shadow: 0 10px 22px rgb(23 58 116 / 28%);
+}
+
+.like-signin-close:focus-visible,
+.like-signin-actions a:focus-visible {
+    outline: 3px solid #2764b6;
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .like-signin-dialog[open] {
+        animation: none;
+    }
+}
+
+/* Smart Muslim pages: floating button back to the Smart Holidays main page (sits above the language switcher) */
+.smart-holidays-fab {
+    position: fixed;
+    z-index: 40;
+    left: 22px;
+    bottom: 80px;
+    display: inline-flex;
+    min-height: 50px;
+    align-items: center;
+    gap: 9px;
+    padding: 5px 16px 5px 12px;
+    border: 1px solid #d8e4f3;
+    border-radius: 999px;
+    background: #fff;
+    color: #173a74;
+    text-decoration: none;
+    box-shadow: 0 10px 26px rgb(20 54 95 / 22%);
+    transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.smart-holidays-fab:hover {
+    transform: translateY(-2px);
+    background: #f4f8ff;
+    box-shadow: 0 14px 30px rgb(20 54 95 / 28%);
+}
+
+.smart-holidays-fab:focus-visible {
+    outline: 3px solid #2764b6;
+    outline-offset: 2px;
+}
+
+.smart-holidays-fab-arrow {
+    color: #2764b6;
+    font-size: 15px;
+    font-weight: 800;
+    transition: transform 160ms ease;
+}
+
+.smart-holidays-fab:hover .smart-holidays-fab-arrow {
+    transform: translateX(-3px);
+}
+
+.smart-holidays-fab img {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+}
+
+.smart-holidays-fab-text {
+    display: grid;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.1;
+}
+
+.smart-holidays-fab-text small {
+    color: #7c8796;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+}
+
+@media (max-width: 760px) {
+    .smart-holidays-fab {
+        left: 14px;
+        bottom: 66px;
+        min-height: 42px;
+        padding: 4px 12px 4px 10px;
+    }
+
+    .smart-holidays-fab img {
+        width: 28px;
+        height: 28px;
+    }
+
+    .smart-holidays-fab-text small {
+        display: none;
+    }
+}
+
+/* Island & Honeymoon page: refreshed hero, island slide cards and softer sections */
+.honeymoon-page .island-hero {
+    min-height: clamp(560px, 86svh, 780px);
+    padding-bottom: 110px;
+}
+
+.honeymoon-page .island-hero-image {
+    animation: honeymoon-hero-drift 18s ease-out both;
+}
+
+@keyframes honeymoon-hero-drift {
+    from { transform: scale(1.12); }
+    to { transform: scale(1); }
+}
+
+.honeymoon-page .island-hero-shade {
+    background:
+        linear-gradient(90deg, rgb(8 37 75 / 86%) 0%, rgb(11 52 101 / 55%) 50%, rgb(11 52 101 / 8%) 100%),
+        linear-gradient(0deg, rgb(8 37 75 / 55%) 0%, transparent 40%);
+}
+
+.honeymoon-page .island-hero::after {
+    position: absolute;
+    right: 0;
+    bottom: -1px;
+    left: 0;
+    height: 70px;
+    background: #f5f9ff;
+    clip-path: ellipse(75% 100% at 50% 100%);
+    content: "";
+}
+
+.honeymoon-page .island-hero-content > * {
+    animation: honeymoon-rise 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.honeymoon-page .island-hero-content > :nth-child(2) { animation-delay: 0.08s; }
+.honeymoon-page .island-hero-content > :nth-child(3) { animation-delay: 0.16s; }
+.honeymoon-page .island-hero-content > :nth-child(4) { animation-delay: 0.24s; }
+.honeymoon-page .island-hero-content > :nth-child(5) { animation-delay: 0.32s; }
+
+@keyframes honeymoon-rise {
+    from { opacity: 0; transform: translateY(22px); }
+    to { opacity: 1; transform: none; }
+}
+
+.honeymoon-page .island-eyebrow {
+    padding: 7px 14px;
+    border: 1px solid rgb(255 255 255 / 22%);
+    border-radius: 999px;
+    background: rgb(255 255 255 / 10%);
+    backdrop-filter: blur(8px);
+    color: #dcebff;
+}
+
+.honeymoon-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 22px;
+    margin-top: 28px;
+}
+
+.honeymoon-hero-actions .island-cta {
+    margin-top: 0;
+}
+
+.honeymoon-hero-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.honeymoon-hero-link span {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    border: 1px solid rgb(255 255 255 / 40%);
+    border-radius: 50%;
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.honeymoon-hero-link:hover span {
+    background: rgb(255 255 255 / 16%);
+    transform: translateY(3px);
+}
+
+.honeymoon-hero-facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 34px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.honeymoon-hero-facts li {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 10px 16px;
+    border: 1px solid rgb(255 255 255 / 18%);
+    border-radius: 14px;
+    background: rgb(8 37 75 / 35%);
+    backdrop-filter: blur(10px);
+    color: #cfe0f7;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.honeymoon-hero-facts strong {
+    color: #fff;
+    font-size: 15px;
+    font-weight: 800;
+}
+
+.honeymoon-page .island-hero-note {
+    bottom: 86px;
+}
+
+/* Island slide cards */
+.honeymoon-islands {
+    padding: 40px 0 56px;
+    background: #f5f9ff;
+}
+
+.honeymoon-islands-heading {
+    display: flex;
+    width: min(1180px, calc(100% - 48px));
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+    margin: 0 auto 28px;
+}
+
+.honeymoon-islands-heading h2 {
+    margin: 12px 0 0;
+    color: #173a74;
+    font-size: clamp(32px, 4.4vw, 52px);
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    line-height: 1.05;
+}
+
+.honeymoon-islands-heading h2 span {
+    color: #2f73d0;
+}
+
+.honeymoon-islands-heading p {
+    max-width: 520px;
+    margin: 12px 0 0;
+    color: #5b6b82;
+    font-size: 15px;
+    line-height: 1.7;
+}
+
+.honeymoon-islands-arrows {
+    display: flex;
+    gap: 10px;
+}
+
+.honeymoon-islands-arrows button {
+    display: grid;
+    width: 50px;
+    height: 50px;
+    place-items: center;
+    border: 1px solid #cfdcf0;
+    border-radius: 50%;
+    background: #fff;
+    color: #173a74;
+    font-size: 18px;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgb(20 54 95 / 10%);
+    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+}
+
+.honeymoon-islands-arrows button:hover:not(:disabled) {
+    background: #173a74;
+    color: #fff;
+    transform: translateY(-2px);
+}
+
+.honeymoon-islands-arrows button:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.honeymoon-islands:not(.is-scrollable) .honeymoon-islands-arrows,
+.honeymoon-islands:not(.is-scrollable) .honeymoon-islands-progress {
+    visibility: hidden;
+}
+
+.honeymoon-islands-track {
+    display: flex;
+    gap: 22px;
+    margin: 0;
+    padding: 10px max(24px, calc((100% - 1180px) / 2)) 26px;
+    overflow-x: auto;
+    list-style: none;
+    scroll-behavior: smooth;
+    scroll-padding-inline: max(24px, calc((100% - 1180px) / 2));
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+}
+
+.honeymoon-islands-track::-webkit-scrollbar {
+    display: none;
+}
+
+.honeymoon-islands-track:focus-visible {
+    outline: 3px solid #2f73d0;
+    outline-offset: -3px;
+}
+
+.honeymoon-island-card {
+    position: relative;
+    flex: 0 0 clamp(270px, 30vw, 360px);
+    scroll-snap-align: start;
+}
+
+.honeymoon-island-link {
+    position: relative;
+    display: block;
+    height: clamp(420px, 44vw, 500px);
+    overflow: hidden;
+    border-radius: 28px;
+    background: #173a74;
+    color: #fff;
+    text-decoration: none;
+    box-shadow: 0 20px 44px rgb(20 54 95 / 20%);
+    transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.35s ease;
+}
+
+.honeymoon-island-link::after {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgb(8 37 75 / 10%) 0%, rgb(8 37 75 / 0%) 35%, rgb(8 37 75 / 92%) 100%);
+    content: "";
+}
+
+.honeymoon-island-link img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.honeymoon-island-link:hover,
+.honeymoon-island-link:focus-visible {
+    transform: translateY(-8px);
+    box-shadow: 0 30px 60px rgb(20 54 95 / 30%);
+}
+
+.honeymoon-island-link:hover img,
+.honeymoon-island-link:focus-visible img {
+    transform: scale(1.07);
+}
+
+.honeymoon-island-link:focus-visible {
+    outline: 3px solid #2f73d0;
+    outline-offset: 4px;
+}
+
+.honeymoon-island-number {
+    position: absolute;
+    z-index: 1;
+    top: 20px;
+    left: 22px;
+    color: rgb(255 255 255 / 85%);
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 2px;
+}
+
+.honeymoon-island-body {
+    position: absolute;
+    z-index: 1;
+    right: 22px;
+    bottom: 22px;
+    left: 22px;
+    display: grid;
+    gap: 8px;
+}
+
+.honeymoon-island-duration {
+    justify-self: start;
+    padding: 5px 11px;
+    border: 1px solid rgb(255 255 255 / 28%);
+    border-radius: 999px;
+    background: rgb(255 255 255 / 14%);
+    backdrop-filter: blur(8px);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.6px;
+}
+
+.honeymoon-island-body strong {
+    font-size: clamp(30px, 3vw, 38px);
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1.05;
+}
+
+.honeymoon-island-summary {
+    display: -webkit-box;
+    overflow: hidden;
+    color: rgb(255 255 255 / 82%);
+    font-size: 13px;
+    line-height: 1.6;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.honeymoon-island-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 6px;
+    padding-top: 14px;
+    border-top: 1px solid rgb(255 255 255 / 18%);
+    color: rgb(255 255 255 / 75%);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.honeymoon-island-explore {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: #fff;
+    color: #173a74;
+    font-size: 12px;
+    font-weight: 800;
+    transition: gap 0.2s ease;
+}
+
+.honeymoon-island-link:hover .honeymoon-island-explore {
+    gap: 12px;
+}
+
+.package-like.honeymoon-island-like {
+    position: absolute;
+    z-index: 2;
+    top: 14px;
+    right: 14px;
+}
+
+.honeymoon-islands-progress {
+    width: min(1180px, calc(100% - 48px));
+    height: 4px;
+    margin: 0 auto;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #dbe6f5;
+}
+
+.honeymoon-islands-progress span {
+    display: block;
+    width: 30%;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #2f73d0, #173a74);
+    transition: transform 0.2s ease-out;
+}
+
+/* Softer intro, highlights and contact */
+.honeymoon-page .island-intro {
+    padding: 90px 0;
+}
+
+.honeymoon-page .island-highlight {
+    position: relative;
+    overflow: hidden;
+    border-radius: 24px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.honeymoon-page .island-highlight::before {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #2f73d0, #8cc2ff);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s ease;
+    content: "";
+}
+
+.honeymoon-page .island-highlight:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 22px 44px rgb(20 54 95 / 14%);
+}
+
+.honeymoon-page .island-highlight:hover::before {
+    transform: scaleX(1);
+}
+
+.honeymoon-page .island-highlight-number {
+    background: linear-gradient(135deg, #2f73d0, #173a74);
+    color: #fff;
+}
+
+.honeymoon-page .island-contact {
+    position: relative;
+    overflow: hidden;
+}
+
+.honeymoon-page .island-contact::before,
+.honeymoon-page .island-contact::after {
+    position: absolute;
+    border-radius: 50%;
+    background: rgb(255 255 255 / 7%);
+    content: "";
+    pointer-events: none;
+}
+
+.honeymoon-page .island-contact::before {
+    top: -120px;
+    right: -60px;
+    width: 320px;
+    height: 320px;
+}
+
+.honeymoon-page .island-contact::after {
+    bottom: -140px;
+    left: 30%;
+    width: 260px;
+    height: 260px;
+}
+
+.honeymoon-page .island-contact > * {
+    position: relative;
+    z-index: 1;
+}
+
+@media (max-width: 760px) {
+    .honeymoon-page .island-hero {
+        min-height: 640px;
+        padding-bottom: 120px;
+    }
+
+    .honeymoon-hero-facts li {
+        padding: 8px 12px;
+    }
+
+    .honeymoon-page .island-hero-note {
+        display: none;
+    }
+
+    .honeymoon-islands-heading {
+        width: calc(100% - 40px);
+    }
+
+    .honeymoon-islands-arrows {
+        display: none;
+    }
+
+    .honeymoon-islands-track {
+        gap: 14px;
+        padding-inline: 20px;
+        scroll-padding-inline: 20px;
+    }
+
+    .honeymoon-island-card {
+        flex-basis: 78vw;
+    }
+
+    .honeymoon-island-link {
+        height: 440px;
+    }
+
+    .honeymoon-islands-progress {
+        width: calc(100% - 40px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .honeymoon-page .island-hero-image,
+    .honeymoon-page .island-hero-content > * {
+        animation: none;
+    }
+
+    .honeymoon-islands-track {
+        scroll-behavior: auto;
+    }
+}
+
+/* Footer: give the Smart Muslim logo room inside its white tile */
+.footer-logo img[src$="smart-muslim-logo.png"] {
+    padding: 14px;
+}
+
+/* Back-to-Smart-Holidays button: compact (arrow + logo) until hovered or focused, so it never covers page content */
+.smart-holidays-fab .smart-holidays-fab-text {
+    max-width: 0;
+    overflow: hidden;
+    opacity: 0;
+    white-space: nowrap;
+    transition: max-width 0.3s ease, opacity 0.2s ease;
+}
+
+.smart-holidays-fab:hover .smart-holidays-fab-text,
+.smart-holidays-fab:focus-visible .smart-holidays-fab-text {
+    max-width: 140px;
+    opacity: 1;
+}
+
+.smart-holidays-fab {
+    gap: 6px;
+    padding-right: 12px;
+}
+
+.smart-holidays-fab:hover,
+.smart-holidays-fab:focus-visible {
+    gap: 9px;
+    padding-right: 16px;
+}
+
+/* Public pages: motion between pages. Every page opts in with @view-transition in its <head>.
+   The header and floating buttons stay still while the page content glides out and the next page rises in. */
+.site-header {
+    view-transition-name: site-header;
+}
+
+.language-switcher {
+    view-transition-name: language-switcher;
+}
+
+.smart-holidays-fab {
+    view-transition-name: smart-holidays-fab;
+}
+
+a.client-portal-fab,
+.client-portal-fab-form {
+    view-transition-name: client-portal-fab;
+}
+
+.admin-portal-fab {
+    view-transition-name: admin-portal-fab;
+}
+
+@keyframes site-page-out {
+    to { opacity: 0; transform: translateY(-18px) scale(0.985); filter: blur(2px); }
+}
+
+@keyframes site-page-in {
+    from { opacity: 0; transform: translateY(28px); }
+}
+
+:root:has(.site-header, .client-auth-page)::view-transition-old(root) {
+    animation: site-page-out 260ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+:root:has(.site-header, .client-auth-page)::view-transition-new(root) {
+    animation: site-page-in 520ms cubic-bezier(0.2, 0.7, 0.2, 1) 120ms both;
+}
+
+/* A thin progress line under the header while the next page loads */
+.site-header::after {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #2764b6, #8cc2ff, #2764b6);
+    background-size: 200% 100%;
+    opacity: 0;
+    transform: scaleX(0);
+    transform-origin: left;
+    content: "";
+    pointer-events: none;
+}
+
+html.is-leaving .site-header::after {
+    opacity: 1;
+    animation: site-page-loading 1.6s cubic-bezier(0.1, 0.7, 0.3, 1) forwards, site-page-shimmer 1.2s linear infinite;
+}
+
+@keyframes site-page-loading {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(0.85); }
+}
+
+@keyframes site-page-shimmer {
+    to { background-position: -200% 0; }
+}
+
+/* Browsers without cross-page transitions still get a gentle entrance */
+@supports not (view-transition-name: none) {
+    body:has(> .site-header) main,
+    .client-auth-page > * {
+        animation: site-page-in 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    }
+}
+
+/* Hover lifts keep working on cards that also scroll into view */
+.brand-tile.is-revealed:hover {
+    transform: translateY(-8px);
+    transition-delay: 0ms;
+    transition-duration: 300ms;
+}
+
+.consultant-card.is-revealed:hover {
+    transform: translateY(-3px);
+    transition-delay: 0ms;
+    transition-duration: 300ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :root:has(.site-header, .client-auth-page)::view-transition-old(root),
+    :root:has(.site-header, .client-auth-page)::view-transition-new(root) {
+        animation: none;
+    }
+
+    html.is-leaving .site-header::after {
+        animation: none;
+    }
+
+    body:has(> .site-header) main,
+    .client-auth-page > * {
+        animation: none;
     }
 }

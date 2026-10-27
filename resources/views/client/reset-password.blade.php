@@ -7,6 +7,7 @@
     <meta name="description" content="Enter your code and choose a new password for your Smart Holidays client account.">
     <title>Choose a New Password | Smart Holidays</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>@view-transition { navigation: auto; }</style>
 </head>
 <body class="admin-login-page client-auth-page">
     <a class="skip-link" href="#client-reset-main">Skip to new password form</a>
@@ -114,5 +115,6 @@
             <footer class="admin-login-footer">© {{ date('Y') }} Smart Holidays by Roystar Travel &amp; Tours</footer>
         </section>
     </main>
+    @include('partials.language-switcher')
 </body>
 </html>

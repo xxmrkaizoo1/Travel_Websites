@@ -7,13 +7,14 @@
     <meta name="description" content="{{ $page->hero_body }}">
     <title>Island &amp; Honeymoon | Smart Muslim by Roystar Travel &amp; Tours</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>@view-transition { navigation: auto; }</style>
 </head>
 <body class="island-page">
     <a class="skip-link" href="#main">Skip to content</a>
 
     @include('partials.site-header')
 
-    <main id="main">
+    <main id="main" class="honeymoon-page">
         <section class="island-hero" aria-labelledby="island-title">
             <img class="island-hero-image" src="{{ $page->imageUrl($page->hero_image) }}" alt="" aria-hidden="true">
             <div class="island-hero-shade"></div>
@@ -21,10 +22,66 @@
                 <span class="island-eyebrow">{{ $page->hero_eyebrow }}</span>
                 <h1 id="island-title">{{ $page->hero_headline }}<br><strong>{{ $page->hero_highlight }}</strong></h1>
                 <p>{{ $page->hero_body }}</p>
-                <a class="island-cta" href="#contact">{{ $page->hero_cta_label }} <span aria-hidden="true">↗</span></a>
+                <div class="honeymoon-hero-actions">
+                    <a class="island-cta" href="#contact">{{ $page->hero_cta_label }} <span aria-hidden="true">↗</span></a>
+                    @if ($islandPackages->isNotEmpty())
+                        <a class="honeymoon-hero-link" href="#island-packages">Browse islands <span aria-hidden="true">↓</span></a>
+                    @endif
+                </div>
+                <ul class="honeymoon-hero-facts">
+                    @if ($islandPackages->isNotEmpty())
+                        <li><strong>{{ $islandPackages->count() }}</strong> island escapes</li>
+                    @endif
+                    <li><strong>Private</strong> just for two</li>
+                    <li><strong>Muslim</strong> friendly</li>
+                </ul>
             </div>
             <span class="island-hero-note">{{ $page->hero_note }}</span>
         </section>
+
+        @if ($islandPackages->isNotEmpty())
+            {{-- Slide cards for the pages under Island & Honeymoon in the menu (Krabi, Lombok, Bali, ...). --}}
+            <section class="honeymoon-islands" id="island-packages" aria-labelledby="island-packages-title">
+                <header class="honeymoon-islands-heading">
+                    <div>
+                        <span class="island-section-label">ISLAND ESCAPES</span>
+                        <h2 id="island-packages-title">Choose your <span>island.</span></h2>
+                        <p>Private island and honeymoon packages, each planned around the two of you.</p>
+                    </div>
+                    <div class="honeymoon-islands-arrows">
+                        <button type="button" data-card-slider-prev aria-controls="island-packages-track" aria-label="Previous islands"><span aria-hidden="true">←</span></button>
+                        <button type="button" data-card-slider-next aria-controls="island-packages-track" aria-label="Next islands"><span aria-hidden="true">→</span></button>
+                    </div>
+                </header>
+
+                <div class="honeymoon-islands-slider" data-card-slider>
+                    <ul class="honeymoon-islands-track" id="island-packages-track" data-card-slider-track tabindex="0" aria-label="Island packages">
+                        @foreach ($islandPackages as $islandPackage)
+                            @php($itineraries = $islandPackage->package_data['itineraries'] ?? [])
+                            <li class="honeymoon-island-card">
+                                <a class="honeymoon-island-link" href="{{ route('tour-package.show', $islandPackage->slug) }}">
+                                    <img src="{{ $islandPackage->imageUrl($islandPackage->hero_image) }}" alt="" loading="lazy" decoding="async">
+                                    <span class="honeymoon-island-number" aria-hidden="true">{{ sprintf('%02d', $loop->iteration) }}</span>
+                                    <span class="honeymoon-island-body">
+                                        @if (filled($itineraries[0]['duration'] ?? null))
+                                            <span class="honeymoon-island-duration">From {{ $itineraries[0]['duration'] }}</span>
+                                        @endif
+                                        <strong>{{ $islandPackage->name }}</strong>
+                                        <span class="honeymoon-island-summary">{{ \Illuminate\Support\Str::limit($islandPackage->hero_body, 110) }}</span>
+                                        <span class="honeymoon-island-footer">
+                                            <span>{{ count($itineraries) }} {{ \Illuminate\Support\Str::plural('itinerary', count($itineraries)) }}</span>
+                                            <span class="honeymoon-island-explore">Explore <span aria-hidden="true">→</span></span>
+                                        </span>
+                                    </span>
+                                </a>
+                                @include('partials.like-button', ['likeKey' => \App\Support\PackageLikes::key($islandPackage), 'likeLabel' => $islandPackage->name, 'likeClass' => 'honeymoon-island-like'])
+                            </li>
+                        @endforeach
+                    </ul>
+                    <div class="honeymoon-islands-progress" aria-hidden="true"><span data-card-slider-progress></span></div>
+                </div>
+            </section>
+        @endif
 
         <section class="island-intro" aria-labelledby="island-intro-title">
             <div class="island-intro-copy">
@@ -150,8 +207,8 @@
 
     <footer class="site-footer">
         <div class="footer-inner">
-            <a class="footer-logo" href="{{ route('home') }}" aria-label="Smart Holidays home">
-                <img src="{{ asset('images/smart-holidays-logo.png') }}" alt="Smart Holidays">
+            <a class="footer-logo" href="{{ route('smart-muslim') }}" aria-label="Smart Muslim home">
+                <img src="{{ asset('images/smart-muslim-logo.png') }}" alt="Smart Muslim">
             </a>
             <div class="footer-company">
                 <h2>ROYSTAR TRAVEL &amp; TOURS SDN BHD</h2>

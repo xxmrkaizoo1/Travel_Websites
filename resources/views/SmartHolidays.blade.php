@@ -7,6 +7,7 @@
     <meta name="description" content="{{ $page->meta_description }}">
     <title>{{ $page->meta_title }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>@view-transition { navigation: auto; }</style>
 </head>
 <body class="smart-home">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -216,7 +217,7 @@
                     <img class="brand-tile__photo" src="https://images.unsplash.com/photo-1519817650390-64a93db51149?auto=format&fit=crop&w=1200&q=80" alt="" loading="lazy">
                     <div class="brand-tile__body">
                         <div class="brand-tile__top">
-                            <span class="brand-tile__logo brand-tile__logo--badge"><strong>SMART</strong><span>MUSLIM</span></span>
+                            <span class="brand-tile__logo"><img src="{{ asset('images/smart-muslim-logo.png') }}" alt="Smart Muslim logo" loading="lazy"></span>
                             <span class="brand-tile__index" aria-hidden="true">02</span>
                         </div>
                         <span class="brand-tile__kicker">Muslim-friendly travel</span>

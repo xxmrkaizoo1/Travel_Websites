@@ -7,6 +7,7 @@
     <meta name="description" content="How Smart Muslim by Roystar Travel &amp; Tours collects, uses and protects your personal data.">
     <title>Privacy Policy | Smart Muslim by Roystar Travel &amp; Tours</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>@view-transition { navigation: auto; }</style>
 </head>
 <body class="island-page privacy-page">
     <a class="skip-link" href="#main">Skip to content</a>

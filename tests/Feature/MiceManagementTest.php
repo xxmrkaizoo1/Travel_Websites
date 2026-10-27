@@ -21,7 +21,8 @@ class MiceManagementTest extends TestCase
             ->assertOk()
             ->assertSee('Company Trip')
             ->assertSee('+6017-388 6708')
-            ->assertSee('images/clientele/perodua.png', false);
+            ->assertSee('images/clientele/perodua.png', false)
+            ->assertSeeInOrder(['images/mice-gallery/uitm-guangzhou-2026.jpg', 'images/mice-gallery/harta-yogyakarta-2023.jpg', 'images/series/hero.jpg'], false);
     }
 
     public function test_admin_can_add_and_remove_gallery_photos(): void

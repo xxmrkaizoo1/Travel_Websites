@@ -7,6 +7,7 @@
     <meta name="description" content="Smart Muslim customises company trips and MICE programmes for government and private sectors, with 30 years of experience.">
     <title>Company Trip (MICE) | Smart Muslim by Roystar Travel &amp; Tours</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>@view-transition { navigation: auto; }</style>
     <style>
         .mice-clientele { padding: 5rem 1.5rem; text-align: center; background: linear-gradient(180deg, #f6f8fb 0%, #fff 100%); }
         .mice-clientele .mice-eyebrow { display: block; font-size: .78rem; letter-spacing: .22em; font-weight: 700; color: #3e5dd2; margin-bottom: .75rem; }
@@ -25,10 +26,10 @@
         .mice-gallery h2 { font-size: clamp(1.9rem, 3.6vw, 2.8rem); font-weight: 800; margin: 0 0 .75rem; color: #14213d; }
         .mice-gallery .mice-sub { max-width: 560px; margin: 0 auto 3rem; padding: 0 1.5rem; color: #5b6475; line-height: 1.6; }
         .mice-gallery-slider { overflow: hidden; padding: 1.5rem 0 2.5rem; mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); }
-        .mice-gallery-track { display: flex; align-items: center; gap: 1.5rem; width: max-content; animation: mice-gallery-scroll 70s linear infinite; }
+        .mice-gallery-track { display: flex; align-items: center; gap: 1.5rem; width: max-content; animation: mice-gallery-scroll var(--gallery-duration, 70s) linear infinite; }
         .mice-gallery-slider:hover .mice-gallery-track { animation-play-state: paused; }
-        .mice-gallery-slide { position: relative; flex: 0 0 auto; width: 380px; height: 460px; margin: 0; overflow: hidden; border-radius: 26px; border: 6px solid #fff; background: #dfe6f5; box-shadow: 0 18px 40px rgba(20, 33, 61, .18); transition: transform .4s ease, box-shadow .4s ease; }
-        .mice-gallery-slide:nth-child(even) { height: 380px; }
+        .mice-gallery-slide { position: relative; flex: 0 0 auto; width: 500px; aspect-ratio: 768 / 565; margin: 0; overflow: hidden; border-radius: 26px; border: 6px solid #fff; background: #dfe6f5; box-shadow: 0 18px 40px rgba(20, 33, 61, .18); transition: transform .4s ease, box-shadow .4s ease; }
+        .mice-gallery-slide:nth-child(even) { width: 420px; }
         .mice-gallery-slide:nth-child(3n) { transform: rotate(-1.2deg); }
         .mice-gallery-slide:nth-child(3n+1) { transform: rotate(1.2deg); }
         .mice-gallery-slide:hover { transform: translateY(-10px) rotate(0); box-shadow: 0 26px 50px rgba(62, 93, 210, .28); }
@@ -36,7 +37,7 @@
         .mice-gallery-slide:hover img { transform: scale(1.08); }
         .mice-gallery-slide figcaption { position: absolute; inset: auto 0 0; padding: 3.5rem 1.25rem 1.1rem; text-align: left; font-size: 1.05rem; font-weight: 700; color: #fff; background: linear-gradient(180deg, transparent, rgba(10, 20, 45, .82)); }
         @keyframes mice-gallery-scroll { to { transform: translateX(calc(-50% - .75rem)); } }
-        @media (max-width: 640px) { .mice-gallery-slide { width: 260px; height: 340px; } .mice-gallery-slide:nth-child(even) { height: 290px; } }
+        @media (max-width: 640px) { .mice-gallery-slide { width: 300px; } .mice-gallery-slide:nth-child(even) { width: 260px; } }
         @media (prefers-reduced-motion: reduce) { .mice-gallery-track { animation: none; } .mice-gallery-slider { overflow-x: auto; } }
         @media (max-width: 640px) { .mice-slide { width: 160px; height: 100px; } }
         @media (prefers-reduced-motion: reduce) { .mice-track { animation: none; } .mice-slider { overflow-x: auto; } }
@@ -96,7 +97,7 @@
                 <h2 id="mice-gallery-title">Gallery</h2>
                 <p class="mice-sub">A glimpse of the corporate journeys, team-building days and incentive trips we have crafted for our clients.</p>
                 <div class="mice-gallery-slider">
-                    <div class="mice-gallery-track">
+                    <div class="mice-gallery-track" style="--gallery-duration: {{ max(70, $galleryImages->count() * 12) }}s">
                         @foreach ([1, 2] as $copy)
                             @foreach ($galleryImages as $photo)
                                 <figure class="mice-gallery-slide" @if ($copy === 2) aria-hidden="true" @endif>
@@ -145,8 +146,8 @@
 
     <footer class="site-footer">
         <div class="footer-inner">
-            <a class="footer-logo" href="{{ route('home') }}" aria-label="Smart Holidays home">
-                <img src="{{ asset('images/smart-holidays-logo.png') }}" alt="Smart Holidays">
+            <a class="footer-logo" href="{{ route('smart-muslim') }}" aria-label="Smart Muslim home">
+                <img src="{{ asset('images/smart-muslim-logo.png') }}" alt="Smart Muslim">
             </a>
             <div class="footer-company">
                 <h2>ROYSTAR TRAVEL &amp; TOURS SDN BHD</h2>

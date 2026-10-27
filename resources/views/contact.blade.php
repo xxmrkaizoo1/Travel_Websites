@@ -7,6 +7,7 @@
     <meta name="description" content="{{ $page->meta_description }}">
     <title>{{ $page->meta_title }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>@view-transition { navigation: auto; }</style>
 </head>
 <body class="contact-page">
     <a class="skip-link" href="#main">Skip to content</a>

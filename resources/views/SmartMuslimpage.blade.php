@@ -7,6 +7,7 @@
     <meta name="description" content="Discover thoughtful Muslim-friendly tours and meaningful holidays with Smart Holidays by Roystar Travel & Tours.">
     <title>Smart Muslim by Roystar Travel &amp; Tours</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>@view-transition { navigation: auto; }</style>
 </head>
 <body class="smart-muslim-page">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -173,8 +174,8 @@
 
     <footer class="site-footer" id="contact">
         <div class="footer-inner">
-            <a class="footer-logo" href="{{ route('home') }}" aria-label="Smart Holidays home">
-                <img src="{{ asset('images/smart-holidays-logo.png') }}" alt="Smart Holidays">
+            <a class="footer-logo" href="{{ route('smart-muslim') }}" aria-label="Smart Muslim home">
+                <img src="{{ asset('images/smart-muslim-logo.png') }}" alt="Smart Muslim">
             </a>
             <div class="footer-company">
                 <h2>ROYSTAR TRAVEL &amp; TOURS SDN BHD</h2>

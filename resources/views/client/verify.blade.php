@@ -7,6 +7,7 @@
     <meta name="description" content="Verify your email address to finish creating your Smart Holidays client account.">
     <title>Verify Your Email | Smart Holidays</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>@view-transition { navigation: auto; }</style>
 </head>
 <body class="admin-login-page client-auth-page">
     <a class="skip-link" href="#client-verify-main">Skip to email verification</a>
@@ -87,5 +88,6 @@
             <footer class="admin-login-footer">© {{ date('Y') }} Smart Holidays by Roystar Travel &amp; Tours</footer>
         </section>
     </main>
+    @include('partials.language-switcher')
 </body>
 </html>

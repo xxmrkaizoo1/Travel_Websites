@@ -43,7 +43,9 @@ class BaliTourPageTest extends TestCase
             ->assertSee('Bintang Bali Resort')
             ->assertSee('Welcome flower garland upon arrival')
             ->assertSee('Price does not include')
-            ->assertSee('Bali highlights slideshow')
+            ->assertSee('Bali highlights')
+            ->assertDontSee('highlights slideshow')
+            ->assertSee('pk-showcase-thumbs', false)
             ->assertSee('Enquire on WhatsApp');
     }
 }

@@ -323,7 +323,7 @@ class TourPackagePage extends Model
                 'cta_url' => $whatsapp,
             ]],
             'gallery_eyebrow' => 'A GLIMPSE OF THE DESTINATION',
-            'gallery_headline' => "{$name} highlights slideshow",
+            'gallery_headline' => "{$name} highlights",
             'gallery_body' => 'Explore the scenery and places featured in your tour.',
             'gallery' => [
                 ['image' => 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1800&q=85', 'alt' => $name, 'eyebrow' => 'DISCOVER', 'title' => $name],

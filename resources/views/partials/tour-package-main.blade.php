@@ -2,7 +2,7 @@
     $slug = $page->slug;
     $slideCount = count($page->slides);
 @endphp
-<main id="{{ $seriesPageMainId ?? 'main' }}" @if (! empty($page->package_data['series'])) class="tour-main--series" @endif>
+<main id="{{ $seriesPageMainId ?? 'main' }}" @class(['package-page' => empty($page->package_data['series']), 'tour-main--series' => ! empty($page->package_data['series'])])>
     <section class="island-hero {{ $slug }}-hero" aria-labelledby="{{ $slug }}-title">
         <img class="island-hero-image" src="{{ $page->imageUrl($page->hero_image) }}" alt="" aria-hidden="true">
         <div class="island-hero-shade"></div>

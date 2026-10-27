@@ -34,6 +34,7 @@ class AcehTourPageTest extends TestCase
             ->assertSee('Casa Nemo Beach Resort & Spa')
             ->assertSee('Flight tickets')
             ->assertSee('Private tours and entrance tickets')
-            ->assertSee('Aceh attractions slideshow');
+            ->assertSee('Aceh attractions')
+            ->assertDontSee('attractions slideshow');
     }
 }

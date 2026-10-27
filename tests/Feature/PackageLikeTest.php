@@ -2,50 +2,74 @@
 
 namespace Tests\Feature;
 
-use App\Http\Controllers\PackageLikeController;
 use App\Models\ChinaMuslimPackage;
 use App\Models\PackageLike;
 use App\Models\User;
 use App\Support\PackageLikes;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class PackageLikeTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_guest_likes_and_unlikes_a_package_and_is_remembered_by_cookie(): void
+    public function test_guests_are_asked_to_log_in_and_come_back_to_the_package_afterwards(): void
     {
         $key = PackageLikes::key(ChinaMuslimPackage::factory()->create());
 
-        $response = $this->postJson(route('package-likes.toggle'), ['key' => $key])
-            ->assertOk()
-            ->assertExactJson(['count' => 1, 'liked' => true])
-            ->assertCookie(PackageLikeController::GUEST_COOKIE);
-        $guestToken = $response->getCookie(PackageLikeController::GUEST_COOKIE)->getValue();
+        $this->get(route('china-muslim'))->assertOk();
 
-        $this->withCredentials()->withCookie(PackageLikeController::GUEST_COOKIE, $guestToken)
+        $this->postJson(route('package-likes.toggle'), ['key' => $key])
+            ->assertUnauthorized()
+            ->assertJson([
+                'login_url' => route('client.login'),
+                'register_url' => route('client.register'),
+            ])
+            ->assertSessionHas('url.intended', route('china-muslim'));
+
+        $this->assertDatabaseCount('package_likes', 0);
+    }
+
+    public function test_admins_cannot_like_packages(): void
+    {
+        $key = PackageLikes::key(ChinaMuslimPackage::factory()->create());
+
+        $this->actingAs(User::factory()->create(['is_admin' => true]))
+            ->postJson(route('package-likes.toggle'), ['key' => $key])
+            ->assertForbidden();
+
+        $this->assertDatabaseCount('package_likes', 0);
+    }
+
+    public function test_client_likes_and_unlikes_a_package(): void
+    {
+        $key = PackageLikes::key(ChinaMuslimPackage::factory()->create());
+        $client = User::factory()->create();
+
+        $this->actingAs($client)
+            ->postJson(route('package-likes.toggle'), ['key' => $key])
+            ->assertExactJson(['count' => 1, 'liked' => true]);
+
+        $this->actingAs($client)
             ->getJson(route('package-likes.index', ['keys' => [$key]]))
             ->assertExactJson([$key => ['count' => 1, 'liked' => true]]);
 
-        $this->withCredentials()->withCookie(PackageLikeController::GUEST_COOKIE, $guestToken)
+        $this->actingAs($client)
             ->postJson(route('package-likes.toggle'), ['key' => $key])
             ->assertExactJson(['count' => 0, 'liked' => false]);
 
         $this->assertDatabaseCount('package_likes', 0);
     }
 
-    public function test_each_visitor_counts_once_and_signed_in_users_like_as_their_account(): void
+    public function test_each_client_counts_once_and_sees_only_their_own_like(): void
     {
         $key = PackageLikes::key(ChinaMuslimPackage::factory()->create());
-        PackageLike::query()->create(['package_key' => $key, 'visitor_key' => 'guest:'.Str::uuid()]);
+        PackageLike::query()->create(['package_key' => $key, 'visitor_key' => 'user:'.User::factory()->create()->id]);
         $user = User::factory()->create();
 
         $this->actingAs($user)
             ->postJson(route('package-likes.toggle'), ['key' => $key])
-            ->assertExactJson(['count' => 2, 'liked' => true])
-            ->assertCookieMissing(PackageLikeController::GUEST_COOKIE);
+            ->assertExactJson(['count' => 2, 'liked' => true]);
 
         $this->assertDatabaseHas('package_likes', ['package_key' => $key, 'visitor_key' => 'user:'.$user->id]);
 
@@ -57,6 +81,7 @@ class PackageLikeTest extends TestCase
     public function test_likes_are_only_accepted_for_real_packages_and_destinations(): void
     {
         $chinaPackage = ChinaMuslimPackage::factory()->create();
+        $this->actingAs(User::factory()->create());
 
         foreach ([
             'china-muslim-package/'.($chinaPackage->id + 100),
@@ -84,7 +109,8 @@ class PackageLikeTest extends TestCase
         $this->get(route('tour-package.show', 'series-departures-2026'))
             ->assertSee('data-like-key="tour-package/series-departures-2026#', false);
 
-        $this->postJson(route('package-likes.toggle'), ['key' => 'tour-package/series-departures-2026#da-nang'])
+        $this->actingAs(User::factory()->create())
+            ->postJson(route('package-likes.toggle'), ['key' => 'tour-package/series-departures-2026#da-nang'])
             ->assertOk()
             ->assertJson(['liked' => true]);
     }

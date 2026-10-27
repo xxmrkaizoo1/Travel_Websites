@@ -880,6 +880,8 @@ document.querySelectorAll('.bali-gallery').forEach((baliCarousel) => {
     const toggleButton = baliCarousel.querySelector('.bali-carousel-toggle');
     const slideCount = baliCarousel.querySelector('.bali-slide-count strong');
     const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+    // A full-screen showcase is nearly always under the mouse, so only the pause button or keyboard focus pauses it.
+    const isShowcase = baliCarousel.classList.contains('pk-showcase-stage');
     let activeIndex = 0;
     let userPaused = motionPreference.matches;
     let isHovered = false;
@@ -918,11 +920,16 @@ document.querySelectorAll('.bali-gallery').forEach((baliCarousel) => {
         window.clearInterval(timer);
         timer = null;
 
-        if (userPaused || isHovered || isFocused || document.hidden || motionPreference.matches) {
+        baliCarousel.classList.remove('is-playing');
+
+        if (userPaused || isHovered || isFocused || document.hidden || motionPreference.matches || slides.length < 2) {
             return;
         }
 
         timer = window.setInterval(() => showSlide(activeIndex + 1), 6000);
+        // Restart the thumbnail progress bar in step with the timer.
+        void baliCarousel.offsetWidth;
+        baliCarousel.classList.add('is-playing');
     };
 
     const updateToggleButton = () => {
@@ -943,11 +950,20 @@ document.querySelectorAll('.bali-gallery').forEach((baliCarousel) => {
         }
     };
 
-    previousButton?.addEventListener('click', () => showSlide(activeIndex - 1));
-    nextButton?.addEventListener('click', () => showSlide(activeIndex + 1));
+    previousButton?.addEventListener('click', () => {
+        showSlide(activeIndex - 1);
+        updateAutoplay();
+    });
+    nextButton?.addEventListener('click', () => {
+        showSlide(activeIndex + 1);
+        updateAutoplay();
+    });
 
     dots.forEach((dot, index) => {
-        dot.addEventListener('click', () => showSlide(index));
+        dot.addEventListener('click', () => {
+            showSlide(index);
+            updateAutoplay();
+        });
     });
 
     toggleButton?.addEventListener('click', () => {
@@ -967,7 +983,7 @@ document.querySelectorAll('.bali-gallery').forEach((baliCarousel) => {
     });
 
     baliCarousel.addEventListener('pointerenter', () => {
-        isHovered = true;
+        isHovered = !isShowcase;
         updateAutoplay();
     });
 
@@ -976,8 +992,8 @@ document.querySelectorAll('.bali-gallery').forEach((baliCarousel) => {
         updateAutoplay();
     });
 
-    baliCarousel.addEventListener('focusin', () => {
-        isFocused = true;
+    baliCarousel.addEventListener('focusin', (event) => {
+        isFocused = !isShowcase || event.target.matches(':focus-visible');
         updateAutoplay();
     });
 
@@ -1054,6 +1070,8 @@ const revealTargets = document.querySelectorAll([
     '.series-head', '.series-advantage', '.series-flag', '.series-photo',
     '.travel-moments__heading', '.travel-moment-card',
     '.focus-tour-card', '.focus-tours-cta__inner', '.booking-toc__card', '.booking-card', '.destination-state',
+    '.brand-tile', '.consultants-intro', '.consultant-card', '.china-cta', '.china-moments',
+    '.honeymoon-islands-heading', '.honeymoon-island-card', '.mice-gallery > h2', '.mice-clientele > h2',
 ].join(', '));
 
 if (revealTargets.length && 'IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -3424,12 +3442,45 @@ document.querySelectorAll('[data-moments]').forEach((section) => {
 });
 
 // Smart Muslim packages: love / like buttons. Counts load together; buttons sharing a key stay in sync.
+// Only client accounts can like; anyone else gets a popup asking them to log in or sign up.
 (() => {
     const buttons = [...document.querySelectorAll('[data-like-key]')];
 
     if (buttons.length === 0) {
         return;
     }
+
+    let signInDialog = null;
+
+    const showSignInDialog = ({ message, login_url: loginUrl, register_url: registerUrl }) => {
+        if (!signInDialog) {
+            signInDialog = document.createElement('dialog');
+            signInDialog.className = 'like-signin-dialog';
+            signInDialog.setAttribute('aria-labelledby', 'like-signin-title');
+            signInDialog.innerHTML = `
+                <button class="like-signin-close" type="button" aria-label="Close">×</button>
+                <span class="like-signin-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 20.6s-7.6-4.6-9.4-9.3C1.4 8 3.4 4.4 7 4.4c2 0 3.4 1.1 5 3 1.6-1.9 3-3 5-3 3.6 0 5.6 3.6 4.4 6.9-1.8 4.7-9.4 9.3-9.4 9.3Z"/></svg></span>
+                <h2 id="like-signin-title">Love this package?</h2>
+                <p data-like-signin-message></p>
+                <div class="like-signin-actions">
+                    <a class="like-signin-login" data-like-signin-login>Log in</a>
+                    <a class="like-signin-register" data-like-signin-register>Sign up</a>
+                </div>`;
+            signInDialog.querySelector('.like-signin-close').addEventListener('click', () => signInDialog.close());
+            signInDialog.addEventListener('click', (event) => {
+                if (event.target === signInDialog) {
+                    signInDialog.close();
+                }
+            });
+            document.body.append(signInDialog);
+        }
+
+        signInDialog.querySelector('[data-like-signin-message]').textContent = message ?? 'Please log in or sign up to love this package.';
+        signInDialog.querySelector('.like-signin-actions').hidden = !loginUrl;
+        signInDialog.querySelector('[data-like-signin-login]').href = loginUrl ?? '#';
+        signInDialog.querySelector('[data-like-signin-register]').href = registerUrl ?? '#';
+        signInDialog.showModal();
+    };
 
     const xsrfToken = () => decodeURIComponent(document.cookie.split('; ').find((row) => row.startsWith('XSRF-TOKEN='))?.split('=')[1] ?? '');
     const buttonsFor = (key) => buttons.filter((button) => button.dataset.likeKey === key);
@@ -3462,14 +3513,7 @@ document.querySelectorAll('[data-moments]').forEach((section) => {
             const countLabel = button.querySelector('[data-like-count]');
             const previous = { count: Number(countLabel.textContent) || 0, liked: wasLiked };
 
-            render(key, { count: Math.max(0, previous.count + (wasLiked ? -1 : 1)), liked: !wasLiked });
             buttonsFor(key).forEach((sameKey) => { sameKey.disabled = true; });
-
-            if (!wasLiked) {
-                button.classList.remove('is-popping');
-                void button.offsetWidth;
-                button.classList.add('is-popping');
-            }
 
             try {
                 const response = await fetch('/package-likes', {
@@ -3479,7 +3523,21 @@ document.querySelectorAll('[data-moments]').forEach((section) => {
                     body: JSON.stringify({ key }),
                 });
 
-                render(key, response.ok ? await response.json() : previous);
+                if (response.status === 401 || response.status === 403) {
+                    render(key, previous);
+                    showSignInDialog(await response.json());
+
+                    return;
+                }
+
+                const state = response.ok ? await response.json() : previous;
+                render(key, state);
+
+                if (state.liked && !wasLiked) {
+                    button.classList.remove('is-popping');
+                    void button.offsetWidth;
+                    button.classList.add('is-popping');
+                }
             } catch {
                 render(key, previous);
             } finally {
@@ -3517,3 +3575,185 @@ if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         setTimeout(() => requestAnimationFrame(tick), 200);
     });
 }
+
+// Package pages: full-screen button on the photo showcase.
+document.querySelectorAll('[data-pk-fullscreen]').forEach((button) => {
+    const stage = button.closest('.pk-showcase-stage');
+
+    if (!stage || !document.fullscreenEnabled) {
+        button.hidden = true;
+
+        return;
+    }
+
+    button.addEventListener('click', () => {
+        if (document.fullscreenElement) {
+            document.exitFullscreen();
+        } else {
+            stage.requestFullscreen().catch(() => {});
+        }
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+        const isFull = document.fullscreenElement === stage;
+
+        button.setAttribute('aria-label', isFull ? 'Exit full screen' : 'View full screen');
+        button.querySelector('span').textContent = isFull ? '✕' : '⛶';
+    });
+});
+
+// Floating language switcher: Google Translate translates the whole page and keeps the choice
+// in its "googtrans" cookie, so every page opens in the chosen language.
+const languageSwitcher = document.querySelector('[data-language-switcher]');
+
+if (languageSwitcher) {
+    const languageButton = languageSwitcher.querySelector('.language-switcher-button');
+    const languageMenu = languageSwitcher.querySelector('.language-switcher-menu');
+    const languageOptions = [...languageMenu.querySelectorAll('[data-language]')];
+    const savedLanguage = () => document.cookie.match(/(?:^|;\s*)googtrans=\/[^/]*\/([^;]+)/)?.[1] ?? 'en';
+
+    const setTranslateCookie = (language) => {
+        const domains = ['', `; domain=${location.hostname}`, `; domain=.${location.hostname.replace(/^www\./, '')}`];
+        const value = language === 'en' ? '; expires=Thu, 01 Jan 1970 00:00:00 GMT' : '; max-age=31536000';
+
+        domains.forEach((domain) => {
+            document.cookie = `googtrans=${language === 'en' ? '' : `/en/${language}`}; path=/${domain}${value}`;
+        });
+    };
+
+    const showLanguage = (language) => {
+        const current = languageOptions.find((option) => option.dataset.language === language) ?? languageOptions[0];
+
+        languageOptions.forEach((option) => option.setAttribute('aria-checked', String(option === current)));
+        languageSwitcher.querySelector('[data-language-current]').textContent = current.dataset.languageShort;
+    };
+
+    const loadTranslator = () => {
+        if (document.querySelector('script[data-google-translate]')) {
+            return;
+        }
+
+        window.googleTranslateElementInit = () => {
+            new window.google.translate.TranslateElement({
+                pageLanguage: 'en',
+                includedLanguages: 'en,zh-CN,ms',
+                autoDisplay: false,
+            }, 'google-translate-element');
+        };
+
+        const script = document.createElement('script');
+        script.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+        script.async = true;
+        script.dataset.googleTranslate = '';
+        document.head.append(script);
+    };
+
+    const toggleLanguageMenu = (open) => {
+        languageMenu.hidden = !open;
+        languageButton.setAttribute('aria-expanded', String(open));
+        languageSwitcher.classList.toggle('is-open', open);
+    };
+
+    const chooseLanguage = (language) => {
+        toggleLanguageMenu(false);
+
+        if (language === savedLanguage()) {
+            return;
+        }
+
+        setTranslateCookie(language);
+        showLanguage(language);
+
+        const translateSelect = document.querySelector('.goog-te-combo');
+
+        // Going back to English, or switching before the translator has loaded, is most reliable with a reload.
+        if (language === 'en' || !translateSelect) {
+            location.reload();
+
+            return;
+        }
+
+        translateSelect.value = language;
+        translateSelect.dispatchEvent(new Event('change'));
+    };
+
+    showLanguage(savedLanguage());
+
+    if (savedLanguage() !== 'en') {
+        loadTranslator();
+    }
+
+    languageButton.addEventListener('click', () => toggleLanguageMenu(languageMenu.hidden));
+    languageOptions.forEach((option) => option.addEventListener('click', () => chooseLanguage(option.dataset.language)));
+
+    document.addEventListener('click', (event) => {
+        if (!languageSwitcher.contains(event.target)) {
+            toggleLanguageMenu(false);
+        }
+    });
+
+    languageSwitcher.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            toggleLanguageMenu(false);
+            languageButton.focus();
+        }
+    });
+}
+
+// Card sliders (Island & Honeymoon packages): native swipe/scroll, arrow buttons and a progress bar.
+document.querySelectorAll('[data-card-slider]').forEach((slider) => {
+    const track = slider.querySelector('[data-card-slider-track]');
+    const section = slider.closest('section') ?? slider;
+    const previous = section.querySelector('[data-card-slider-prev]');
+    const next = section.querySelector('[data-card-slider-next]');
+    const progress = slider.querySelector('[data-card-slider-progress]');
+
+    const step = () => {
+        const card = track.firstElementChild;
+
+        return card ? card.getBoundingClientRect().width + parseFloat(getComputedStyle(track).columnGap || 0) : track.clientWidth;
+    };
+
+    const update = () => {
+        const maxScroll = track.scrollWidth - track.clientWidth;
+        const atStart = track.scrollLeft <= 2;
+        const atEnd = track.scrollLeft >= maxScroll - 2;
+
+        previous?.toggleAttribute('disabled', atStart);
+        next?.toggleAttribute('disabled', atEnd);
+        section.classList.toggle('is-scrollable', maxScroll > 2);
+
+        if (progress) {
+            const visible = track.clientWidth / track.scrollWidth;
+            progress.style.width = `${Math.max(visible, 0.08) * 100}%`;
+            progress.style.transform = `translateX(${maxScroll > 0 ? (track.scrollLeft / maxScroll) * ((1 / Math.max(visible, 0.08)) - 1) * 100 : 0}%)`;
+        }
+    };
+
+    previous?.addEventListener('click', () => track.scrollBy({ left: -step(), behavior: 'smooth' }));
+    next?.addEventListener('click', () => track.scrollBy({ left: step(), behavior: 'smooth' }));
+    track.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    update();
+});
+
+// Page-to-page motion: a loading line under the header as soon as a link to another page is followed.
+document.addEventListener('click', (event) => {
+    const link = event.target.closest?.('a[href]');
+
+    if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+        return;
+    }
+
+    const url = new URL(link.href, location.href);
+    const samePage = url.pathname === location.pathname && url.search === location.search;
+
+    if (url.origin !== location.origin || samePage || (link.target && link.target !== '_self') || link.hasAttribute('download')) {
+        return;
+    }
+
+    document.documentElement.classList.add('is-leaving');
+});
+
+// Coming back with the browser's back button can restore the old page as it was; clear the loading line.
+window.addEventListener('pageshow', () => document.documentElement.classList.remove('is-leaving'));

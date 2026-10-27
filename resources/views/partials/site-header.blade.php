@@ -1,7 +1,9 @@
+    @php($isSmartMuslimPage = request()->routeIs('smart-muslim', 'china-muslim', 'company-trip-mice', 'gallery', 'tour-package-private', 'island-honeymoon', 'indonesia', 'indonesia.aceh', 'bali', 'thailand', 'vietnam', 'philippines', 'tour-package.show'))
     <header class="site-header smart-holidays-header">
     <div class="header-inner">
-        <a class="brand" href="{{ route('home') }}" aria-label="Smart Holidays home">
-            <img class="brand-logo" src="{{ asset('images/smart-holidays-logo.png') }}" alt="Smart Holidays">
+        @php($brandName = $isSmartMuslimPage ? 'Smart Muslim' : 'Smart Holidays')
+        <a class="brand" href="{{ $isSmartMuslimPage ? route('smart-muslim') : route('home') }}" aria-label="{{ $brandName }} home">
+            <img class="brand-logo" src="{{ asset($isSmartMuslimPage ? 'images/smart-muslim-logo.png' : 'images/smart-holidays-logo.png') }}" alt="{{ $brandName }}">
             <span class="brand-caption">ROYSTAR TRAVEL &amp; TOURS</span>
         </a>
 
@@ -84,7 +86,7 @@
             </div>
             <div class="nav-item has-dropdown">
                 <div class="muslim-nav-control">
-                    <a class="muslim-nav{{ request()->routeIs('smart-muslim', 'china-muslim', 'tour-package-private', 'island-honeymoon', 'indonesia', 'indonesia.aceh', 'bali', 'thailand', 'vietnam', 'philippines', 'tour-package.show') ? ' is-current' : '' }}" href="{{ route('smart-muslim') }}">Smart Muslim Tour</a>
+                    <a class="muslim-nav{{ $isSmartMuslimPage ? ' is-current' : '' }}" href="{{ route('smart-muslim') }}">Smart Muslim Tour</a>
                     <button class="nav-trigger muslim-nav-toggle" type="button" aria-label="Toggle Smart Muslim Tour menu" aria-expanded="false" aria-controls="muslim-tours-menu"><span class="nav-chevron" aria-hidden="true"></span></button>
                 </div>
                 <div class="dropdown-menu" id="muslim-tours-menu">
@@ -345,3 +347,13 @@
         </form>
     @endunless
 @endif
+
+@if ($isSmartMuslimPage)
+    <a class="smart-holidays-fab" href="{{ route('home') }}" aria-label="Back to the Smart Holidays main page" title="Back to Smart Holidays">
+        <span class="smart-holidays-fab-arrow" aria-hidden="true">←</span>
+        <img src="{{ asset('images/smart-holidays-logo.png') }}" alt="">
+        <span class="smart-holidays-fab-text"><small>Back to</small>Smart Holidays</span>
+    </a>
+@endif
+
+@include('partials.language-switcher')

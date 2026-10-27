@@ -184,6 +184,7 @@ Route::get('/island-honeymoon', function () {
     return view('Smart-Muslim.Tour-Package(private).island-honeymoon.island-honeymoon', [
         'page' => IslandHoneymoonSetting::query()->firstOrFail(),
         'destinations' => IslandDestination::query()->orderBy('position')->get(),
+        'islandPackages' => TourPackagePage::query()->where('is_custom', true)->where('parent_slug', 'island-honeymoon')->orderBy('name')->get(),
     ]);
 })->name('island-honeymoon');
 

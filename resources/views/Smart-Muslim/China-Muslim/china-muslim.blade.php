@@ -7,6 +7,7 @@
     <meta name="description" content="China Muslim package tours and series departures by Smart Holidays.">
     <title>China Muslim Package Tours | Smart Holidays</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>@view-transition { navigation: auto; }</style>
 </head>
 <body class="island-page china-muslim-page">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -277,8 +278,8 @@
 
     <footer class="site-footer">
         <div class="footer-inner">
-            <a class="footer-logo" href="{{ route('home') }}" aria-label="Smart Holidays home">
-                <img src="{{ asset('images/smart-holidays-logo.png') }}" alt="Smart Holidays">
+            <a class="footer-logo" href="{{ route('smart-muslim') }}" aria-label="Smart Muslim home">
+                <img src="{{ asset('images/smart-muslim-logo.png') }}" alt="Smart Muslim">
             </a>
             <div class="footer-company">
                 <h2>ROYSTAR TRAVEL &amp; TOURS SDN BHD</h2>

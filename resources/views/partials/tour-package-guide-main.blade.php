@@ -7,7 +7,7 @@
     $hotels = $data['hotels'] ?? [];
     $packageBooking = new \App\Support\BookablePackage($page);
 @endphp
-<main id="{{ $seriesPageMainId ?? 'main' }}">
+<main id="{{ $seriesPageMainId ?? 'main' }}" class="package-page">
     <section class="island-hero indonesia-hero" aria-labelledby="{{ $slug }}-title">
         <img class="island-hero-image" src="{{ $page->imageUrl($page->hero_image) }}" alt="" aria-hidden="true">
         <div class="island-hero-shade"></div>
@@ -87,32 +87,52 @@
     </section>
 
     @if ($galleryCount > 0)
-        <section class="aceh-gallery-section bali-gallery-section" aria-labelledby="{{ $slug }}-gallery-title">
-            <div class="island-section-heading">
-                <span class="island-section-label">{{ $data['gallery_eyebrow'] ?? '' }}</span>
-                <h2 id="{{ $slug }}-gallery-title">{{ $data['gallery_headline'] ?? '' }}</h2>
-                <p>{{ $data['gallery_body'] ?? '' }}</p>
-            </div>
-            <div class="bali-gallery" role="region" aria-roledescription="carousel" aria-label="{{ $data['gallery_headline'] ?? 'Slideshow' }}" tabindex="0">
+        {{-- Full-screen photo showcase: the heading sits over the photos, thumbnails with a progress bar choose the photo. --}}
+        <section class="aceh-gallery-section bali-gallery-section pk-showcase" aria-labelledby="{{ $slug }}-gallery-title">
+            <div class="bali-gallery pk-showcase-stage" role="region" aria-roledescription="carousel" aria-label="{{ $data['gallery_headline'] ?? $page->name }}" tabindex="0">
                 <div class="bali-slides">
                     @foreach ($gallery as $slide)
                         <figure class="bali-slide{{ $loop->first ? ' is-active' : '' }}" aria-roledescription="slide" aria-label="{{ $loop->iteration }} of {{ $galleryCount }}" aria-hidden="{{ $loop->first ? 'false' : 'true' }}" @unless ($loop->first) inert @endunless>
                             <img src="{{ $page->imageUrl($slide['image']) }}" alt="{{ $slide['alt'] }}" @unless ($loop->first) loading="lazy" @endunless decoding="async">
-                            <figcaption><span>{{ $slide['eyebrow'] }}</span><strong>{{ $slide['title'] }}</strong></figcaption>
+                            <figcaption>
+                                @if ($galleryCount > 1)
+                                    <em aria-hidden="true">{{ sprintf('%02d', $loop->iteration) }}</em>
+                                @endif
+                                <span>{{ $slide['eyebrow'] }}</span><strong>{{ $slide['title'] }}</strong>
+                            </figcaption>
                         </figure>
                     @endforeach
                 </div>
-                <button class="bali-carousel-arrow bali-carousel-prev" type="button" aria-label="Previous slide"><span aria-hidden="true">←</span></button>
-                <button class="bali-carousel-arrow bali-carousel-next" type="button" aria-label="Next slide"><span aria-hidden="true">→</span></button>
-                <div class="bali-carousel-toolbar">
-                    <button class="bali-carousel-toggle" type="button" aria-label="Pause slideshow" aria-pressed="false"><span aria-hidden="true">Ⅱ</span></button>
-                    <div class="bali-slide-dots" role="group" aria-label="Choose a slide">
-                        @foreach ($gallery as $slide)
-                            <button type="button" @if ($loop->first) class="is-active" aria-current="true" @endif aria-label="Show slide {{ $loop->iteration }}: {{ $slide['title'] }}"></button>
-                        @endforeach
+
+                <header class="pk-showcase-heading">
+                    @if (filled($data['gallery_eyebrow'] ?? null))
+                        <span class="pk-showcase-eyebrow">{{ $data['gallery_eyebrow'] }}</span>
+                    @endif
+                    <h2 id="{{ $slug }}-gallery-title">{{ $data['gallery_headline'] ?? $page->name }}</h2>
+                    @if (filled($data['gallery_body'] ?? null))
+                        <p>{{ $data['gallery_body'] }}</p>
+                    @endif
+                </header>
+
+                <button class="pk-showcase-fullscreen" type="button" data-pk-fullscreen aria-label="View full screen"><span aria-hidden="true">⛶</span></button>
+
+                @if ($galleryCount > 1)
+                    <button class="bali-carousel-arrow bali-carousel-prev" type="button" aria-label="Previous photo"><span aria-hidden="true">←</span></button>
+                    <button class="bali-carousel-arrow bali-carousel-next" type="button" aria-label="Next photo"><span aria-hidden="true">→</span></button>
+                    <div class="bali-carousel-toolbar">
+                        <button class="bali-carousel-toggle" type="button" aria-label="Pause slideshow" aria-pressed="false"><span aria-hidden="true">Ⅱ</span></button>
+                        <div class="bali-slide-dots pk-showcase-thumbs" role="group" aria-label="Choose a photo">
+                            @foreach ($gallery as $slide)
+                                <button type="button" @if ($loop->first) class="is-active" aria-current="true" @endif aria-label="Show photo {{ $loop->iteration }}: {{ $slide['title'] }}">
+                                    <img src="{{ $page->imageUrl($slide['image']) }}" alt="" loading="lazy" decoding="async">
+                                    <span>{{ $slide['title'] }}</span>
+                                    <i class="pk-showcase-progress" aria-hidden="true"></i>
+                                </button>
+                            @endforeach
+                        </div>
+                        <span class="bali-slide-count" aria-live="off"><strong>01</strong><span>/ {{ sprintf('%02d', $galleryCount) }}</span></span>
                     </div>
-                    <span class="bali-slide-count" aria-live="off"><strong>01</strong><span>/ {{ sprintf('%02d', $galleryCount) }}</span></span>
-                </div>
+                @endif
             </div>
         </section>
     @endif

@@ -7,6 +7,7 @@
     <meta name="description" content="Sign in to your Smart Holidays client account.">
     <title>Client Sign In | Smart Holidays</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>@view-transition { navigation: auto; }</style>
 </head>
 <body class="admin-login-page client-auth-page">
     <a class="skip-link" href="#client-login-main">Skip to sign in</a>
@@ -95,5 +96,6 @@
             <footer class="admin-login-footer">© {{ date('Y') }} Smart Holidays by Roystar Travel &amp; Tours</footer>
         </section>
     </main>
+    @include('partials.language-switcher')
 </body>
 </html>

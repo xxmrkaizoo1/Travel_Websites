@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\TourPackagePage;
 use App\Models\User;
+use App\Support\PackageLikes;
 use Database\Seeders\IndonesiaTourPackagePagesSeeder;
 use Database\Seeders\IslandHoneymoonPackagePagesSeeder;
 use Database\Seeders\LegacyTourPackagePagesSeeder;
@@ -138,7 +139,25 @@ class CustomTourPackagePageTest extends TestCase
         $this->get('/tour/langkawi-break')
             ->assertOk()
             ->assertSee('aceh-itinerary-card', false)
-            ->assertSee(e($page->package_data['itineraries'][0]['title']), false);
+            ->assertSee(e($page->package_data['itineraries'][0]['title']), false)
+            ->assertSee('Langkawi Break highlights')
+            ->assertDontSee('slideshow</h2>', false)
+            ->assertSee('pk-showcase-stage', false)
+            ->assertDontSee('bali-carousel-prev', false);
+    }
+
+    public function test_slideshow_is_removed_from_existing_gallery_headings(): void
+    {
+        $this->seed(LegacyTourPackagePagesSeeder::class);
+        $page = TourPackagePage::query()->where('slug', 'aceh')->firstOrFail();
+        $page->update(['package_data' => [...$page->package_data, 'gallery_headline' => 'Aceh attractions Slideshow']]);
+        $untouched = TourPackagePage::query()->where('slug', 'bali')->firstOrFail();
+        $untouched->update(['package_data' => [...$untouched->package_data, 'gallery_headline' => 'Bali at a glance']]);
+
+        (require database_path('migrations/2026_10_27_045512_remove_slideshow_from_package_gallery_headlines.php'))->up();
+
+        $this->assertSame('Aceh attractions', $page->fresh()->package_data['gallery_headline']);
+        $this->assertSame('Bali at a glance', $untouched->fresh()->package_data['gallery_headline']);
     }
 
     public function test_indonesia_tour_packages_are_linked_and_render_the_supplied_itineraries(): void
@@ -1154,6 +1173,26 @@ class CustomTourPackagePageTest extends TestCase
             ->assertForbidden();
 
         $this->assertDatabaseHas('tour_package_pages', ['slug' => 'thailand']);
+    }
+
+    public function test_island_honeymoon_page_shows_a_slide_card_for_each_island_package(): void
+    {
+        $krabi = $this->createCustomPage('Krabi', 'package');
+        $krabi->update(['parent_slug' => 'island-honeymoon']);
+        $lombok = $this->createCustomPage('Lombok', 'package');
+        $lombok->update(['parent_slug' => 'island-honeymoon']);
+        $this->createCustomPage('Testville', 'package')->update(['parent_slug' => 'vietnam']);
+
+        $this->get(route('island-honeymoon'))
+            ->assertOk()
+            ->assertSee('id="island-packages"', false)
+            ->assertSee('<strong>2</strong> island escapes', false)
+            ->assertSeeInOrder([
+                'href="'.route('tour-package.show', 'krabi').'"',
+                'data-like-key="'.PackageLikes::key($krabi).'"',
+                'href="'.route('tour-package.show', 'lombok').'"',
+            ], false)
+            ->assertDontSee('<strong>Testville</strong>', false);
     }
 
     private function createAdmin(): User

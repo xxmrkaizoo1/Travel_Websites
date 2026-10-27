@@ -7,6 +7,7 @@
     <meta name="description" content="Discover Bali with four private tour packages, from a romantic 4D3N escape to a 5D4N Nusa Penida adventure.">
     <title>Bali Tour Packages | Smart Muslim by Roystar Travel &amp; Tours</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>@view-transition { navigation: auto; }</style>
 </head>
 <body class="island-page indonesia-page bali-tour-page">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -237,8 +238,8 @@
 
     <footer class="site-footer">
         <div class="footer-inner">
-            <a class="footer-logo" href="{{ route('home') }}" aria-label="Smart Holidays home">
-                <img src="{{ asset('images/smart-holidays-logo.png') }}" alt="Smart Holidays">
+            <a class="footer-logo" href="{{ route('smart-muslim') }}" aria-label="Smart Muslim home">
+                <img src="{{ asset('images/smart-muslim-logo.png') }}" alt="Smart Muslim">
             </a>
             <div class="footer-company">
                 <h2>ROYSTAR TRAVEL &amp; TOURS SDN BHD</h2>
