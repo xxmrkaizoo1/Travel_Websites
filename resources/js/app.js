@@ -3612,13 +3612,27 @@ if (languageSwitcher) {
     const languageOptions = [...languageMenu.querySelectorAll('[data-language]')];
     const savedLanguage = () => document.cookie.match(/(?:^|;\s*)googtrans=\/[^/]*\/([^;]+)/)?.[1] ?? 'en';
 
+    // Google Translate may write its cookie on any parent domain (e.g. ".infinityfreeapp.com"), so every
+    // level of the hostname is written or cleared, otherwise a leftover cookie keeps the page translated.
     const setTranslateCookie = (language) => {
-        const domains = ['', `; domain=${location.hostname}`, `; domain=.${location.hostname.replace(/^www\./, '')}`];
-        const value = language === 'en' ? '; expires=Thu, 01 Jan 1970 00:00:00 GMT' : '; max-age=31536000';
+        const hostParts = location.hostname.split('.');
+        const domains = [''];
+
+        hostParts.forEach((_, index) => {
+            const domain = hostParts.slice(index).join('.');
+
+            if (domain.includes('.')) {
+                domains.push(`; domain=${domain}`, `; domain=.${domain}`);
+            }
+        });
 
         domains.forEach((domain) => {
-            document.cookie = `googtrans=${language === 'en' ? '' : `/en/${language}`}; path=/${domain}${value}`;
+            document.cookie = `googtrans=; path=/${domain}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
         });
+
+        if (language !== 'en') {
+            document.cookie = `googtrans=/en/${language}; path=/; max-age=31536000`;
+        }
     };
 
     const showLanguage = (language) => {

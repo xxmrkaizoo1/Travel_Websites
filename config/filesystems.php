@@ -38,9 +38,11 @@ return [
             'report' => false,
         ],
 
+        // Hosts without symlink support (e.g. InfinityFree) set PUBLIC_STORAGE_IN_PUBLIC=true so uploads
+        // are saved straight into public/storage, where the web server can serve them directly.
         'public' => [
             'driver' => 'local',
-            'root' => storage_path('app/public'),
+            'root' => env('PUBLIC_STORAGE_IN_PUBLIC', false) ? public_path('storage') : storage_path('app/public'),
             'url' => '/storage',
             'visibility' => 'public',
             'throw' => false,
@@ -73,7 +75,7 @@ return [
     |
     */
 
-    'links' => [
+    'links' => env('PUBLIC_STORAGE_IN_PUBLIC', false) ? [] : [
         public_path('storage') => storage_path('app/public'),
     ],
 
