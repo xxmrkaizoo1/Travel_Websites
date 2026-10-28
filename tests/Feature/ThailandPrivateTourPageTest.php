@@ -46,4 +46,22 @@ class ThailandPrivateTourPageTest extends TestCase
         $this->get(route('philippines'))
             ->assertSeeInOrder(['href="/tour/boracay"', 'href="/tour/palawan"', 'href="/tour/manila"', 'href="/tour/cebu"', 'Ask about Bohol packages'], false);
     }
+
+    public function test_linked_thailand_packages_exist_without_running_seeders(): void
+    {
+        $packages = [
+            'bangkok' => 'Al Meroz Hotel Bangkok',
+            'pattaya' => 'Centre Point Prime Hotel Pattaya',
+            'kanchanaburi' => 'Royal River Khwae Resort',
+            'chiang-mai-chiang-rai' => 'Grand Vista Hotel Chiang Rai',
+        ];
+
+        foreach ($packages as $slug => $hotel) {
+            $this->get(route('tour-package.show', $slug))
+                ->assertOk()
+                ->assertSee($hotel)
+                ->assertSee('Mineral water (1 bottle during tours)')
+                ->assertDontSee('Photos for this destination will be added soon.');
+        }
+    }
 }

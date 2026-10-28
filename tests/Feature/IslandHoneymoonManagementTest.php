@@ -67,6 +67,17 @@ class IslandHoneymoonManagementTest extends TestCase
             ->assertSee('Plan a private escape around your favourite island moments.');
     }
 
+    public function test_public_page_shows_maafushi_and_krabi_after_bali(): void
+    {
+        $this->get(route('island-honeymoon'))
+            ->assertOk()
+            ->assertSeeInOrder(['Bali Island', 'Maafushi Island', 'Krabi Island'])
+            ->assertSee('Advantages of Vacationing in Maafushi')
+            ->assertSee('Muslim-Friendly &amp; Welcoming Community', false)
+            ->assertSee('Advantages of Vacationing in Krabi')
+            ->assertSee('Krabi offers a variety of exciting activities like island hopping to Phi Phi and Hong Islands');
+    }
+
     public function test_admin_can_add_edit_and_delete_a_destination_spotlight(): void
     {
         Storage::fake('public');

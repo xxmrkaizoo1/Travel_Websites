@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\SmartHolidaysPage;
+use App\Support\Mp4FastStart;
 use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -245,6 +246,10 @@ class SmartHolidaysPageController extends Controller
 
         if (! is_string($path)) {
             throw new RuntimeException('A file could not be saved. Please try again.');
+        }
+
+        if ($file->getMimeType() === 'video/mp4') {
+            Mp4FastStart::optimize(Storage::disk('public')->path($path));
         }
 
         return $path;

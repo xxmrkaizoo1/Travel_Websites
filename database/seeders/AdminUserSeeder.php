@@ -22,8 +22,12 @@ class AdminUserSeeder extends Seeder
             throw new InvalidArgumentException('Set ADMIN_EMAIL to a valid administrator email address.');
         }
 
-        if (! is_string($password) || strlen($password) < 12) {
-            throw new InvalidArgumentException('Set ADMIN_PASSWORD to a password of at least 12 characters.');
+        if (! is_string($password) || $password === '') {
+            throw new InvalidArgumentException('Set ADMIN_PASSWORD to a non-empty password.');
+        }
+
+        if (app()->isProduction() && strlen($password) < 12) {
+            throw new InvalidArgumentException('Set ADMIN_PASSWORD to a password of at least 12 characters in production.');
         }
 
         $user = User::firstOrNew(['email' => $email]);

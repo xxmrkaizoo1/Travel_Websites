@@ -471,7 +471,7 @@ class CustomTourPackagePageTest extends TestCase
             ->assertSee('Gyeongbokgung')
             ->assertSee('City of Eternal Spring', false)
             ->assertSee('Dragon Bridge')
-            ->assertDontSee('Medan')
+            ->assertDontSee('href="#series-medan"', false)
             ->assertDontSee('Lake Toba')
             ->assertSee('Explore the full Da Nang package')
             ->assertSee('id="da-nang-package-details"', false)
@@ -629,7 +629,7 @@ class CustomTourPackagePageTest extends TestCase
         $this->get(route('tour-package.show', $page->slug))->assertOk()
             ->assertSee('Dragon Bridge')
             ->assertSee('href="#series-da-nang"', false)
-            ->assertDontSee('Medan');
+            ->assertDontSee('href="#series-medan"', false);
     }
 
     public function test_create_form_lets_admin_pick_a_template_for_each_page_kind(): void
@@ -1007,7 +1007,8 @@ class CustomTourPackagePageTest extends TestCase
 
     public function test_legacy_destinations_appear_under_their_parent_in_navigation(): void
     {
-        foreach (['Aceh', 'Bali', 'Bangkok', 'Krabi', 'Lombok', 'Maldives'] as $destination) {
+        // Aceh and Bangkok are already added under their countries by their own migrations.
+        foreach (['Bali', 'Krabi', 'Lombok', 'Maldives'] as $destination) {
             $this->createCustomPage($destination, 'package');
         }
 

@@ -3942,14 +3942,35 @@ document.querySelectorAll('[data-pk-fullscreen]').forEach((button) => {
 });
 
 // Floating language switcher: Google Translate translates the whole page and keeps the choice
-// in its "googtrans" cookie, so every page opens in the chosen language.
+// in its "googtrans" cookie, so every page opens in the chosen language. The choice is also kept in
+// localStorage and applied through Google's language select, because embedded browsers (such as an
+// editor's preview pane) may block the cookie, which would otherwise reload the page in English.
 const languageSwitcher = document.querySelector('[data-language-switcher]');
 
 if (languageSwitcher) {
     const languageButton = languageSwitcher.querySelector('.language-switcher-button');
     const languageMenu = languageSwitcher.querySelector('.language-switcher-menu');
     const languageOptions = [...languageMenu.querySelectorAll('[data-language]')];
-    const savedLanguage = () => document.cookie.match(/(?:^|;\s*)googtrans=\/[^/]*\/([^;]+)/)?.[1] ?? 'en';
+    const languageStorageKey = 'smart-holidays-language';
+    const cookieLanguage = () => document.cookie.match(/(?:^|;\s*)googtrans=\/[^/]*\/([^;]+)/)?.[1] ?? null;
+
+    const storedLanguage = () => {
+        try {
+            return window.localStorage.getItem(languageStorageKey);
+        } catch {
+            return null;
+        }
+    };
+
+    const savedLanguage = () => cookieLanguage() ?? storedLanguage() ?? 'en';
+
+    const storeLanguage = (language) => {
+        try {
+            window.localStorage.setItem(languageStorageKey, language);
+        } catch {
+            // Storage blocked: the cookie alone remembers the choice.
+        }
+    };
 
     // Google Translate may write its cookie on any parent domain (e.g. ".infinityfreeapp.com"), so every
     // level of the hostname is written or cleared, otherwise a leftover cookie keeps the page translated.
@@ -4001,6 +4022,29 @@ if (languageSwitcher) {
         document.head.append(script);
     };
 
+    // Google builds its language select a moment after its script loads, so wait for it and then pick the language.
+    const translateWith = (language) => {
+        const startedAt = Date.now();
+
+        const pickLanguage = () => {
+            const translateSelect = document.querySelector('.goog-te-combo');
+
+            if (translateSelect?.querySelector(`option[value="${language}"]`)) {
+                translateSelect.value = language;
+                translateSelect.dispatchEvent(new Event('change'));
+
+                return;
+            }
+
+            if (Date.now() - startedAt < 15000) {
+                window.setTimeout(pickLanguage, 250);
+            }
+        };
+
+        loadTranslator();
+        pickLanguage();
+    };
+
     const toggleLanguageMenu = (open) => {
         languageMenu.hidden = !open;
         languageButton.setAttribute('aria-expanded', String(open));
@@ -4015,25 +4059,26 @@ if (languageSwitcher) {
         }
 
         setTranslateCookie(language);
+        storeLanguage(language);
         showLanguage(language);
 
-        const translateSelect = document.querySelector('.goog-te-combo');
-
-        // Going back to English, or switching before the translator has loaded, is most reliable with a reload.
-        if (language === 'en' || !translateSelect) {
+        // Going back to English is most reliable with a reload.
+        if (language === 'en') {
             location.reload();
 
             return;
         }
 
-        translateSelect.value = language;
-        translateSelect.dispatchEvent(new Event('change'));
+        translateWith(language);
     };
 
     showLanguage(savedLanguage());
 
-    if (savedLanguage() !== 'en') {
+    // Google applies the cookie by itself; when the cookie was blocked, the stored language is picked instead.
+    if (cookieLanguage() !== null) {
         loadTranslator();
+    } else if (savedLanguage() !== 'en') {
+        translateWith(savedLanguage());
     }
 
     languageButton.addEventListener('click', () => toggleLanguageMenu(languageMenu.hidden));
@@ -4060,6 +4105,11 @@ document.querySelectorAll('[data-card-slider]').forEach((slider) => {
     const previous = section.querySelector('[data-card-slider-prev]');
     const next = section.querySelector('[data-card-slider-next]');
     const progress = slider.querySelector('[data-card-slider-progress]');
+
+    // Group Tours and China Muslim sliders reuse the wrapper but are driven by [data-slider-track] instead.
+    if (!track) {
+        return;
+    }
 
     const step = () => {
         const card = track.firstElementChild;

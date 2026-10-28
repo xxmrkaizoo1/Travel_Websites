@@ -49,8 +49,22 @@ class ChinaMuslimPackageTest extends TestCase
             ->assertSee('Subject to change.');
     }
 
+    public function test_starter_cards_are_added_with_itineraries(): void
+    {
+        $this->get(route('china-muslim'))
+            ->assertOk()
+            ->assertSee('7D5N GUANGZHOU GUILIN YANGSHUO MUSLIM TOURS')
+            ->assertSee('RM2,990.00')
+            ->assertSee('9D7N KUNMING DALI LIJIANG SHANGRI-LA (2 WAY TRAIN) MUSLIM TOURS')
+            ->assertSee('8D6N ZHANGJIAJIE CHANGSHA CHANGDE MUSLIM TOURS')
+            ->assertSee('Pray at Chongxin Mosque.')
+            ->assertSee('Pray at South Gate Mosque.')
+            ->assertSee('Visit Yellow Dragon Cave, famous for its massive stalactites.');
+    }
+
     public function test_card_without_details_has_no_popup(): void
     {
+        ChinaMuslimPackage::query()->delete();
         ChinaMuslimPackage::factory()->create();
 
         $this->get(route('china-muslim'))
@@ -138,7 +152,7 @@ class ChinaMuslimPackageTest extends TestCase
             'image' => UploadedFile::fake()->image('guilin.jpg'),
         ])->assertRedirect(route('admin.china-muslim'));
 
-        $package = ChinaMuslimPackage::query()->firstOrFail();
+        $package = ChinaMuslimPackage::query()->where('title', '7D5N GUANGZHOU GUILIN MUSLIM TOURS')->firstOrFail();
         $this->assertTrue($package->is_hot);
         Storage::disk('public')->assertExists($package->image_path);
         $oldImage = $package->image_path;
@@ -167,6 +181,7 @@ class ChinaMuslimPackageTest extends TestCase
     {
         Storage::fake('public');
         $admin = User::factory()->create(['is_admin' => true]);
+        $existingCount = ChinaMuslimPackage::query()->count();
 
         $this->actingAs($admin)->from(route('admin.china-muslim.create'))
             ->post(route('admin.china-muslim.store'), [
@@ -179,7 +194,7 @@ class ChinaMuslimPackageTest extends TestCase
             ])
             ->assertSessionHasErrors(['title', 'price', 'days', 'nights', 'link', 'image']);
 
-        $this->assertDatabaseCount('china_muslim_packages', 0);
+        $this->assertDatabaseCount('china_muslim_packages', $existingCount);
     }
 
     public function test_admin_can_edit_the_about_this_place_popup_and_gallery(): void

@@ -37,4 +37,35 @@ class AcehTourPageTest extends TestCase
             ->assertSee('Aceh attractions')
             ->assertDontSee('attractions slideshow');
     }
+
+    public function test_aceh_package_is_listed_under_indonesia_without_running_seeders(): void
+    {
+        $this->get(route('indonesia.aceh'))
+            ->assertOk()
+            ->assertSee('4D3N ACEH TOUR PACKAGE')
+            ->assertSee('Aceh + Sabang');
+
+        $this->assertDatabaseHas('tour_package_pages', ['slug' => 'aceh', 'parent_slug' => 'indonesia', 'is_custom' => true]);
+        $this->assertDatabaseMissing('tour_package_pages', ['slug' => 'bali', 'is_custom' => true]);
+    }
+
+    public function test_medan_and_padang_packages_are_listed_under_indonesia_without_running_seeders(): void
+    {
+        $this->get(route('tour-package.show', 'medan'))
+            ->assertOk()
+            ->assertSee('5D4N Medan · Lake Toba · Berastagi')
+            ->assertSee('Taman Simalem Resort')
+            ->assertSee('Grand Al-Mashun Mosque');
+
+        $this->get(route('tour-package.show', 'padang'))
+            ->assertOk()
+            ->assertSee('5D4N Padang · Bukittinggi')
+            ->assertSee('Jam Gadang');
+
+        $this->get(route('indonesia'))
+            ->assertOk()
+            ->assertSee('href="'.route('tour-package.show', 'medan', false).'"', false)
+            ->assertSee('href="'.route('tour-package.show', 'padang', false).'"', false)
+            ->assertDontSee('href="'.route('tour-package.show', 'surabaya', false).'"', false);
+    }
 }

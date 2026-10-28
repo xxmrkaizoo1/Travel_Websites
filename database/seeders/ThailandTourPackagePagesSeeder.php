@@ -11,8 +11,8 @@ class ThailandTourPackagePagesSeeder extends Seeder
         'Transportation throughout the trip',
         'Hotel accommodation with breakfast',
         'Private tours and entrance tickets',
-        'Mineral water during tours',
-        'Meals as listed in each itinerary',
+        'Mineral water (1 bottle during tours)',
+        'Full meals (breakfast, lunch and dinner)',
     ];
 
     private const EXCLUSIONS = [
@@ -24,9 +24,14 @@ class ThailandTourPackagePagesSeeder extends Seeder
         'Personal expenses such as laundry and souvenirs',
     ];
 
-    public function run(): void
+    /**
+     * @param  list<string>  $slugs  Only these pages are added; empty adds them all.
+     */
+    public function run(array $slugs = []): void
     {
-        foreach ($this->pages() as $slug => $definition) {
+        $pages = $slugs === [] ? $this->pages() : array_intersect_key($this->pages(), array_flip($slugs));
+
+        foreach ($pages as $slug => $definition) {
             if (TourPackagePage::query()->where('slug', $slug)->exists()) {
                 continue;
             }
@@ -50,7 +55,9 @@ class ThailandTourPackagePagesSeeder extends Seeder
     {
         $whatsapp = fn (string $name): string => 'https://wa.me/60165500590?text='.rawurlencode("Hi, I'd like to ask about the {$name} private tour package.");
 
-        $package = fn (string $name, string $headline, string $body, array $itineraries, array $hotels): array => [
+        $photo = fn (string $id, int $width = 1800): string => "https://images.unsplash.com/photo-{$id}?auto=format&fit=crop&w={$width}&q=85";
+
+        $package = fn (string $name, string $headline, string $body, array $itineraries, array $hotels, array $gallery = []): array => [
             'itineraries_eyebrow' => "EXPLORE {$name}",
             'itineraries_headline' => $headline,
             'itineraries_body' => $body,
@@ -64,8 +71,8 @@ class ThailandTourPackagePagesSeeder extends Seeder
             ),
             'gallery_eyebrow' => 'DESTINATION PHOTOS',
             'gallery_headline' => "{$name} gallery",
-            'gallery_body' => 'Photos for this destination will be added soon.',
-            'gallery' => [],
+            'gallery_body' => $gallery === [] ? 'Photos for this destination will be added soon.' : 'A glimpse of the places on your itinerary.',
+            'gallery' => $gallery,
             'details_eyebrow' => 'GOOD TO KNOW',
             'details_headline' => "What's included in your {$name} tour.",
             'details_body' => 'Package inclusions and exclusions are listed below.',
@@ -88,13 +95,13 @@ class ThailandTourPackagePagesSeeder extends Seeder
                     'hero_highlight' => 'Culture, river & city life.',
                     'hero_body' => 'Explore Bangkok’s historic landmarks, lively markets and riverside attractions with a private 4D3N itinerary.',
                     'hero_note' => 'CITY · CULTURE · SHOPPING',
-                    'hero_image' => 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=2000&q=90',
+                    'hero_image' => $photo('1747235156815-3b39a7097b7b', 2000),
                     'intro_eyebrow' => 'WELCOME TO BANGKOK',
                     'intro_headline' => 'Experience the energy of',
                     'intro_highlight' => 'Thailand’s capital.',
                     'intro_body' => 'Discover the city’s contrasting character, from Chinatown and historic palaces to a Chao Phraya River boat ride, modern malls and colourful local markets.',
                     'intro_image' => 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=1000&q=85',
-                    'intro_image_alt' => 'Bangkok city at dusk',
+                    'intro_image_alt' => 'Neon signs and tuk-tuks on a Bangkok street at night',
                     'intro_image_caption' => 'A city journey at your own pace.',
                     'highlights_eyebrow' => 'LANDMARKS · RIVER · MARKETS',
                     'highlights_headline' => 'See the many sides of Bangkok.',
@@ -121,6 +128,11 @@ class ThailandTourPackagePagesSeeder extends Seeder
                         ],
                     ], [
                         ['label' => 'Bangkok', 'name' => 'Al Meroz Hotel Bangkok', 'address' => '4 Ramkhamhaeng 5 Alley, Suan Luang, Bangkok 10250, Thailand', 'phone' => '+66 2 136 8700'],
+                    ], [
+                        ['image' => $photo('1747235156815-3b39a7097b7b'), 'alt' => 'Wat Arun temple rising towards the sky', 'eyebrow' => 'TEMPLE OF DAWN', 'title' => 'Wat Arun'],
+                        ['image' => $photo('1591357820463-55f8f8d7d483'), 'alt' => 'Visitors among the porcelain-tiled spires of Wat Arun', 'eyebrow' => 'UP CLOSE', 'title' => 'Wat Arun’s spires'],
+                        ['image' => $photo('1568321385520-b9252021b491'), 'alt' => 'White and gold temple spires in Bangkok', 'eyebrow' => 'BANGKOK', 'title' => 'Temple quarter'],
+                        ['image' => $photo('1508009603885-50cf7c579365'), 'alt' => 'Neon signs and tuk-tuks on a Bangkok street at night', 'eyebrow' => 'AFTER DARK', 'title' => 'Bangkok by night'],
                     ]),
                 ],
             ],
@@ -134,13 +146,13 @@ class ThailandTourPackagePagesSeeder extends Seeder
                     'hero_highlight' => 'A city and coast escape.',
                     'hero_body' => 'Pair Bangkok’s city landmarks and shopping with time to unwind on Pattaya Beach on this private 4D3N tour.',
                     'hero_note' => 'BANGKOK · PATTAYA · PRIVATE TOUR',
-                    'hero_image' => 'https://images.unsplash.com/photo-1519451241324-20b4ea2c4220?auto=format&fit=crop&w=2000&q=90',
+                    'hero_image' => $photo('1620373901514-4319a7c81cdb', 2000),
                     'intro_eyebrow' => 'WELCOME TO BANGKOK & PATTAYA',
                     'intro_headline' => 'From the city to',
                     'intro_highlight' => 'the coast.',
                     'intro_body' => 'Enjoy Pattaya Beach and Nong Nooch Tropical Garden, then return to Bangkok for heritage sights, a Chao Phraya boat ride and shopping.',
-                    'intro_image' => 'https://images.unsplash.com/photo-1519451241324-20b4ea2c4220?auto=format&fit=crop&w=1000&q=85',
-                    'intro_image_alt' => 'Pattaya coastline in Thailand',
+                    'intro_image' => $photo('1475645486310-a1e31c4cbfee', 1000),
+                    'intro_image_alt' => 'Pier and blue sea at Koh Larn near Pattaya',
                     'intro_image_caption' => 'A relaxed city and coast escape.',
                     'highlights_eyebrow' => 'CITY · GARDENS · COAST',
                     'highlights_headline' => 'Two destinations, one easy journey.',
@@ -168,6 +180,11 @@ class ThailandTourPackagePagesSeeder extends Seeder
                     ], [
                         ['label' => 'Bangkok', 'name' => 'Al Meroz Hotel Bangkok', 'address' => '4 Ramkhamhaeng 5 Alley, Suan Luang, Bangkok 10250, Thailand', 'phone' => '+66 2 136 8700'],
                         ['label' => 'Pattaya', 'name' => 'Centre Point Prime Hotel Pattaya', 'address' => '275 Sukhumvit Road, Muang Pattaya, Bang Lamung District, Chon Buri 20150, Thailand', 'phone' => '+66 38 186 888'],
+                    ], [
+                        ['image' => $photo('1620373901514-4319a7c81cdb'), 'alt' => 'Pattaya Beach lined with hotels and visitors', 'eyebrow' => 'THE GULF COAST', 'title' => 'Pattaya Beach'],
+                        ['image' => $photo('1475645486310-a1e31c4cbfee'), 'alt' => 'Pier and blue sea at Koh Larn near Pattaya', 'eyebrow' => 'ISLAND DAY TRIP', 'title' => 'Koh Larn'],
+                        ['image' => $photo('1747235156815-3b39a7097b7b'), 'alt' => 'Wat Arun temple in Bangkok', 'eyebrow' => 'BANGKOK', 'title' => 'Wat Arun'],
+                        ['image' => $photo('1508009603885-50cf7c579365'), 'alt' => 'Bangkok street with neon signs at night', 'eyebrow' => 'CITY NIGHTS', 'title' => 'Bangkok by night'],
                     ]),
                 ],
             ],
@@ -181,13 +198,13 @@ class ThailandTourPackagePagesSeeder extends Seeder
                     'hero_highlight' => 'River, nature & city.',
                     'hero_body' => 'Travel from Bangkok to Kanchanaburi for river landmarks and safari attractions, then return to the capital for markets and shopping.',
                     'hero_note' => 'KANCHANABURI · RIVER KWAI · BANGKOK',
-                    'hero_image' => 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=2000&q=90',
+                    'hero_image' => $photo('1624807177672-468d85ff1803', 2000),
                     'intro_eyebrow' => 'WELCOME TO KANCHANABURI',
                     'intro_headline' => 'A journey beyond',
                     'intro_highlight' => 'Bangkok.',
                     'intro_body' => 'Discover Kanchanaburi’s river scenery and local landmarks, with a safari experience and Bangkok’s famous railway and floating markets.',
-                    'intro_image' => 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=1000&q=85',
-                    'intro_image_alt' => 'Thailand river and city scenery',
+                    'intro_image' => $photo('1624807177672-468d85ff1803', 1000),
+                    'intro_image_alt' => 'Railway line running beside the River Kwai',
                     'intro_image_caption' => 'Explore more of Thailand on a private tour.',
                     'highlights_eyebrow' => 'RIVER · SAFARI · MARKETS',
                     'highlights_headline' => 'A varied Thailand adventure.',
@@ -215,6 +232,10 @@ class ThailandTourPackagePagesSeeder extends Seeder
                     ], [
                         ['label' => 'Bangkok', 'name' => 'Al Meroz Hotel Bangkok', 'address' => '4 Ramkhamhaeng 5 Alley, Suan Luang, Bangkok 10250, Thailand', 'phone' => '+66 2 136 8700'],
                         ['label' => 'Kanchanaburi', 'name' => 'Royal River Khwae Resort', 'address' => '88 Moo 2, Kaeng Sian, Mueang Kanchanaburi District, Kanchanaburi 71000, Thailand', 'phone' => '+66 34 670 621'],
+                    ], [
+                        ['image' => $photo('1624807177672-468d85ff1803'), 'alt' => 'Railway line running beside the River Kwai', 'eyebrow' => 'HISTORY BY THE RIVER', 'title' => 'River Kwai railway'],
+                        ['image' => $photo('1591357820463-55f8f8d7d483'), 'alt' => 'Porcelain-tiled spires of Wat Arun in Bangkok', 'eyebrow' => 'BANGKOK', 'title' => 'Wat Arun'],
+                        ['image' => $photo('1508009603885-50cf7c579365'), 'alt' => 'Bangkok street market lights at night', 'eyebrow' => 'MARKETS & SHOPPING', 'title' => 'Bangkok by night'],
                     ]),
                 ],
             ],
@@ -274,6 +295,11 @@ class ThailandTourPackagePagesSeeder extends Seeder
                     ], [
                         ['label' => 'Chiang Mai', 'name' => 'Duangtawan Hotel Chiang Mai', 'address' => '132 Loi Kroh Road, Tambon Chang Khlan, Mueang Chiang Mai District, Chiang Mai 50100, Thailand', 'phone' => '+66 53 905 000'],
                         ['label' => 'Chiang Rai', 'name' => 'Grand Vista Hotel Chiang Rai', 'address' => 'Moo 25 Phahonyothin Road, Tambon Rop Wiang, Mueang Chiang Rai District, Chiang Rai 57000, Thailand', 'phone' => '+66 53 746 053'],
+                    ], [
+                        ['image' => $photo('1671188893377-ee825a53d27f'), 'alt' => 'The White Temple reflected in still water in Chiang Rai', 'eyebrow' => 'CHIANG RAI', 'title' => 'Wat Rong Khun'],
+                        ['image' => $photo('1528181304800-259b08848526'), 'alt' => 'Golden Lanna temples in Chiang Mai', 'eyebrow' => 'CHIANG MAI', 'title' => 'Lanna temples'],
+                        ['image' => $photo('1573822619717-605a97a3856c'), 'alt' => 'Ornate white spires of Wat Rong Khun', 'eyebrow' => 'THE WHITE TEMPLE', 'title' => 'A work of art'],
+                        ['image' => $photo('1532925562556-266f9db734ad'), 'alt' => 'Misty countryside and rice fields in Northern Thailand', 'eyebrow' => 'NORTHERN THAILAND', 'title' => 'Mountain valleys'],
                     ]),
                 ],
             ],

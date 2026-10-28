@@ -24,9 +24,14 @@ class IndonesiaTourPackagePagesSeeder extends Seeder
         'Personal expenses such as laundry and souvenirs',
     ];
 
-    public function run(): void
+    /**
+     * @param  list<string>  $slugs  Only these pages are added; empty adds them all.
+     */
+    public function run(array $slugs = []): void
     {
-        foreach ($this->pages() as $slug => $definition) {
+        $pages = $slugs === [] ? $this->pages() : array_intersect_key($this->pages(), array_flip($slugs));
+
+        foreach ($pages as $slug => $definition) {
             if (TourPackagePage::query()->where('slug', $slug)->exists()) {
                 continue;
             }
@@ -52,7 +57,7 @@ class IndonesiaTourPackagePagesSeeder extends Seeder
     {
         $whatsapp = fn (string $name): string => 'https://wa.me/60165500590?text='.rawurlencode("Hi, I'd like to ask about the {$name} private tour package.");
 
-        $package = fn (string $name, string $headline, string $body, array $itineraries, array $hotels = []): array => [
+        $package = fn (string $name, string $headline, string $body, array $itineraries, array $hotels = [], array $gallery = []): array => [
             'itineraries_eyebrow' => "EXPLORE {$name}",
             'itineraries_headline' => $headline,
             'itineraries_body' => $body,
@@ -66,8 +71,8 @@ class IndonesiaTourPackagePagesSeeder extends Seeder
             ),
             'gallery_eyebrow' => 'DESTINATION PHOTOS',
             'gallery_headline' => "{$name} gallery",
-            'gallery_body' => 'Photos for this destination will be added soon.',
-            'gallery' => [],
+            'gallery_body' => $gallery === [] ? 'Photos for this destination will be added soon.' : 'A glimpse of the places on your itinerary.',
+            'gallery' => $gallery,
             'details_eyebrow' => 'GOOD TO KNOW',
             'details_headline' => "What's included in your {$name} tour.",
             'details_body' => 'Package inclusions and exclusions are listed below.',
@@ -159,13 +164,13 @@ class IndonesiaTourPackagePagesSeeder extends Seeder
                     'hero_highlight' => 'Lake Toba & highlands.',
                     'hero_body' => 'Travel from Medan to Lake Toba, Samosir Island and the highlands of Berastagi on a private North Sumatra journey.',
                     'hero_note' => 'MEDAN · LAKE TOBA · BERASTAGI',
-                    'hero_image' => 'https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=2000&q=90',
+                    'hero_image' => 'images/series/medan-5.jpg',
                     'intro_eyebrow' => 'WELCOME TO NORTH SUMATRA',
                     'intro_headline' => 'From the city to',
                     'intro_highlight' => 'Lake Toba.',
                     'intro_body' => 'Discover Batak heritage on Samosir Island, see the scale of Lake Toba, visit Sipiso-Piso Waterfall and enjoy the cool highlands of Berastagi.',
-                    'intro_image' => 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1000&q=85',
-                    'intro_image_alt' => 'Green highland scenery in North Sumatra',
+                    'intro_image' => 'images/series/medan-1.jpg',
+                    'intro_image_alt' => 'Sipiso-Piso Waterfall plunging into a green canyon',
                     'intro_image_caption' => 'Discover the landscapes of North Sumatra.',
                     'highlights_eyebrow' => 'CITY · ISLAND · HIGHLANDS',
                     'highlights_headline' => 'The many sides of North Sumatra.',
@@ -207,6 +212,12 @@ class IndonesiaTourPackagePagesSeeder extends Seeder
                         ['label' => 'Samosir Island', 'name' => 'Marianna Resort & Convention Tuktuk', 'address' => 'MV92+7JW, JL. PUD, Tuktuk Siadong, Simanindo, Kabupaten Samosir, Sumatera Utara 22395, Indonesia', 'phone' => '+62 819-7896-999'],
                         ['label' => 'Berastagi', 'name' => 'Taman Simalem Resort', 'address' => 'Jl. Raya Merek No.KM. 9, Kodon-Kodon, Merek, Karo Regency, 22173 Kodon-Kodon, Karo, North Sumatra, Indonesia', 'phone' => '+62-61-4577-616'],
                         ['label' => 'Medan City', 'name' => 'Grand City Hall Medan', 'address' => 'Jl. Balai Kota No.1, Kesawan, Kec. Medan Bar., Kota Medan, Sumatera Utara 20112, Indonesia', 'phone' => '+62 61 4557000'],
+                    ], [
+                        ['image' => 'images/series/medan-5.jpg', 'alt' => 'Traditional Batak houses with curved roofs on Samosir Island', 'eyebrow' => 'BATAK CULTURE', 'title' => 'Samosir Island'],
+                        ['image' => 'images/series/medan-2.jpg', 'alt' => 'Sunset over the calm water of Lake Toba', 'eyebrow' => 'THE WORLD’S LARGEST VOLCANIC LAKE', 'title' => 'Lake Toba'],
+                        ['image' => 'images/series/medan-1.jpg', 'alt' => 'Sipiso-Piso Waterfall plunging into a green canyon', 'eyebrow' => 'ON THE WAY TO BERASTAGI', 'title' => 'Sipiso-Piso Waterfall'],
+                        ['image' => 'images/series/medan-3.jpg', 'alt' => 'Maimoon Palace in Medan under a blue sky', 'eyebrow' => 'ROYAL HERITAGE', 'title' => 'Maimoon Palace'],
+                        ['image' => 'images/series/medan-4.jpg', 'alt' => 'The Grand Al-Mashun Mosque of Medan with its black domes', 'eyebrow' => 'FAITH & ARCHITECTURE', 'title' => 'Grand Al-Mashun Mosque'],
                     ]),
                 ],
             ],
@@ -280,13 +291,13 @@ class IndonesiaTourPackagePagesSeeder extends Seeder
                     'hero_highlight' => 'Padang & Bukittinggi.',
                     'hero_body' => 'Discover Minangkabau heritage, highland scenery, waterfalls and the coast on a private West Sumatra journey.',
                     'hero_note' => 'PADANG · BUKITTINGGI · PAGARUYUNG',
-                    'hero_image' => 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=2000&q=90',
+                    'hero_image' => 'https://images.unsplash.com/photo-1754615842174-7e6c8d1f0ca3?auto=format&fit=crop&w=2000&q=90',
                     'intro_eyebrow' => 'WELCOME TO WEST SUMATRA',
                     'intro_headline' => 'Discover a region shaped by',
                     'intro_highlight' => 'heritage & nature.',
                     'intro_body' => 'Travel between Padang and Bukittinggi, visit Lembah Anai and Lembah Harau, explore Pagaruyung Palace and enjoy the landscapes around Lake Maninjau.',
-                    'intro_image' => 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1000&q=85',
-                    'intro_image_alt' => 'Green highland scenery in West Sumatra',
+                    'intro_image' => 'https://images.unsplash.com/photo-1657453725781-21c0e61e5069?auto=format&fit=crop&w=1000&q=85',
+                    'intro_image_alt' => 'Close view of the Jam Gadang clock tower in Bukittinggi',
                     'intro_image_caption' => 'A private journey through West Sumatra.',
                     'highlights_eyebrow' => 'HIGHLANDS · HERITAGE · COAST',
                     'highlights_headline' => 'A West Sumatra journey to remember.',
@@ -323,6 +334,10 @@ class IndonesiaTourPackagePagesSeeder extends Seeder
                                 ['title' => 'Padang city tour & departure', 'body' => 'After breakfast and check-out, explore Padang including the Grand Mosque and Chinatown. Have lunch at a local restaurant, then transfer to Minangkabau International Airport for your return flight.', 'meals' => 'BREAKFAST · LUNCH'],
                             ],
                         ],
+                    ], [], [
+                        ['image' => 'https://images.unsplash.com/photo-1754615842174-7e6c8d1f0ca3?auto=format&fit=crop&w=1800&q=85', 'alt' => 'Jam Gadang clock tower in the centre of Bukittinggi', 'eyebrow' => 'WEST SUMATRA', 'title' => 'Jam Gadang'],
+                        ['image' => 'https://images.unsplash.com/photo-1657453725781-21c0e61e5069?auto=format&fit=crop&w=1800&q=85', 'alt' => 'Close view of the Jam Gadang clock tower', 'eyebrow' => 'BUKITTINGGI', 'title' => 'The heart of Bukittinggi'],
+                        ['image' => 'https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1800&q=85', 'alt' => 'Sun setting over green highland hills', 'eyebrow' => 'HIGHLAND VIEWS', 'title' => 'Puncak Lawang'],
                     ]),
                 ],
             ],
@@ -348,7 +363,8 @@ class IndonesiaTourPackagePagesSeeder extends Seeder
         foreach ($slides as &$slide) {
             $slug = $destinationSlugs[$slide['title'] ?? ''] ?? null;
 
-            if (! $slug) {
+            // Cards are only linked once their package page exists, so they never lead to a missing page.
+            if (! $slug || ! TourPackagePage::query()->where('slug', $slug)->exists()) {
                 continue;
             }
 
