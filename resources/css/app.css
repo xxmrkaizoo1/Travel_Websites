@@ -27718,26 +27718,26 @@ html.is-leaving .site-header::after {
     mask-image: radial-gradient(ellipse at center, #000 20%, transparent 72%);
 }
 
+/* Soft glows drawn as radial gradients rather than a blur filter, which is costly to redraw while they drift. */
 .sh-posters-orb {
     position: absolute;
     width: clamp(260px, 36vw, 520px);
     aspect-ratio: 1;
     border-radius: 50%;
-    filter: blur(70px);
     opacity: .55;
 }
 
 .sh-posters-orb-a {
     top: -12%;
     left: -8%;
-    background: #2f58d8;
+    background: radial-gradient(circle, #2f58d8 0%, rgb(47 88 216 / 55%) 35%, transparent 70%);
     animation: sh-poster-drift-a 16s ease-in-out infinite alternate;
 }
 
 .sh-posters-orb-b {
     right: -10%;
     bottom: -18%;
-    background: #72bdff;
+    background: radial-gradient(circle, #72bdff 0%, rgb(114 189 255 / 55%) 35%, transparent 70%);
     opacity: .32;
     animation: sh-poster-drift-b 19s ease-in-out infinite alternate;
 }
@@ -32644,5 +32644,301 @@ html:has(.admin-booking-manager[open]) {
     .site-header.smart-holidays-header .book-button,
     .site-header.smart-holidays-header .book-button::after {
         transition: none;
+    }
+}
+
+/* Navbar polish: a shimmering brand hairline, a pill that glides between menu items, springy dropdowns
+   with staggered rows, a shining Book Now button, a breathing WhatsApp button and a one-time entrance. */
+.site-header.smart-holidays-header {
+    --nav-spring: cubic-bezier(0.34, 1.4, 0.5, 1);
+    --nav-ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+    --nav-gradient: linear-gradient(90deg, #13294b, #1f5fd0, #38bdf8, #1f5fd0, #13294b);
+}
+
+/* The strip is twice as wide as the header and slides by half its width, so the flow loops seamlessly
+   while only moving (no repaint), which keeps it cheap on phones. */
+.site-header.smart-holidays-header::before {
+    position: absolute;
+    z-index: 2;
+    top: 0;
+    left: 0;
+    width: 200%;
+    height: 3px;
+    background: var(--nav-gradient);
+    background-size: 50% 100%;
+    animation: nav-hairline-flow 9s linear infinite;
+    content: "";
+    pointer-events: none;
+}
+
+@keyframes nav-hairline-flow {
+    to { transform: translateX(-50%); }
+}
+
+/* Logo */
+.site-header.smart-holidays-header .brand-logo {
+    transition: transform 450ms var(--nav-spring), filter 300ms ease;
+}
+
+.site-header.smart-holidays-header .brand:hover .brand-logo,
+.site-header.smart-holidays-header .brand:focus-visible .brand-logo {
+    filter: drop-shadow(0 6px 10px rgb(31 95 208 / 22%));
+    transform: translateY(-2px) rotate(-4deg) scale(1.06);
+}
+
+/* Book Now: deep gradient, a light sweep every few seconds and a glow on hover */
+.site-header.smart-holidays-header .book-button {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    background: linear-gradient(120deg, #13294b 0%, #1d4f9e 55%, #1f5fd0 100%);
+    background-size: 160% 100%;
+    background-position: 0 0;
+    transition: background-position 400ms ease, transform 300ms var(--nav-spring), box-shadow 300ms ease;
+}
+
+.site-header.smart-holidays-header .book-button::before {
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 30%, rgb(255 255 255 / 38%) 50%, transparent 70%);
+    animation: nav-button-shine 4.5s ease-in-out 1.2s infinite;
+    content: "";
+    transform: translateX(-120%);
+}
+
+@keyframes nav-button-shine {
+    0%, 55% { transform: translateX(-120%); }
+    80%, 100% { transform: translateX(120%); }
+}
+
+.site-header.smart-holidays-header .book-button:hover,
+.site-header.smart-holidays-header .book-button:focus-visible {
+    background: linear-gradient(120deg, #13294b 0%, #1d4f9e 55%, #1f5fd0 100%);
+    background-size: 160% 100%;
+    background-position: 100% 0;
+    box-shadow: 0 12px 28px rgb(31 95 208 / 38%);
+    transform: translateY(-2px);
+}
+
+/* WhatsApp: a soft ring breathes out every few seconds; the icon wiggles on hover */
+.site-header.smart-holidays-header .whatsapp-button {
+    position: relative;
+    transition: background-color 200ms ease, transform 300ms var(--nav-spring), box-shadow 300ms ease;
+}
+
+/* The ring grows and fades using transform and opacity only, so it never repaints. */
+.site-header.smart-holidays-header .whatsapp-button::after {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    animation: nav-whatsapp-ring 3.2s ease-out 2s infinite;
+    box-shadow: 0 0 0 3px rgb(31 168 85 / 55%);
+    content: "";
+    opacity: 0;
+    pointer-events: none;
+}
+
+@keyframes nav-whatsapp-ring {
+    0% { opacity: 1; transform: scale(1); }
+    45%, 100% { opacity: 0; transform: scale(1.12, 1.45); }
+}
+
+.site-header.smart-holidays-header .whatsapp-button:hover,
+.site-header.smart-holidays-header .whatsapp-button:focus-visible {
+    box-shadow: 0 12px 26px rgb(31 168 85 / 35%);
+    transform: translateY(-2px);
+}
+
+.site-header.smart-holidays-header .whatsapp-button:hover .whatsapp-icon,
+.site-header.smart-holidays-header .whatsapp-button:focus-visible .whatsapp-icon {
+    animation: nav-icon-wiggle 600ms ease;
+}
+
+@keyframes nav-icon-wiggle {
+    0%, 100% { transform: rotate(0); }
+    25% { transform: rotate(-14deg) scale(1.1); }
+    50% { transform: rotate(10deg) scale(1.1); }
+    75% { transform: rotate(-6deg); }
+}
+
+.site-header.smart-holidays-header .nav-indicator {
+    display: none;
+}
+
+@media (min-width: 1101px) {
+    /* Gliding pill behind the menu items (placed by app.js) */
+    .site-header.smart-holidays-header .primary-nav {
+        position: relative;
+    }
+
+    .site-header.smart-holidays-header .nav-indicator {
+        display: block;
+    }
+
+    .site-header.smart-holidays-header .primary-nav > .nav-item,
+    .site-header.smart-holidays-header .primary-nav > a {
+        position: relative;
+        z-index: 1;
+    }
+
+    .site-header.smart-holidays-header .nav-indicator {
+        position: absolute;
+        z-index: 0;
+        top: 0;
+        left: 0;
+        width: var(--indicator-width, 0);
+        height: var(--indicator-height, 0);
+        border-radius: 999px;
+        background: linear-gradient(135deg, #eef4ff, #e1ecff);
+        box-shadow: inset 0 0 0 1px #d4e2f8, 0 6px 16px rgb(31 95 208 / 12%);
+        opacity: 0;
+        pointer-events: none;
+        transform: translate(var(--indicator-x, 0), var(--indicator-y, 0)) scale(0.92);
+        transition: transform 420ms var(--nav-spring), width 420ms var(--nav-spring), opacity 220ms ease;
+    }
+
+    .site-header.smart-holidays-header .primary-nav.has-indicator .nav-indicator {
+        opacity: 1;
+        transform: translate(var(--indicator-x, 0), var(--indicator-y, 0)) scale(1);
+    }
+
+    /* The pill replaces the per-item hover background */
+    .site-header.smart-holidays-header .primary-nav.has-indicator > a:hover,
+    .site-header.smart-holidays-header .primary-nav.has-indicator > a:focus-visible,
+    .site-header.smart-holidays-header .primary-nav.has-indicator .nav-item:hover > .muslim-nav-control,
+    .site-header.smart-holidays-header .primary-nav.has-indicator .nav-item:focus-within > .muslim-nav-control {
+        background: transparent;
+    }
+
+    .site-header.smart-holidays-header .primary-nav > a,
+    .site-header.smart-holidays-header .primary-nav a.muslim-nav {
+        transition: color 200ms ease;
+    }
+
+    .site-header.smart-holidays-header .nav-chevron {
+        transition: transform 350ms var(--nav-spring), margin 350ms var(--nav-spring);
+    }
+
+    /* Dropdowns rise, unblur and settle; their rows follow one after another */
+    .site-header .nav-item:hover > .dropdown-menu,
+    .site-header .nav-item.is-open > .dropdown-menu,
+    .site-header .nav-item:focus-within > .dropdown-menu {
+        animation: nav-panel-in 380ms var(--nav-ease-out) both;
+        transform-origin: top center;
+    }
+
+    .site-header .nav-item:hover > .dropdown-menu > *,
+    .site-header .nav-item.is-open > .dropdown-menu > *,
+    .site-header .nav-item:focus-within > .dropdown-menu > * {
+        animation: nav-row-in 360ms var(--nav-ease-out) both;
+    }
+
+    .site-header .dropdown-menu > :nth-child(2) { animation-delay: 40ms; }
+    .site-header .dropdown-menu > :nth-child(3) { animation-delay: 80ms; }
+    .site-header .dropdown-menu > :nth-child(4) { animation-delay: 120ms; }
+    .site-header .dropdown-menu > :nth-child(5) { animation-delay: 160ms; }
+    .site-header .dropdown-menu > :nth-child(n + 6) { animation-delay: 200ms; }
+
+    .site-header .nav-subitem:hover > .submenu-menu,
+    .site-header .nav-subitem.is-open > .submenu-menu,
+    .site-header .nav-subitem:focus-within > .submenu-menu {
+        animation: nav-submenu-panel-in 320ms var(--nav-ease-out) both;
+    }
+
+    /* Dropdown rows slide their text a little on hover */
+    .site-header.smart-holidays-header :is(#group-tours-menu, #ground-tours-menu, #domestic-tours-menu, #muslim-tours-menu) a {
+        transition: background-color 160ms ease, color 160ms ease, padding-left 250ms var(--nav-spring);
+    }
+
+    .site-header.smart-holidays-header :is(#group-tours-menu, #ground-tours-menu, #domestic-tours-menu, #muslim-tours-menu) a:hover,
+    .site-header.smart-holidays-header :is(#group-tours-menu, #ground-tours-menu, #domestic-tours-menu, #muslim-tours-menu) a:focus-visible {
+        padding-left: 17px;
+    }
+}
+
+@keyframes nav-panel-in {
+    from {
+        opacity: 0;
+        filter: blur(6px);
+        transform: translateY(12px) scale(0.96);
+    }
+}
+
+@keyframes nav-row-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+}
+
+@keyframes nav-submenu-panel-in {
+    from {
+        opacity: 0;
+        filter: blur(4px);
+        transform: translateX(-10px) scale(0.97);
+    }
+}
+
+/* One-time entrance on the first page of a visit (class added by app.js) */
+.site-header.smart-holidays-header.is-introducing .brand,
+.site-header.smart-holidays-header.is-introducing .primary-nav > .nav-item,
+.site-header.smart-holidays-header.is-introducing .primary-nav > a,
+.site-header.smart-holidays-header.is-introducing .header-actions > * {
+    animation: nav-intro-in 700ms var(--nav-ease-out) both;
+}
+
+.site-header.smart-holidays-header.is-introducing .primary-nav > :nth-child(2) { animation-delay: 60ms; }
+.site-header.smart-holidays-header.is-introducing .primary-nav > :nth-child(3) { animation-delay: 120ms; }
+.site-header.smart-holidays-header.is-introducing .primary-nav > :nth-child(4) { animation-delay: 180ms; }
+.site-header.smart-holidays-header.is-introducing .primary-nav > :nth-child(5) { animation-delay: 240ms; }
+.site-header.smart-holidays-header.is-introducing .primary-nav > :nth-child(6) { animation-delay: 300ms; }
+.site-header.smart-holidays-header.is-introducing .primary-nav > :nth-child(7) { animation-delay: 360ms; }
+.site-header.smart-holidays-header.is-introducing .header-actions > * { animation-delay: 380ms; }
+.site-header.smart-holidays-header.is-introducing .header-actions > :last-child { animation-delay: 460ms; }
+
+@keyframes nav-intro-in {
+    from {
+        opacity: 0;
+        transform: translateY(-14px);
+    }
+}
+
+/* Phone menu: cards fall into place one after another when the menu opens */
+@media (max-width: 1100px) {
+    .site-header.smart-holidays-header .primary-nav.is-open > * {
+        animation: nav-row-in 420ms var(--nav-ease-out) both;
+    }
+
+    .site-header.smart-holidays-header .primary-nav.is-open > :nth-child(2) { animation-delay: 45ms; }
+    .site-header.smart-holidays-header .primary-nav.is-open > :nth-child(3) { animation-delay: 90ms; }
+    .site-header.smart-holidays-header .primary-nav.is-open > :nth-child(4) { animation-delay: 135ms; }
+    .site-header.smart-holidays-header .primary-nav.is-open > :nth-child(5) { animation-delay: 180ms; }
+    .site-header.smart-holidays-header .primary-nav.is-open > :nth-child(6) { animation-delay: 225ms; }
+    .site-header.smart-holidays-header .primary-nav.is-open > :nth-child(n + 7) { animation-delay: 270ms; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .site-header.smart-holidays-header::before,
+    .site-header.smart-holidays-header .book-button::before,
+    .site-header.smart-holidays-header .whatsapp-button::after,
+    .site-header.smart-holidays-header .whatsapp-icon,
+    .site-header.smart-holidays-header .primary-nav > *,
+    .site-header.smart-holidays-header .dropdown-menu,
+    .site-header.smart-holidays-header .dropdown-menu > *,
+    .site-header.smart-holidays-header .submenu-menu,
+    .site-header.smart-holidays-header.is-introducing * {
+        animation: none !important;
+    }
+
+    .site-header.smart-holidays-header .brand-logo,
+    .site-header.smart-holidays-header .nav-indicator,
+    .site-header.smart-holidays-header .nav-chevron,
+    .site-header.smart-holidays-header .dropdown-menu a {
+        transition: none !important;
+    }
+
+    .site-header.smart-holidays-header .brand:hover .brand-logo {
+        transform: none;
     }
 }

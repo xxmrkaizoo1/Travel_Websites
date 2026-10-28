@@ -175,7 +175,7 @@
                                 <article class="popular-tour-card{{ $loop->index === $popularTourActiveIndex ? ' is-active' : '' }}" data-popular-tour-card>
                                     <a href="{{ $tour['href'] }}">
                                         <div class="popular-tour-image">
-                                                <img src="{{ $tour['image'] }}" alt="{{ $tour['title'] }}, {{ $tour['country'] }}" loading="eager" decoding="async">
+                                                <img src="{{ $tour['image'] }}" alt="{{ $tour['title'] }}, {{ $tour['country'] }}" loading="lazy" decoding="async">
                                             <span>{{ $tour['country'] }}</span>
                                             <em class="popular-tour-brand">Smart Muslim</em>
                                         </div>

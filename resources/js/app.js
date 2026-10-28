@@ -31,6 +31,77 @@ if (siteHeader) {
     window.addEventListener('scroll', markScrolled, { passive: true });
 }
 
+// The navbar plays its entrance once per visit, not on every page change.
+if (siteHeader?.classList.contains('smart-holidays-header')) {
+    let hasPlayedIntro = false;
+
+    try {
+        hasPlayedIntro = window.sessionStorage.getItem('navbar-intro-played') === '1';
+        window.sessionStorage.setItem('navbar-intro-played', '1');
+    } catch {
+        // Storage blocked: the entrance plays on every page.
+    }
+
+    if (!hasPlayedIntro && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        siteHeader.classList.add('is-introducing');
+        window.setTimeout(() => siteHeader.classList.remove('is-introducing'), 1400);
+    }
+}
+
+// Desktop: a soft pill glides behind the top-level menu items as the pointer or keyboard focus moves across them.
+if (primaryNav && siteHeader?.classList.contains('smart-holidays-header')) {
+    const desktopNav = window.matchMedia('(min-width: 1101px)');
+    const indicator = document.createElement('span');
+    indicator.className = 'nav-indicator';
+    indicator.setAttribute('aria-hidden', 'true');
+    primaryNav.append(indicator);
+
+    const hideIndicator = () => primaryNav.classList.remove('has-indicator');
+
+    const moveIndicatorTo = (item) => {
+        if (!desktopNav.matches) {
+            hideIndicator();
+
+            return;
+        }
+
+        const target = item.querySelector(':scope > .muslim-nav-control') ?? item;
+        const navRect = primaryNav.getBoundingClientRect();
+        const rect = target.getBoundingClientRect();
+        const isAppearing = !primaryNav.classList.contains('has-indicator');
+
+        // Appearing from hidden: jump straight to the item instead of sliding in from the last spot.
+        if (isAppearing) {
+            indicator.style.transition = 'none';
+        }
+
+        indicator.style.setProperty('--indicator-x', `${rect.left - navRect.left}px`);
+        indicator.style.setProperty('--indicator-y', `${rect.top - navRect.top}px`);
+        indicator.style.setProperty('--indicator-width', `${rect.width}px`);
+        indicator.style.setProperty('--indicator-height', `${rect.height}px`);
+
+        if (isAppearing) {
+            indicator.getBoundingClientRect();
+            indicator.style.transition = '';
+        }
+
+        primaryNav.classList.add('has-indicator');
+    };
+
+    primaryNav.querySelectorAll(':scope > .nav-item, :scope > a').forEach((item) => {
+        item.addEventListener('pointerenter', () => moveIndicatorTo(item));
+        item.addEventListener('focusin', () => moveIndicatorTo(item));
+    });
+
+    primaryNav.addEventListener('pointerleave', hideIndicator);
+    primaryNav.addEventListener('focusout', (event) => {
+        if (!primaryNav.contains(event.relatedTarget)) {
+            hideIndicator();
+        }
+    });
+    desktopNav.addEventListener('change', hideIndicator);
+}
+
 const NAV_VISIBLE_ITEMS = 5;
 
 // Long menus show their first five links; the rest sit behind a "See more" toggle.
