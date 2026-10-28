@@ -146,8 +146,7 @@ class SmartHolidaysPageManagementTest extends TestCase
         $this->assertSame('', $saved[0]['video']);
 
         $this->get(route('home'))
-            ->assertSee('src="'.Storage::disk('public')->url($video).'" poster="'.$page->imageUrl($saved[1]['image']).'" muted loop playsinline preload="none"', false)
-            ->assertSee('class="sh-journey-thumb-video">▶ Video</em>', false);
+            ->assertSee('src="'.Storage::disk('public')->url($video).'" poster="'.$page->imageUrl($saved[1]['image']).'" muted loop playsinline preload="none"', false);
 
         $saved[1]['video'] = '';
         $this->put(route('admin.smart-holidays.update'), $this->payload($page->fresh(), ['journey_slides' => $saved]))
@@ -190,6 +189,169 @@ class SmartHolidaysPageManagementTest extends TestCase
         $this->assertSame($page->journey_slides, $page->fresh()->journey_slides);
     }
 
+    public function test_homepage_shows_poster_slideshow_without_journey_thumbnails(): void
+    {
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('data-sh-poster-carousel', false)
+            ->assertSeeInOrder(['Trending Packages', 'Kunming &amp; Yunnan', 'Explore Thailand'], false)
+            ->assertDontSee('sh-journey-thumbnails', false);
+    }
+
+    public function test_homepage_shows_popular_smart_holidays_after_smart_muslim(): void
+    {
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSeeInOrder(['Popular in Smart Muslim', 'Popular in Smart Holidays', 'class="popular-tour-brand">Smart Holidays</em>', 'View all Smart Holidays Tours', 'Trending Packages'], false);
+    }
+
+    public function test_admin_can_set_and_remove_popular_smart_holidays_background(): void
+    {
+        Storage::fake('public');
+        $admin = $this->createAdmin();
+        $page = SmartHolidaysPage::query()->firstOrFail();
+
+        $this->actingAs($admin)
+            ->put(route('admin.smart-holidays.update'), $this->payload($page, [
+                'holidays_popular_video_file' => UploadedFile::fake()->create('beach.mp4', 2048, 'video/mp4'),
+                'holidays_popular_image_file' => UploadedFile::fake()->image('beach.jpg', 1600, 900),
+            ]))->assertRedirect(route('admin.smart-holidays.edit'));
+
+        $page->refresh();
+        Storage::disk('public')->assertExists([$page->holidays_popular_video, $page->holidays_popular_image]);
+
+        $this->get(route('home'))
+            ->assertSee('class="popular-tours popular-tours--holidays has-video"', false)
+            ->assertSeeInOrder([
+                'class="popular-tours-video" src="'.Storage::disk('public')->url($page->holidays_popular_video).'"',
+                'poster="'.Storage::disk('public')->url($page->holidays_popular_image).'"',
+            ], false);
+
+        $this->put(route('admin.smart-holidays.update'), $this->payload($page, ['holidays_popular_video' => '', 'holidays_popular_image' => '']))
+            ->assertRedirect(route('admin.smart-holidays.edit'));
+
+        Storage::disk('public')->assertMissing([$page->holidays_popular_video, $page->holidays_popular_image]);
+        $this->assertNull($page->fresh()->holidays_popular_video);
+        $this->get(route('home'))->assertSee('class="popular-tours popular-tours--holidays"', false);
+    }
+
+    public function test_popular_smart_holidays_background_image_must_be_safe(): void
+    {
+        $page = SmartHolidaysPage::query()->firstOrFail();
+
+        $this->actingAs($this->createAdmin())
+            ->put(route('admin.smart-holidays.update'), $this->payload($page, [
+                'holidays_popular_image' => 'private/secret.jpg',
+                'holidays_popular_video_file' => UploadedFile::fake()->create('notes.pdf', 10, 'application/pdf'),
+            ]))->assertSessionHasErrors([
+                'holidays_popular_image' => 'The image must be a valid http(s) URL or an uploaded image.',
+                'holidays_popular_video_file' => 'The background video must be an MP4 or WebM file.',
+            ]);
+    }
+
+    public function test_admin_can_upload_and_remove_posters(): void
+    {
+        Storage::fake('public');
+        $admin = $this->createAdmin();
+        $page = SmartHolidaysPage::query()->firstOrFail();
+        $posters = [[
+            'image' => '', 'image_file' => UploadedFile::fake()->image('shanghai.jpg', 800, 1000),
+            'alt' => 'Shanghai poster', 'label' => '8D7N', 'title' => 'Shanghai Nanxun', 'price' => 'from RM 2,298', 'link_url' => '/china-muslim',
+        ]];
+
+        $this->actingAs($admin)
+            ->put(route('admin.smart-holidays.update'), $this->payload($page, ['posters_heading' => 'Hot Deals', 'poster_slides' => $posters]))
+            ->assertRedirect(route('admin.smart-holidays.edit'));
+
+        $saved = $page->fresh()->poster_slides;
+        $this->assertCount(1, $saved);
+        Storage::disk('public')->assertExists($saved[0]['image']);
+
+        $this->get(route('home'))
+            ->assertSee('Hot Deals')
+            ->assertSee('from RM 2,298')
+            ->assertDontSee('Explore Thailand');
+
+        $this->put(route('admin.smart-holidays.update'), $this->payload($page->fresh(), ['poster_slides' => []]))
+            ->assertRedirect(route('admin.smart-holidays.edit'));
+
+        Storage::disk('public')->assertMissing($saved[0]['image']);
+        $this->get(route('home'))->assertDontSee('data-sh-poster-carousel', false);
+    }
+
+    public function test_poster_link_must_be_safe(): void
+    {
+        $page = SmartHolidaysPage::query()->firstOrFail();
+        $posters = $page->poster_slides;
+        $posters[0]['link_url'] = 'javascript:alert(1)';
+
+        $this->actingAs($this->createAdmin())
+            ->put(route('admin.smart-holidays.update'), $this->payload($page, ['poster_slides' => $posters]))
+            ->assertSessionHasErrors(['poster_slides.0.link_url' => 'The link must be a site path such as /vietnam or a full http(s) URL.']);
+
+        $this->assertSame($page->poster_slides, $page->fresh()->poster_slides);
+    }
+
+    public function test_homepage_shows_short_video_reels_between_brands_and_call_to_action(): void
+    {
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('data-sh-reels', false)
+            ->assertSeeInOrder(['id="smart-brands-title"', 'Moments from the road', 'Above the clouds', 'Ottoman domes', 'id="sh-cta-title"'], false);
+    }
+
+    public function test_admin_can_upload_and_remove_short_videos(): void
+    {
+        Storage::fake('public');
+        $admin = $this->createAdmin();
+        $page = SmartHolidaysPage::query()->firstOrFail();
+        $reels = [[
+            'video' => '', 'video_file' => UploadedFile::fake()->create('langkawi.mp4', 2048, 'video/mp4'),
+            'image' => '', 'image_file' => UploadedFile::fake()->image('langkawi.jpg', 720, 1280),
+            'label' => 'Island escapes', 'title' => 'Langkawi sunset', 'link_url' => '',
+        ]];
+
+        $this->actingAs($admin)
+            ->put(route('admin.smart-holidays.update'), $this->payload($page, ['reels_heading' => 'Short films', 'reel_slides' => $reels]))
+            ->assertRedirect(route('admin.smart-holidays.edit'));
+
+        $saved = $page->fresh()->reel_slides;
+        $this->assertCount(1, $saved);
+        Storage::disk('public')->assertExists([$saved[0]['video'], $saved[0]['image']]);
+
+        $this->get(route('home'))
+            ->assertSee('Short films')
+            ->assertSee('src="'.Storage::disk('public')->url($saved[0]['video']).'"', false)
+            ->assertDontSee('sh-reel-link', false)
+            ->assertDontSee('Above the clouds');
+
+        $this->put(route('admin.smart-holidays.update'), $this->payload($page->fresh(), ['reel_slides' => []]))
+            ->assertRedirect(route('admin.smart-holidays.edit'));
+
+        Storage::disk('public')->assertMissing([$saved[0]['video'], $saved[0]['image']]);
+        $this->get(route('home'))->assertDontSee('data-sh-reels', false);
+    }
+
+    public function test_short_video_must_be_a_safe_video(): void
+    {
+        $page = SmartHolidaysPage::query()->firstOrFail();
+        $reels = $page->reel_slides;
+        $reels[0]['video'] = '';
+        $reels[0]['video_file'] = UploadedFile::fake()->create('notes.pdf', 10, 'application/pdf');
+        $reels[1]['video'] = 'javascript:alert(1)';
+        $reels[2]['video'] = '';
+
+        $this->actingAs($this->createAdmin())
+            ->put(route('admin.smart-holidays.update'), $this->payload($page, ['reel_slides' => $reels]))
+            ->assertSessionHasErrors([
+                'reel_slides.0.video_file' => 'Each short video must be an MP4 or WebM file.',
+                'reel_slides.1.video' => 'The video must be a valid http(s) URL or an uploaded video.',
+                'reel_slides.2.video' => 'Each short video needs a video URL or an uploaded video.',
+            ]);
+
+        $this->assertSame($page->reel_slides, $page->fresh()->reel_slides);
+    }
+
     /**
      * @param  array<string, mixed>  $overrides
      * @return array<string, mixed>
@@ -199,7 +361,7 @@ class SmartHolidaysPageManagementTest extends TestCase
         $data = $page->only([
             'meta_title', 'meta_description', 'hero_eyebrow', 'hero_title', 'hero_body', 'hero_cta_label',
             'hero_secondary_label', 'hero_image_alt', 'stats', 'services_eyebrow', 'services_heading', 'services',
-            'journey_slides', 'popular_eyebrow', 'popular_heading', 'popular_body', 'brands_eyebrow', 'brands_heading',
+            'journey_slides', 'posters_eyebrow', 'posters_heading', 'poster_slides', 'reels_eyebrow', 'reels_heading', 'reel_slides', 'popular_eyebrow', 'popular_heading', 'popular_body', 'brands_eyebrow', 'brands_heading',
             'cta_heading', 'cta_body', 'cta_label', 'whatsapp_number',
         ]);
 

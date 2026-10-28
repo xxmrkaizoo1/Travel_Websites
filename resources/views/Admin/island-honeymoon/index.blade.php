@@ -7,6 +7,7 @@
     <meta name="description" content="Manage Island & Honeymoon page content and destination spotlights.">
     <title>Island &amp; Honeymoon | Smart Holidays Admin</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @include('Admin.partials.theme-head')
     <style>@view-transition { navigation: auto; }</style>
 </head>
 <body class="admin-page">

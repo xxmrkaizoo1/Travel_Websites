@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\BookingStatus;
+use App\Support\BookablePackage;
 use Database\Factories\BookingFactory;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -11,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Str;
 
 class Booking extends Model
 {
@@ -29,6 +31,7 @@ class Booking extends Model
         'status',
         'notes',
         'special_requests',
+        'bookable_option',
     ];
 
     protected $attributes = [
@@ -129,6 +132,36 @@ class Booking extends Model
     public function daysUntilTravel(): int
     {
         return (int) today()->diffInDays($this->travel_date, false);
+    }
+
+    /**
+     * Why this booking cannot move to $status with $travellers on it, or null when it can. A confirmed or
+     * completed online booking takes one seat per traveller on its package (or series departure).
+     */
+    public function seatProblem(BookingStatus $status, int $travellers): ?string
+    {
+        if ($this->bookable === null || ! $status->earnsRevenue()) {
+            return null;
+        }
+
+        $bookable = new BookablePackage($this->bookable);
+        $seatsLeft = $bookable->seatsLeft($this->bookable_option);
+
+        if ($seatsLeft === null) {
+            return null;
+        }
+
+        // Seats this booking already holds become free again before it is counted with its new details.
+        $available = $seatsLeft + ($this->status->earnsRevenue() ? $this->adults + $this->children : 0);
+        $place = $bookable->hasSeatsPerDeparture() ? 'departure' : 'package';
+
+        if ($travellers <= $available) {
+            return null;
+        }
+
+        return $available === 0
+            ? "This {$place} is fully booked, so the booking cannot be confirmed. Raise the available seats on the Online booking page first."
+            : "Only {$available} ".Str::plural('seat', $available)." available on this {$place}, but this booking has {$travellers} travellers. Raise the available seats on the Online booking page or reduce the travellers.";
     }
 
     public function guestsLabel(): string

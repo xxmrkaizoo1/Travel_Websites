@@ -16,7 +16,7 @@
             ['admin.destinations.index', 'admin.destinations.*', '◎', 'Destinations', null],
             ['admin.online-booking.edit', 'admin.online-booking.*', '☑', 'Online booking', null],
         ] as [$routeName, $activePattern, $icon, $label, $badge])
-            <a class="admin-nav-link{{ request()->routeIs($activePattern) ? ' is-active' : '' }}" href="{{ route($routeName) }}" @if (request()->routeIs($activePattern)) aria-current="page" @endif>
+            <a class="admin-nav-link{{ request()->routeIs($activePattern) ? ' is-active' : '' }}" href="{{ route($routeName) }}" data-admin-tour="nav-{{ \Illuminate\Support\Str::slug($label) }}" @if (request()->routeIs($activePattern)) aria-current="page" @endif>
                 <span class="admin-nav-icon" aria-hidden="true">{{ $icon }}</span> {{ $label }}
                 @if ($badge)
                     <span class="admin-nav-count" aria-label="{{ $badge }} pending">{{ $badge }}</span>
@@ -27,22 +27,22 @@
 
     <span class="admin-nav-label admin-tools-label">MANAGEMENT</span>
     <nav class="admin-navigation">
-        <a class="admin-nav-link{{ request()->routeIs('admin.clients.*') ? ' is-active' : '' }}" href="{{ route('admin.clients.index') }}" @if (request()->routeIs('admin.clients.*')) aria-current="page" @endif>
+        <a class="admin-nav-link{{ request()->routeIs('admin.clients.*') ? ' is-active' : '' }}" href="{{ route('admin.clients.index') }}" data-admin-tour="nav-clients" @if (request()->routeIs('admin.clients.*')) aria-current="page" @endif>
             <span class="admin-nav-icon" aria-hidden="true">♧</span> Clients
         </a>
-        <a class="admin-nav-link{{ request()->routeIs('admin.package-likes') ? ' is-active' : '' }}" href="{{ route('admin.package-likes') }}" @if (request()->routeIs('admin.package-likes')) aria-current="page" @endif>
+        <a class="admin-nav-link{{ request()->routeIs('admin.package-likes') ? ' is-active' : '' }}" href="{{ route('admin.package-likes') }}" data-admin-tour="nav-package-likes" @if (request()->routeIs('admin.package-likes')) aria-current="page" @endif>
             <span class="admin-nav-icon" aria-hidden="true">♡</span> Package likes
         </a>
         <span class="admin-nav-link admin-nav-link-disabled" aria-disabled="true">
             <span class="admin-nav-icon" aria-hidden="true">♙</span> Team <small>Coming soon</small>
         </span>
-        <a class="admin-nav-link{{ request()->routeIs('admin.settings*') ? ' is-active' : '' }}" href="{{ route('admin.settings') }}" @if (request()->routeIs('admin.settings*')) aria-current="page" @endif>
+        <a class="admin-nav-link{{ request()->routeIs('admin.settings*') ? ' is-active' : '' }}" href="{{ route('admin.settings') }}" data-admin-tour="nav-settings" @if (request()->routeIs('admin.settings*')) aria-current="page" @endif>
             <span class="admin-nav-icon" aria-hidden="true">⚙</span> Settings
         </a>
     </nav>
 
     <span class="admin-nav-label admin-tools-label">SMART HOLIDAYS</span>
-    <nav class="admin-navigation" aria-label="Smart Holidays">
+    <nav class="admin-navigation" aria-label="Smart Holidays" data-admin-tour="nav-smart-holidays">
         <details class="admin-nav-group" open>
             <summary class="admin-nav-link admin-nav-parent" data-context-menu="tour-package-menu" data-page-name="Smart Holidays" data-edit-url="{{ route('admin.smart-holidays.edit') }}" data-view-url="{{ route('home') }}" data-context-disable-create="true" data-edit-label="Edit homepage" data-view-label="View website" title="Right-click for Smart Holidays actions">
                 <span class="admin-nav-icon" aria-hidden="true">✈</span> Smart Holidays
@@ -70,7 +70,7 @@
     </nav>
 
     <span class="admin-nav-label admin-tools-label">SMART MUSLIM TOUR</span>
-    <nav class="admin-navigation" aria-label="Smart Muslim Tour">
+    <nav class="admin-navigation" aria-label="Smart Muslim Tour" data-admin-tour="nav-smart-muslim">
         <details class="admin-nav-group">
             <summary class="admin-nav-link admin-nav-parent" data-context-menu="tour-package-menu" data-page-name="Smart Muslim Homepage content" data-edit-url="{{ route('admin.homepage') }}" data-view-url="{{ route('smart-muslim') }}" data-edit-label="Manage homepage content" data-view-label="View homepage" data-context-create-url="{{ route('admin.homepage.create') }}" data-context-create-title="Create homepage campaign" data-context-create-label="New campaign" title="Right-click for homepage actions">
                 <span class="admin-nav-icon" aria-hidden="true">▧</span> Smart Muslim Homepage content
@@ -203,12 +203,6 @@
     </div>
 
     <div class="admin-sidebar-bottom">
-        <div class="admin-help-card">
-            <span class="admin-help-icon" aria-hidden="true">✦</span>
-            <strong>Need a hand?</strong>
-            <p>Our support team is here to help.</p>
-            <a href="mailto:tour@roystartravel.com.my">Contact support <span aria-hidden="true">→</span></a>
-        </div>
         <a class="admin-back-link" href="{{ route('home') }}">
             <span aria-hidden="true">↗</span> Back to website
         </a>

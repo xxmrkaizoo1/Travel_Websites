@@ -511,7 +511,9 @@ class TourPackagePageController extends Controller
             && in_array(parse_url((string) $value, PHP_URL_SCHEME), ['http', 'https'], true);
 
         $imageSource = function (string $attribute, mixed $value, Closure $fail) use ($storedPaths, $isHttpUrl): void {
-            if (! $isHttpUrl($value) && ! in_array($value, $storedPaths, true)) {
+            $isBundled = preg_match('#^images/[A-Za-z0-9/_.-]+$#', (string) $value) === 1 && ! str_contains((string) $value, '..');
+
+            if (! $isHttpUrl($value) && ! $isBundled && ! in_array($value, $storedPaths, true)) {
                 $fail('The image must be a valid http(s) URL or an uploaded image.');
             }
         };

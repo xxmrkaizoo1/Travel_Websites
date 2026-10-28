@@ -5,7 +5,7 @@
 @section('content')
     @php
         $optionGroups = collect($options)->groupBy(fn (array $option): string => (string) $option['group']);
-        $chosen = collect($options)->firstWhere('key', $selectedOption) ?? $options[0];
+        $chosen = collect($options)->firstWhere('key', $selectedOption) ?? $options[0] ?? null;
         $travellers = max(1, (int) old('adults', 2) + (int) old('children', 0));
     @endphp
 
@@ -20,11 +20,16 @@
         </div>
     </section>
 
-    @if (! $bookable->isOpen())
+    @if (! $bookable->isOpen() || $bookable->isFull())
         <section class="cp-panel cp-help-panel">
             <div>
-                <h2>Online booking is closed for this package</h2>
-                <p>You can still book with our team. Send us a trip request or message us on WhatsApp.</p>
+                @if ($bookable->isOpen())
+                    <h2>This package is fully booked</h2>
+                    <p>Every seat has been taken. Send us a trip request or message us on WhatsApp and we will tell you if a seat opens up.</p>
+                @else
+                    <h2>Online booking is closed for this package</h2>
+                    <p>You can still book with our team. Send us a trip request or message us on WhatsApp.</p>
+                @endif
             </div>
             <div class="cp-help-actions">
                 <a class="cp-button" href="{{ route('client.enquiries.index') }}#new-request">Send a trip request</a>
@@ -66,9 +71,12 @@
                         <input type="date" name="travel_date" value="{{ $chosen['travel_date'] ?? old('travel_date') }}" min="{{ today()->toDateString() }}" @readonly($chosen['travel_date']) @required(! $chosen['travel_date']) data-booking-date>
                     </label>
                     <div class="cp-field-pair">
-                        <label class="cp-field"><span>Adults</span><input type="number" name="adults" value="{{ old('adults', 2) }}" required min="1" max="50" data-booking-adults></label>
+                        <label class="cp-field"><span>Adults</span><input type="number" name="adults" value="{{ old('adults', 2) }}" required min="1" max="{{ min(50, $bookable->seatsLeft() ?? 50) }}" data-booking-adults></label>
                         <label class="cp-field"><span>Children</span><input type="number" name="children" value="{{ old('children', 0) }}" min="0" max="50" data-booking-children></label>
                     </div>
+                    @if ($bookable->seatsLeft() !== null)
+                        <p @class(['cp-seats-left', 'is-low' => $bookable->seatsLeft() <= 5])><span aria-hidden="true">●</span> {{ $bookable->seatsLeft() }} {{ \Illuminate\Support\Str::plural('seat', $bookable->seatsLeft()) }} available · each adult and child takes one seat</p>
+                    @endif
                     <label class="cp-field cp-field--wide">
                         <span>Special requests <small>Optional</small></span>
                         <textarea name="special_requests" maxlength="1500" rows="4" placeholder="Room sharing, dietary needs, wheelchair access, passport names…">{{ old('special_requests') }}</textarea>

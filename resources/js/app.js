@@ -21,6 +21,16 @@ const closeMobileNav = () => {
     closeDropdowns();
 };
 
+// The header gains a shadow once the page scrolls under it.
+const siteHeader = document.querySelector('.site-header');
+
+if (siteHeader) {
+    const markScrolled = () => siteHeader.classList.toggle('is-scrolled', window.scrollY > 8);
+
+    markScrolled();
+    window.addEventListener('scroll', markScrolled, { passive: true });
+}
+
 const NAV_VISIBLE_ITEMS = 5;
 
 // Long menus show their first five links; the rest sit behind a "See more" toggle.
@@ -181,10 +191,58 @@ if (carousel) {
     const dots = [...document.querySelectorAll('.carousel-dot')];
     const previousButton = carousel.querySelector('.carousel-prev');
     const nextButton = carousel.querySelector('.carousel-next');
+    const counter = carousel.querySelector('[data-campaign-current]');
+    const interval = Number(carousel.dataset.campaignInterval) || 0;
+    const canAutoplay = interval > 0 && slides.length > 1 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const pauseReasons = new Set();
     let activeIndex = 0;
+    let timer = null;
+    let startedAt = 0;
+    let remaining = interval;
+
+    carousel.style.setProperty('--cs-interval', `${interval}ms`);
+    carousel.classList.toggle('is-static', !canAutoplay);
+
+    // Autoplay keeps its place when paused, so the progress bar and the timer stay in step.
+    const schedule = () => {
+        window.clearTimeout(timer);
+
+        if (!canAutoplay || pauseReasons.size > 0) {
+            return;
+        }
+
+        startedAt = performance.now();
+        timer = window.setTimeout(() => showSlide(activeIndex + 1), remaining);
+    };
+
+    const pause = (reason) => {
+        if (pauseReasons.size === 0) {
+            window.clearTimeout(timer);
+            remaining = Math.max(0, remaining - (performance.now() - startedAt));
+        }
+
+        pauseReasons.add(reason);
+        carousel.classList.add('is-paused');
+    };
+
+    const resume = (reason) => {
+        if (!pauseReasons.delete(reason)) {
+            return;
+        }
+
+        if (pauseReasons.size === 0) {
+            carousel.classList.remove('is-paused');
+            schedule();
+        }
+    };
 
     const showSlide = (index) => {
         activeIndex = (index + slides.length) % slides.length;
+        remaining = interval;
+
+        if (counter) {
+            counter.textContent = String(activeIndex + 1).padStart(2, '0');
+        }
 
         slides.forEach((slide, slideIndex) => {
             const isActive = slideIndex === activeIndex;
@@ -205,7 +263,28 @@ if (carousel) {
                 dot.removeAttribute('aria-current');
             }
         });
+
+        schedule();
     };
+
+    if (canAutoplay) {
+        carousel.addEventListener('mouseenter', () => pause('hover'));
+        carousel.addEventListener('mouseleave', () => resume('hover'));
+        // Keyboard focus pauses; a mouse click on an arrow should not stop the slideshow.
+        carousel.addEventListener('focusin', (event) => {
+            if (event.target.matches(':focus-visible')) {
+                pause('focus');
+            }
+        });
+        carousel.addEventListener('focusout', (event) => {
+            if (!carousel.contains(event.relatedTarget)) {
+                resume('focus');
+            }
+        });
+        document.addEventListener('visibilitychange', () => (document.hidden ? pause('hidden') : resume('hidden')));
+        new IntersectionObserver(([entry]) => (entry.isIntersecting ? resume('offscreen') : pause('offscreen')), { threshold: 0.3 }).observe(carousel);
+        schedule();
+    }
 
     previousButton?.addEventListener('click', () => showSlide(activeIndex - 1));
     nextButton?.addEventListener('click', () => showSlide(activeIndex + 1));
@@ -242,164 +321,288 @@ if (carousel) {
     });
 }
 
+// Featured destinations: stacked full-screen slides that wipe in over each other and advance on their own.
+// Autoplay pauses on hover, focus, when scrolled away, when the tab is hidden or when the visitor presses pause.
 document.querySelectorAll('[data-sh-journey-carousel]').forEach((carousel) => {
-    const viewport = carousel.querySelector('.sh-journey-viewport');
-    const track = carousel.querySelector('.sh-journey-track');
-    const slides = [...carousel.querySelectorAll('.sh-journey-slide')];
+    const stage = carousel.querySelector('.sh-cine-stage');
+    const slides = [...carousel.querySelectorAll('[data-sh-journey-slide]')];
     const selectors = [...carousel.querySelectorAll('[data-sh-journey-select]')];
-    const previousButton = carousel.querySelector('[data-sh-journey-previous]');
-    const nextButton = carousel.querySelector('[data-sh-journey-next]');
+    const toggleButton = carousel.querySelector('[data-sh-journey-toggle]');
+    const nextCard = carousel.querySelector('[data-sh-journey-next-card]');
+    const nextImage = carousel.querySelector('[data-sh-journey-next-image]');
+    const nextTitle = carousel.querySelector('[data-sh-journey-next-title]');
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const interval = 7000;
     let currentIndex = 0;
+    let timer = null;
+    let startedAt = 0;
+    let elapsed = 0;
+    let isStoppedByVisitor = prefersReducedMotion;
+    let isHovered = false;
+    let isInView = true;
     let pointerStartX = null;
     let pointerStartY = null;
-    let dragStartOffset = 0;
-    let dragMoved = false;
     let suppressClick = false;
 
-    const showSlide = (index) => {
-        currentIndex = Math.max(0, Math.min(index, slides.length - 1));
-        track.style.transform = `translateX(-${currentIndex * viewport.clientWidth}px)`;
-        previousButton.disabled = currentIndex === 0;
-        nextButton.disabled = currentIndex === slides.length - 1;
+    carousel.style.setProperty('--sh-cine-interval', `${interval}ms`);
+
+    const shouldPlay = () => !isStoppedByVisitor && !isHovered && isInView && !document.hidden && slides.length > 1;
+
+    // Runs or pauses the countdown, keeping the time already spent on the current slide.
+    const schedule = () => {
+        const isPlaying = shouldPlay();
+
+        if (timer !== null) {
+            window.clearTimeout(timer);
+            timer = null;
+            elapsed += performance.now() - startedAt;
+        }
+
+        carousel.classList.toggle('is-paused', !isPlaying);
+
+        if (isPlaying) {
+            startedAt = performance.now();
+            timer = window.setTimeout(() => showSlide(currentIndex + 1, 1), Math.max(0, interval - elapsed));
+        }
+    };
+
+    const showSlide = (index, direction = index >= currentIndex ? 1 : -1) => {
+        const nextIndex = (index + slides.length) % slides.length;
+        const previousSlide = slides[currentIndex];
+        const isChange = nextIndex !== currentIndex;
+
+        carousel.dataset.direction = direction > 0 ? 'forward' : 'backward';
+        currentIndex = nextIndex;
+
         slides.forEach((slide, slideIndex) => {
-            slide.setAttribute('aria-hidden', String(slideIndex !== currentIndex));
-            slide.inert = slideIndex !== currentIndex;
-            slide.classList.toggle('is-active', slideIndex === currentIndex);
+            const isActive = slideIndex === currentIndex;
+
+            slide.classList.toggle('is-active', isActive);
+            slide.classList.toggle('is-leaving', isChange && slide === previousSlide);
+            slide.setAttribute('aria-hidden', String(!isActive));
+            slide.inert = !isActive;
 
             const video = slide.querySelector('[data-sh-journey-video]');
 
-            if (video && slideIndex === currentIndex && !prefersReducedMotion) {
+            if (video && isActive && !prefersReducedMotion) {
                 video.preload = 'auto';
                 video.play().catch(() => {});
-            } else {
-                video?.pause();
+            } else if (video && slide !== previousSlide) {
+                video.pause();
             }
         });
+
+        if (isChange) {
+            window.setTimeout(() => {
+                previousSlide.classList.remove('is-leaving');
+                previousSlide.querySelector('[data-sh-journey-video]')?.pause();
+            }, 1200);
+        }
+
         selectors.forEach((selector) => {
-            if (Number(selector.dataset.shJourneyIndex) === currentIndex) {
+            const selectorIndex = Number(selector.dataset.shJourneyIndex);
+
+            selector.classList.toggle('is-done', selectorIndex < currentIndex);
+
+            if (selectorIndex === currentIndex) {
                 selector.setAttribute('aria-current', 'true');
             } else {
                 selector.removeAttribute('aria-current');
             }
         });
-    };
 
-    previousButton.addEventListener('click', () => showSlide(currentIndex - 1));
-    nextButton.addEventListener('click', () => showSlide(currentIndex + 1));
-    selectors.forEach((selector) => selector.addEventListener('click', () => showSlide(Number(selector.dataset.shJourneyIndex))));
-    viewport.addEventListener('pointerdown', (event) => {
-        if (event.target instanceof Element && event.target.closest('.sh-journey-controls')) {
-            return;
+        const upcoming = slides[(currentIndex + 1) % slides.length];
+        nextImage.src = upcoming.querySelector('.sh-cine-media img').currentSrc || upcoming.querySelector('.sh-cine-media img').src;
+        nextTitle.textContent = upcoming.querySelector('h3').textContent.trim();
+
+        // Restart the progress fill for the new slide.
+        const fill = selectors[currentIndex]?.querySelector('.sh-cine-progress-track i');
+
+        selectors.forEach((selector) => selector.querySelector('.sh-cine-progress-track i').classList.remove('is-running'));
+
+        if (fill) {
+            void fill.offsetWidth;
+            fill.classList.add('is-running');
         }
 
+        window.clearTimeout(timer);
+        timer = null;
+        elapsed = 0;
+        schedule();
+    };
+
+    const setStopped = (isStopped) => {
+        isStoppedByVisitor = isStopped;
+        carousel.classList.toggle('is-stopped', isStopped);
+        toggleButton.setAttribute('aria-pressed', String(isStopped));
+        toggleButton.setAttribute('aria-label', isStopped ? 'Play slideshow' : 'Pause slideshow');
+        toggleButton.firstElementChild.textContent = isStopped ? '▶' : '❚❚';
+    };
+
+    carousel.querySelector('[data-sh-journey-previous]').addEventListener('click', () => showSlide(currentIndex - 1, -1));
+    carousel.querySelector('[data-sh-journey-next]').addEventListener('click', () => showSlide(currentIndex + 1, 1));
+    nextCard.addEventListener('click', () => showSlide(currentIndex + 1, 1));
+    toggleButton.addEventListener('click', () => {
+        setStopped(!isStoppedByVisitor);
+        showSlide(currentIndex);
+    });
+    selectors.forEach((selector) => selector.addEventListener('click', () => showSlide(Number(selector.dataset.shJourneyIndex))));
+
+    stage.addEventListener('pointerdown', (event) => {
         if (event.pointerType === 'mouse' && event.button !== 0) {
             return;
         }
 
         pointerStartX = event.clientX;
         pointerStartY = event.clientY;
-        dragStartOffset = -currentIndex * viewport.clientWidth;
-        dragMoved = false;
     });
-    viewport.addEventListener('pointermove', (event) => {
+    stage.addEventListener('pointerup', (event) => {
         if (pointerStartX === null) {
             return;
         }
 
         const distanceX = event.clientX - pointerStartX;
         const distanceY = event.clientY - pointerStartY;
-
-        if (!dragMoved && (Math.abs(distanceX) < 6 || Math.abs(distanceX) <= Math.abs(distanceY))) {
-            return;
-        }
-
-        // Capture only once a swipe starts: capturing on press sends the click to the viewport, so links never open.
-        if (!dragMoved) {
-            viewport.classList.add('is-dragging');
-            track.style.transition = 'none';
-            viewport.setPointerCapture(event.pointerId);
-        }
-
-        dragMoved = true;
-        event.preventDefault();
-        const offset = Math.max(-viewport.clientWidth * (slides.length - 1), Math.min(0, dragStartOffset + distanceX));
-        track.style.transform = `translateX(${offset}px)`;
-    });
-    viewport.addEventListener('pointerup', (event) => {
-        if (pointerStartX === null) {
-            return;
-        }
-
-        const distance = event.clientX - pointerStartX;
-        const wasDragged = dragMoved;
         pointerStartX = null;
         pointerStartY = null;
-        dragMoved = false;
-        viewport.classList.remove('is-dragging');
-        track.style.removeProperty('transition');
 
-        if (wasDragged) {
-            showSlide(currentIndex + (Math.abs(distance) > 48 ? (distance < 0 ? 1 : -1) : 0));
+        if (Math.abs(distanceX) > 50 && Math.abs(distanceX) > Math.abs(distanceY)) {
             suppressClick = true;
             window.setTimeout(() => { suppressClick = false; }, 0);
-        } else {
-            showSlide(currentIndex);
+            showSlide(currentIndex + (distanceX < 0 ? 1 : -1), distanceX < 0 ? 1 : -1);
         }
     });
-    viewport.addEventListener('pointercancel', () => {
+    stage.addEventListener('pointercancel', () => {
         pointerStartX = null;
         pointerStartY = null;
-        dragMoved = false;
-        viewport.classList.remove('is-dragging');
-        track.style.removeProperty('transition');
-        showSlide(currentIndex);
     });
-    viewport.addEventListener('click', (event) => {
+    stage.addEventListener('click', (event) => {
         if (suppressClick) {
             event.preventDefault();
             event.stopImmediatePropagation();
             suppressClick = false;
         }
     }, true);
-    window.addEventListener('resize', () => showSlide(currentIndex));
+
+    carousel.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+            event.preventDefault();
+            showSlide(currentIndex + (event.key === 'ArrowRight' ? 1 : -1), event.key === 'ArrowRight' ? 1 : -1);
+        }
+    });
+
+    const setHovered = (value) => {
+        isHovered = value;
+        schedule();
+    };
+
+    stage.addEventListener('mouseenter', () => setHovered(true));
+    stage.addEventListener('mouseleave', () => setHovered(false));
+    carousel.addEventListener('focusin', () => setHovered(true));
+    carousel.addEventListener('focusout', (event) => {
+        if (!carousel.contains(event.relatedTarget)) {
+            setHovered(false);
+        }
+    });
+    document.addEventListener('visibilitychange', schedule);
+
+    new IntersectionObserver(([entry]) => {
+        isInView = entry.isIntersecting;
+        schedule();
+    }, { threshold: 0.4 }).observe(carousel);
+
+    setStopped(isStoppedByVisitor);
     showSlide(0);
 });
 
-const destinationCarousel = document.querySelector('.destination-carousel');
+// Country pages: destination slider. Native scroll-snap handles touch; arrows, keys and mouse drag move it on desktop.
+document.querySelectorAll('[data-pk-dest]').forEach((slider) => {
+    const track = slider.querySelector('[data-pk-dest-track]');
+    const cards = [...slider.querySelectorAll('[data-pk-dest-card]')];
+    const previousButton = slider.querySelector('[data-pk-dest-previous]');
+    const nextButton = slider.querySelector('[data-pk-dest-next]');
+    const count = slider.querySelector('[data-pk-dest-count]');
+    const progress = slider.querySelector('[data-pk-dest-progress]');
+    const pad = (number) => String(number).padStart(2, '0');
+    let dragStartX = null;
+    let dragStartScroll = 0;
+    let dragged = false;
 
-if (destinationCarousel) {
-    const viewport = destinationCarousel.querySelector('.destination-viewport');
-    const track = destinationCarousel.querySelector('.destination-track');
-    const cards = [...track.querySelectorAll('.destination-card')];
-    const previousButton = destinationCarousel.querySelector('.destination-prev');
-    const nextButton = destinationCarousel.querySelector('.destination-next');
-    const count = destinationCarousel.querySelector('.destination-count');
+    const stride = () => cards[0].getBoundingClientRect().width + Number.parseFloat(window.getComputedStyle(track).columnGap || 0);
 
-    const updateDestinationControls = () => {
-        const cardStride = cards[0].getBoundingClientRect().width
-            + Number.parseFloat(window.getComputedStyle(track).gap);
-        const firstVisible = Math.round(track.scrollLeft / cardStride);
-        const visibleCount = Math.max(1, Math.round(viewport.clientWidth / cardStride));
-        const lastVisible = Math.min(cards.length, firstVisible + visibleCount);
+    const update = () => {
+        const maxScroll = track.scrollWidth - track.clientWidth;
+        const firstVisible = Math.min(cards.length - 1, Math.round(track.scrollLeft / stride()));
+        const visibleCount = Math.max(1, Math.round(track.clientWidth / stride()));
 
         previousButton.disabled = track.scrollLeft <= 1;
-        nextButton.disabled = track.scrollLeft + viewport.clientWidth >= track.scrollWidth - 1;
-        count.textContent = `${firstVisible + 1}–${lastVisible} of ${cards.length} destinations`;
+        nextButton.disabled = track.scrollLeft >= maxScroll - 1;
+        count.innerHTML = `<b>${pad(firstVisible + 1)}</b> / ${pad(cards.length)}`;
+        progress.style.transform = `scaleX(${maxScroll > 0 ? Math.min(1, (track.scrollLeft + track.clientWidth) / track.scrollWidth) : 1})`;
+        cards.forEach((card, index) => card.classList.toggle('is-in-view', index >= firstVisible && index < firstVisible + visibleCount));
     };
 
-    previousButton.addEventListener('click', () => {
-        track.scrollBy({ left: -cards[0].getBoundingClientRect().width - 20, behavior: 'smooth' });
+    const move = (direction) => track.scrollBy({ left: direction * stride(), behavior: 'smooth' });
+
+    previousButton.addEventListener('click', () => move(-1));
+    nextButton.addEventListener('click', () => move(1));
+    slider.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+            event.preventDefault();
+            move(event.key === 'ArrowRight' ? 1 : -1);
+        }
     });
 
-    nextButton.addEventListener('click', () => {
-        track.scrollBy({ left: cards[0].getBoundingClientRect().width + 20, behavior: 'smooth' });
-    });
+    track.addEventListener('pointerdown', (event) => {
+        if (event.pointerType !== 'mouse' || event.button !== 0) {
+            return;
+        }
 
-    track.addEventListener('scroll', updateDestinationControls, { passive: true });
-    window.addEventListener('resize', updateDestinationControls);
-    updateDestinationControls();
-}
+        dragStartX = event.clientX;
+        dragStartScroll = track.scrollLeft;
+        dragged = false;
+    });
+    window.addEventListener('pointermove', (event) => {
+        if (dragStartX === null) {
+            return;
+        }
+
+        const distance = event.clientX - dragStartX;
+
+        if (!dragged && Math.abs(distance) > 6) {
+            dragged = true;
+            track.classList.add('is-dragging');
+        }
+
+        if (dragged) {
+            track.scrollLeft = dragStartScroll - distance;
+        }
+    });
+    window.addEventListener('pointerup', () => {
+        if (dragStartX === null) {
+            return;
+        }
+
+        dragStartX = null;
+        track.classList.remove('is-dragging');
+
+        if (dragged) {
+            const snapped = Math.round(track.scrollLeft / stride()) * stride();
+            track.scrollTo({ left: snapped, behavior: 'smooth' });
+        }
+    });
+    // A drag should not also open the card link it started on.
+    track.addEventListener('click', (event) => {
+        if (dragged) {
+            event.preventDefault();
+            dragged = false;
+        }
+    }, true);
+
+    track.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    update();
+});
 
 document.querySelectorAll('[data-popular-tour-carousel]').forEach((carousel) => {
     const viewport = carousel.querySelector('.popular-tour-viewport');
@@ -599,6 +802,13 @@ if (seriesCarousel) {
         tabs.forEach((tab, index) => {
             if (index === activeIndex) {
                 tab.setAttribute('aria-current', 'true');
+
+                // On narrow screens the tab bar scrolls; keep the active tab in view without moving the page.
+                const tabBar = tab.parentElement;
+
+                if (tabBar.scrollWidth > tabBar.clientWidth) {
+                    tabBar.scrollTo({ left: tab.offsetLeft - (tabBar.clientWidth - tab.offsetWidth) / 2, behavior: 'smooth' });
+                }
             } else {
                 tab.removeAttribute('aria-current');
             }
@@ -1064,13 +1274,13 @@ document.addEventListener('click', (event) => {
 });
 
 const revealTargets = document.querySelectorAll([
-    '.welcome-section h2', '.welcome-subtitle', '.value-card', '.services-section h2', '.service-card', '.service-tile', '.footer-inner > *',
-    '.island-intro-copy', '.island-photo-stack', '.island-section-heading', '.island-highlight', '.destination-carousel',
-    '.aceh-itinerary-heading', '.aceh-day', '.bali-gallery', '.aceh-details-card', '.aceh-hotel-card', '.island-contact > *',
+    '[data-reveal]', '.service-card', '.footer-inner > *',
+    '.island-intro-copy', '.island-photo-stack', '.island-section-heading', '.island-highlight',
+    '.aceh-itinerary-heading', '.aceh-day', '.bali-gallery', '.aceh-details-card', '.aceh-hotel-card', '.island-contact > *', '.pk-dest',
     '.series-head', '.series-advantage', '.series-flag', '.series-photo',
     '.travel-moments__heading', '.travel-moment-card',
     '.focus-tour-card', '.focus-tours-cta__inner', '.booking-toc__card', '.booking-card', '.destination-state',
-    '.brand-tile', '.consultants-intro', '.consultant-card', '.china-cta', '.china-moments',
+    '.brand-tile', '.china-cta', '.china-moments',
     '.honeymoon-islands-heading', '.honeymoon-island-card', '.mice-gallery > h2', '.mice-clientele > h2',
 ].join(', '));
 
@@ -2493,6 +2703,42 @@ if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         video.removeAttribute('autoplay');
         video.pause();
     });
+} else {
+    const backgroundVideos = [...document.querySelectorAll('[data-background-video], [data-sh-journey-video]')];
+
+    // Slide videos only run while their slide is showing; section backgrounds always run.
+    const shouldLoop = (video) => !video.matches('[data-sh-journey-video]') || Boolean(video.closest('.is-active'));
+
+    const restart = (video) => {
+        video.currentTime = 0;
+        video.play().catch(() => {});
+    };
+
+    backgroundVideos.forEach((video) => {
+        video.loop = true;
+        video.muted = true;
+
+        // Hosts that cannot seek (no byte-range support) stop the native loop on the last frame; restart by hand.
+        video.addEventListener('ended', () => {
+            if (shouldLoop(video)) {
+                restart(video);
+            }
+        });
+
+        // Some browsers stall near the end instead of firing "ended" when seeking is unsupported.
+        video.addEventListener('timeupdate', () => {
+            if (video.duration && video.duration - video.currentTime < 0.25 && !video.paused && shouldLoop(video)) {
+                restart(video);
+            }
+        });
+    });
+
+    // Browsers pause background videos in hidden tabs; resume them when the visitor comes back.
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            backgroundVideos.filter((video) => video.paused && shouldLoop(video) && (video.hasAttribute('autoplay') || video.matches('[data-sh-journey-video]'))).forEach((video) => video.play().catch(() => {}));
+        }
+    });
 }
 
 document.querySelectorAll('[data-video-field]').forEach((videoField) => {
@@ -3046,14 +3292,107 @@ document.querySelectorAll('[data-online-booking]').forEach((form) => {
         }
     });
 
+    // "Open all" and "Close all" only change the packages the filters leave on screen.
     form.querySelectorAll('[data-booking-bulk]').forEach((button) => {
         button.addEventListener('click', () => {
-            button.closest('section').querySelectorAll('.admin-booking-toggle input').forEach((input) => {
+            button.closest('section').querySelectorAll('[data-booking-row]:not([hidden]) .admin-booking-toggle input').forEach((input) => {
                 input.checked = button.dataset.bookingBulk === 'open';
                 label(input);
             });
         });
     });
+
+    // Filter bar: search, package type and status. Rows are only hidden, so they are still saved with the form.
+    const filters = form.querySelector('[data-booking-filters]');
+    const search = filters?.querySelector('[data-booking-filter-search]');
+    const rows = [...form.querySelectorAll('[data-booking-row]')];
+    let type = 'all';
+    let state = 'all';
+
+    const matchesState = (row) => {
+        const isOpen = row.querySelector('.admin-booking-toggle input').checked;
+
+        return state === 'all'
+            || (state === 'open' && isOpen)
+            || (state === 'closed' && !isOpen)
+            || (state === 'limited' && row.dataset.seatState !== 'none')
+            || (state === 'full' && row.dataset.seatState === 'full');
+    };
+
+    function applyFilters() {
+        if (!filters) {
+            return;
+        }
+
+        const words = search.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+        let shown = 0;
+
+        rows.forEach((row) => {
+            const section = row.closest('[data-booking-section]').dataset.bookingSection;
+            const visible = (type === 'all' || type === section)
+                && words.every((word) => row.dataset.search.includes(word))
+                && matchesState(row);
+
+            row.hidden = !visible;
+            form.querySelector(`[data-booking-row-detail="${row.dataset.bookingRow}"]`)?.toggleAttribute('hidden', !visible);
+            shown += visible ? 1 : 0;
+        });
+
+        form.querySelectorAll('[data-booking-section]').forEach((section) => {
+            section.hidden = !section.querySelector('[data-booking-row]:not([hidden])');
+        });
+
+        const filtered = shown !== rows.length;
+        filters.querySelector('[data-booking-filter-result]').textContent = filtered
+            ? `Showing ${shown} of ${rows.length} ${rows.length === 1 ? 'package' : 'packages'}`
+            : `Showing all ${rows.length} ${rows.length === 1 ? 'package' : 'packages'}`;
+        form.querySelector('[data-booking-filter-empty]').hidden = shown > 0;
+    }
+
+    const choose = (attribute, value) => {
+        filters.querySelectorAll(`[${attribute}]`).forEach((chip) => {
+            const isActive = chip.getAttribute(attribute) === value;
+
+            chip.classList.toggle('is-active', isActive);
+            chip.setAttribute('aria-pressed', String(isActive));
+        });
+    };
+
+    if (filters) {
+        filters.addEventListener('click', (event) => {
+            const chip = event.target.closest('[data-booking-filter-type], [data-booking-filter-state]');
+
+            if (!chip) {
+                return;
+            }
+
+            if (chip.hasAttribute('data-booking-filter-type')) {
+                type = chip.dataset.bookingFilterType;
+                choose('data-booking-filter-type', type);
+            } else {
+                state = chip.dataset.bookingFilterState;
+                choose('data-booking-filter-state', state);
+            }
+
+            applyFilters();
+        });
+        search.addEventListener('input', applyFilters);
+        // Enter in the search box must not submit (and save) the whole form.
+        search.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+            }
+        });
+        form.querySelector('[data-booking-filter-clear]').addEventListener('click', () => {
+            search.value = '';
+            type = 'all';
+            state = 'all';
+            choose('data-booking-filter-type', type);
+            choose('data-booking-filter-state', state);
+            applyFilters();
+            search.focus();
+        });
+    }
 });
 
 // Admin: a package's online booking switch saves as soon as it is flipped.
@@ -3771,3 +4110,847 @@ document.addEventListener('click', (event) => {
 
 // Coming back with the browser's back button can restore the old page as it was; clear the loading line.
 window.addEventListener('pageshow', () => document.documentElement.classList.remove('is-leaving'));
+
+// Smart Holidays poster slideshow: a 3D coverflow that advances on its own, pausing on hover, focus,
+// when scrolled out of view or when the visitor presses pause.
+document.querySelectorAll('[data-sh-poster-carousel]').forEach((carousel) => {
+    const stage = carousel.querySelector('.sh-poster-stage');
+    const posters = [...carousel.querySelectorAll('[data-sh-poster]')];
+    const currentLabel = carousel.querySelector('[data-sh-poster-current]');
+    const progressBar = carousel.querySelector('[data-sh-poster-bar]');
+    const toggleButton = carousel.querySelector('[data-sh-poster-toggle]');
+    const interval = 4500;
+    let currentIndex = 0;
+    let timer = null;
+    let startedAt = 0;
+    let elapsed = 0;
+    let isStoppedByVisitor = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let isHovered = false;
+    let isInView = false;
+    let pointerStartX = null;
+    let suppressClick = false;
+
+    carousel.style.setProperty('--sh-poster-interval', `${interval}ms`);
+
+    const circularOffset = (index) => {
+        let offset = index - currentIndex;
+
+        if (offset > posters.length / 2) {
+            offset -= posters.length;
+        } else if (offset < -posters.length / 2) {
+            offset += posters.length;
+        }
+
+        return offset;
+    };
+
+    const shouldPlay = () => !isStoppedByVisitor && !isHovered && isInView && !document.hidden && posters.length > 1;
+
+    // Runs or pauses the countdown, keeping time already spent on the current poster.
+    const schedule = () => {
+        const isPlaying = shouldPlay();
+
+        if (timer !== null) {
+            window.clearTimeout(timer);
+            timer = null;
+            elapsed += performance.now() - startedAt;
+        }
+
+        carousel.classList.toggle('is-paused', !isPlaying);
+
+        if (isPlaying) {
+            startedAt = performance.now();
+            timer = window.setTimeout(() => showPoster(currentIndex + 1), Math.max(0, interval - elapsed));
+        }
+    };
+
+    const showPoster = (index) => {
+        currentIndex = (index + posters.length) % posters.length;
+
+        posters.forEach((poster, posterIndex) => {
+            const offset = circularOffset(posterIndex);
+            const distance = Math.abs(offset);
+            const isActive = offset === 0;
+
+            poster.style.setProperty('--offset', String(offset));
+            poster.style.setProperty('--distance', String(distance));
+            poster.style.zIndex = String(posters.length - distance);
+            poster.classList.toggle('is-active', isActive);
+            poster.classList.toggle('is-far', distance > 2);
+            poster.setAttribute('aria-hidden', String(!isActive));
+            poster.querySelector('a').tabIndex = isActive ? 0 : -1;
+        });
+
+        currentLabel.textContent = String(currentIndex + 1).padStart(2, '0');
+
+        window.clearTimeout(timer);
+        timer = null;
+        elapsed = 0;
+        progressBar.classList.remove('is-running');
+        void progressBar.offsetWidth;
+        progressBar.classList.toggle('is-running', !isStoppedByVisitor);
+        schedule();
+    };
+
+    const setStopped = (isStopped) => {
+        isStoppedByVisitor = isStopped;
+        toggleButton.setAttribute('aria-pressed', String(isStopped));
+        toggleButton.setAttribute('aria-label', isStopped ? 'Play slideshow' : 'Pause slideshow');
+        toggleButton.firstElementChild.textContent = isStopped ? '▶' : '❚❚';
+    };
+
+    carousel.querySelector('[data-sh-poster-previous]').addEventListener('click', () => showPoster(currentIndex - 1));
+    carousel.querySelector('[data-sh-poster-next]').addEventListener('click', () => showPoster(currentIndex + 1));
+    toggleButton.addEventListener('click', () => {
+        setStopped(!isStoppedByVisitor);
+        showPoster(currentIndex);
+    });
+
+    // Clicking a side poster brings it to the front instead of opening its link.
+    posters.forEach((poster, posterIndex) => {
+        poster.querySelector('a').addEventListener('click', (event) => {
+            if (suppressClick || posterIndex !== currentIndex) {
+                event.preventDefault();
+                suppressClick = false;
+
+                if (posterIndex !== currentIndex) {
+                    showPoster(posterIndex);
+                }
+            }
+        });
+    });
+
+    stage.addEventListener('pointerdown', (event) => {
+        pointerStartX = event.clientX;
+    });
+    stage.addEventListener('pointerup', (event) => {
+        if (pointerStartX === null) {
+            return;
+        }
+
+        const distanceX = event.clientX - pointerStartX;
+        pointerStartX = null;
+
+        if (Math.abs(distanceX) > 40) {
+            suppressClick = true;
+            showPoster(currentIndex + (distanceX < 0 ? 1 : -1));
+        }
+    });
+    stage.addEventListener('pointercancel', () => {
+        pointerStartX = null;
+    });
+
+    carousel.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+            event.preventDefault();
+            showPoster(currentIndex + (event.key === 'ArrowRight' ? 1 : -1));
+        }
+    });
+
+    const setHovered = (value) => {
+        isHovered = value;
+        schedule();
+    };
+
+    stage.addEventListener('mouseenter', () => setHovered(true));
+    stage.addEventListener('mouseleave', () => setHovered(false));
+    carousel.addEventListener('focusin', () => setHovered(true));
+    carousel.addEventListener('focusout', (event) => {
+        if (!carousel.contains(event.relatedTarget)) {
+            setHovered(false);
+        }
+    });
+    document.addEventListener('visibilitychange', schedule);
+
+    new IntersectionObserver(([entry]) => {
+        isInView = entry.isIntersecting;
+        schedule();
+    }, { threshold: 0.35 }).observe(carousel);
+
+    setStopped(isStoppedByVisitor);
+    showPoster(0);
+});
+
+// Short-video reels: the centred reel plays muted, its bar fills with the clip, then the strip moves on.
+document.querySelectorAll('[data-sh-reels]').forEach((section) => {
+    const track = section.querySelector('[data-sh-reels-track]');
+    const reels = [...section.querySelectorAll('[data-sh-reel]')];
+    const currentLabel = section.querySelector('[data-sh-reels-current]');
+    const toggleButton = section.querySelector('[data-sh-reels-toggle]');
+    const maxReelSeconds = 10;
+    const fallbackSeconds = 7;
+    const loadTimeoutSeconds = 12;
+    let currentIndex = 0;
+    let isStoppedByVisitor = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let isInView = false;
+    let frame = null;
+    let lastTick = 0;
+    let waited = 0;
+    let scrollTimer = null;
+
+    const viewer = section.querySelector('[data-sh-reel-viewer]');
+    const viewerStage = viewer.querySelector('[data-sh-reel-viewer-stage]');
+    const viewerVideo = viewer.querySelector('[data-sh-reel-viewer-video]');
+    const viewerBar = viewer.querySelector('[data-sh-reel-viewer-bar]');
+    const viewerSound = viewer.querySelector('[data-sh-reel-viewer-sound]');
+    const viewerLabel = viewer.querySelector('[data-sh-reel-viewer-label]');
+    const viewerLink = viewer.querySelector('[data-sh-reel-viewer-link]');
+    let viewerIndex = 0;
+    let viewerPointer = null;
+    let suppressViewerClick = false;
+
+    const videoOf = (reel) => reel.querySelector('[data-sh-reel-video]');
+    const shouldPlay = () => !isStoppedByVisitor && isInView && !document.hidden && !viewer.open;
+
+    if (reels.length === 1) {
+        videoOf(reels[0]).loop = true;
+    }
+
+    const stopLoop = () => {
+        if (frame !== null) {
+            window.cancelAnimationFrame(frame);
+            frame = null;
+        }
+    };
+
+    const tick = (now) => {
+        const reel = reels[currentIndex];
+        const video = videoOf(reel);
+        const isRunning = !video.paused && video.readyState >= 2;
+        let progress = 0;
+
+        if (isRunning) {
+            const length = Number.isFinite(video.duration) && video.duration > 0 ? Math.min(video.duration, maxReelSeconds) : maxReelSeconds;
+            progress = video.currentTime / length;
+        } else {
+            waited += (now - lastTick) / 1000;
+            // Blocked or broken videos still advance on a timer; slow ones get a generous wait.
+            progress = 'reelBlocked' in video.dataset ? waited / fallbackSeconds : (waited >= loadTimeoutSeconds ? 1 : 0);
+        }
+
+        lastTick = now;
+        reel.style.setProperty('--reel-progress', String(Math.min(progress, 1)));
+
+        if (progress >= 1 && reels.length > 1) {
+            showReel(currentIndex + 1);
+
+            return;
+        }
+
+        frame = window.requestAnimationFrame(tick);
+    };
+
+    const sync = () => {
+        const video = videoOf(reels[currentIndex]);
+
+        if (!shouldPlay()) {
+            video.pause();
+            stopLoop();
+
+            return;
+        }
+
+        video.preload = 'auto';
+        video.play().then(() => {
+            delete video.dataset.reelBlocked;
+        }).catch(() => {
+            video.dataset.reelBlocked = '';
+        });
+
+        if (frame === null) {
+            lastTick = performance.now();
+            frame = window.requestAnimationFrame(tick);
+        }
+    };
+
+    const centreOffset = (reel) => reel.offsetLeft - (track.clientWidth - reel.offsetWidth) / 2;
+
+    const showReel = (index, { scroll = true, behavior = 'smooth' } = {}) => {
+        currentIndex = (index + reels.length) % reels.length;
+        waited = 0;
+
+        reels.forEach((reel, reelIndex) => {
+            const isActive = reelIndex === currentIndex;
+
+            reel.classList.toggle('is-active', isActive);
+            reel.querySelectorAll('a, [data-sh-reel-open]').forEach((control) => {
+                control.tabIndex = isActive ? 0 : -1;
+            });
+
+            if (!isActive) {
+                const video = videoOf(reel);
+
+                video.pause();
+
+                if (video.readyState > 0) {
+                    video.currentTime = 0;
+                }
+
+                reel.style.setProperty('--reel-progress', '0');
+            }
+        });
+
+        currentLabel.textContent = String(currentIndex + 1).padStart(2, '0');
+
+        if (scroll) {
+            track.scrollTo({ left: centreOffset(reels[currentIndex]), behavior });
+        }
+
+        stopLoop();
+        sync();
+    };
+
+    const setStopped = (isStopped) => {
+        isStoppedByVisitor = isStopped;
+        toggleButton.setAttribute('aria-pressed', String(isStopped));
+        toggleButton.setAttribute('aria-label', isStopped ? 'Play videos' : 'Pause videos');
+        toggleButton.firstElementChild.textContent = isStopped ? '▶' : '❚❚';
+        sync();
+    };
+
+    section.querySelector('[data-sh-reels-previous]').addEventListener('click', () => showReel(currentIndex - 1));
+    section.querySelector('[data-sh-reels-next]').addEventListener('click', () => showReel(currentIndex + 1));
+    toggleButton.addEventListener('click', () => setStopped(!isStoppedByVisitor));
+
+    // Full-screen viewer: the chosen reel plays large with sound; the strip waits until it closes.
+    const setViewerMuted = (isMuted) => {
+        viewerVideo.muted = isMuted;
+        viewerSound.setAttribute('aria-pressed', String(isMuted));
+        viewerSound.setAttribute('aria-label', isMuted ? 'Turn sound on' : 'Mute sound');
+    };
+
+    const playViewer = () => {
+        viewerVideo.play().catch(() => {
+            // Browsers may refuse sound without a fresh tap; fall back to muted playback.
+            if (!viewerVideo.muted) {
+                setViewerMuted(true);
+                viewerVideo.play().catch(() => {});
+            }
+        });
+    };
+
+    const showInViewer = (index) => {
+        viewerIndex = (index + reels.length) % reels.length;
+
+        const reel = reels[viewerIndex];
+        const source = videoOf(reel);
+        const label = reel.querySelector('.sh-reel-label');
+        const link = reel.querySelector('.sh-reel-link');
+
+        viewerVideo.src = source.currentSrc || source.src;
+        viewerVideo.poster = source.poster;
+        viewerVideo.loop = reels.length === 1;
+        viewer.querySelector('[data-sh-reel-viewer-glow]').style.backgroundImage = source.poster ? `url("${source.poster}")` : '';
+        viewer.querySelector('[data-sh-reel-viewer-title]').textContent = reel.querySelector('.sh-reel-info strong').textContent;
+        viewer.querySelector('[data-sh-reel-viewer-current]').textContent = String(viewerIndex + 1).padStart(2, '0');
+        viewerLabel.textContent = label ? label.textContent : '';
+        viewerLabel.hidden = !label;
+        viewerLink.hidden = !link;
+        viewerLink.href = link ? link.href : '#';
+        viewerBar.style.transform = 'scaleX(0)';
+        viewerStage.classList.remove('is-paused');
+        playViewer();
+    };
+
+    const openViewer = (index) => {
+        showReel(index, { behavior: 'instant' });
+        setViewerMuted(false);
+        viewer.showModal();
+        sync();
+        showInViewer(index);
+    };
+
+    viewer.addEventListener('close', () => {
+        viewerVideo.pause();
+        viewerVideo.removeAttribute('src');
+        viewerVideo.load();
+        showReel(viewerIndex, { behavior: 'instant' });
+    });
+
+    viewerVideo.addEventListener('timeupdate', () => {
+        if (viewerVideo.duration > 0) {
+            viewerBar.style.transform = `scaleX(${viewerVideo.currentTime / viewerVideo.duration})`;
+        }
+    });
+    viewerVideo.addEventListener('ended', () => showInViewer(viewerIndex + 1));
+    viewerVideo.addEventListener('play', () => viewerStage.classList.remove('is-paused'));
+    viewerVideo.addEventListener('pause', () => viewerStage.classList.toggle('is-paused', viewer.open && !viewerVideo.ended));
+
+    viewerSound.addEventListener('click', () => {
+        setViewerMuted(!viewerVideo.muted);
+        playViewer();
+    });
+    viewer.querySelector('[data-sh-reel-viewer-close]').addEventListener('click', () => viewer.close());
+    viewer.querySelector('[data-sh-reel-viewer-previous]')?.addEventListener('click', () => showInViewer(viewerIndex - 1));
+    viewer.querySelector('[data-sh-reel-viewer-next]')?.addEventListener('click', () => showInViewer(viewerIndex + 1));
+
+    // Tapping the video pauses or resumes it; tapping outside the video closes the viewer.
+    viewerVideo.addEventListener('click', () => {
+        if (suppressViewerClick) {
+            suppressViewerClick = false;
+
+            return;
+        }
+
+        if (viewerVideo.paused) {
+            playViewer();
+        } else {
+            viewerVideo.pause();
+        }
+    });
+    viewer.addEventListener('click', (event) => {
+        if (event.target === viewer || event.target.matches('[data-sh-reel-viewer-glow]')) {
+            viewer.close();
+        }
+    });
+
+    viewer.addEventListener('keydown', (event) => {
+        if (reels.length > 1 && (event.key === 'ArrowLeft' || event.key === 'ArrowRight')) {
+            event.preventDefault();
+            showInViewer(viewerIndex + (event.key === 'ArrowRight' ? 1 : -1));
+        }
+    });
+
+    // Swipe sideways for the next or previous video, swipe down to close.
+    viewerStage.addEventListener('pointerdown', (event) => {
+        viewerPointer = { x: event.clientX, y: event.clientY };
+        suppressViewerClick = false;
+    });
+    viewerStage.addEventListener('pointerup', (event) => {
+        if (viewerPointer === null) {
+            return;
+        }
+
+        const distanceX = event.clientX - viewerPointer.x;
+        const distanceY = event.clientY - viewerPointer.y;
+        viewerPointer = null;
+
+        if (reels.length > 1 && Math.abs(distanceX) > 50 && Math.abs(distanceX) > Math.abs(distanceY)) {
+            suppressViewerClick = true;
+            showInViewer(viewerIndex + (distanceX < 0 ? 1 : -1));
+        } else if (distanceY > 90 && distanceY > Math.abs(distanceX)) {
+            suppressViewerClick = true;
+            viewer.close();
+        }
+    });
+    viewerStage.addEventListener('pointercancel', () => {
+        viewerPointer = null;
+    });
+
+    reels.forEach((reel, index) => {
+        reel.addEventListener('click', (event) => {
+            if (event.target.closest('.sh-reel-link') && index === currentIndex) {
+                return;
+            }
+
+            event.preventDefault();
+            openViewer(index);
+        });
+
+        videoOf(reel).addEventListener('ended', () => {
+            if (index === currentIndex && reels.length > 1 && shouldPlay()) {
+                showReel(currentIndex + 1);
+            }
+        });
+
+        videoOf(reel).addEventListener('error', () => {
+            videoOf(reel).dataset.reelBlocked = '';
+        });
+    });
+
+    // A swipe or trackpad scroll makes whichever reel settles in the centre the playing one.
+    track.addEventListener('scroll', () => {
+        window.clearTimeout(scrollTimer);
+        scrollTimer = window.setTimeout(() => {
+            const middle = track.scrollLeft + track.clientWidth / 2;
+            const nearest = reels.reduce((best, reel, index) => {
+                const distance = Math.abs(reel.offsetLeft + reel.offsetWidth / 2 - middle);
+
+                return distance < best.distance ? { index, distance } : best;
+            }, { index: currentIndex, distance: Infinity });
+
+            if (nearest.index !== currentIndex) {
+                showReel(nearest.index, { scroll: false });
+            }
+        }, 140);
+    }, { passive: true });
+
+    if ('IntersectionObserver' in window) {
+        new IntersectionObserver(([entry]) => {
+            isInView = entry.isIntersecting;
+            sync();
+        }, { threshold: 0.35 }).observe(track);
+    } else {
+        isInView = true;
+    }
+
+    document.addEventListener('visibilitychange', sync);
+    setStopped(isStoppedByVisitor);
+    showReel(Number(section.dataset.startIndex) || 0, { behavior: 'instant' });
+});
+
+// Admin settings: picking a colour theme changes the page at once and saves it in the background.
+document.querySelectorAll('[data-admin-theme-form]').forEach((form) => {
+    const status = form.querySelector('[data-admin-theme-status]');
+    let request = 0;
+
+    form.querySelector('[data-admin-theme-save]').hidden = true;
+
+    form.addEventListener('change', async (event) => {
+        if (event.target.name !== 'admin_theme') {
+            return;
+        }
+
+        const current = ++request;
+
+        window.applyAdminTheme?.(event.target.value);
+        status.textContent = 'Saving…';
+
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                headers: { Accept: 'application/json' },
+                body: new FormData(form),
+            });
+
+            if (current === request) {
+                status.textContent = response.ok ? 'Saved. Every admin page now uses this look.' : 'Could not save. Please try again.';
+            }
+        } catch {
+            if (current === request) {
+                status.textContent = 'Could not save. Check your connection and try again.';
+            }
+        }
+    });
+});
+
+// Admin guided tour: the "?" button on the dashboard walks through every part of the admin. After each new
+// sign-in the dashboard first asks whether the admin would like the tour.
+document.querySelectorAll('[data-admin-tour-root]').forEach((root) => {
+    const name = root.dataset.tourName;
+    const steps = [
+        { title: `Welcome to Smart Holidays Admin${name ? `, ${name}` : ''}! 👋`, text: 'Would you like a quick tour? In about two minutes we will show you what every part of the admin does. You can replay it any time with the “?” button.', next: 'Start the tour', skip: 'Not now' },
+        { target: 'stats', title: 'Your business at a glance', text: 'Total bookings, revenue from confirmed trips, active clients and enquiries waiting for a reply. The small line compares them with last month.' },
+        { target: 'new-booking', title: 'Add a booking yourself', text: 'Booked a client by phone or WhatsApp? Press “New booking” to record it with the client, travel dates, travellers and amount.' },
+        { target: 'revenue', title: 'Revenue overview', text: 'Money from confirmed and completed bookings over time. Use the range picker at the top right to switch between the last 7 days, 30 days and longer periods.' },
+        { target: 'destinations', title: 'Popular destinations', text: 'Where your clients travel most, with travellers and revenue for each destination.' },
+        { target: 'likes', title: 'Most loved packages', text: 'Smart Muslim packages that visitors tapped ♥ on most. A good hint for what to promote next.' },
+        { target: 'recent-bookings', title: 'Recent bookings', text: 'The newest bookings with their status. Search here, or open “View all bookings” for the full list.' },
+        { target: 'nav-bookings', sidebar: true, title: 'Bookings', text: 'Every booking in one list. Open one to confirm it, set the final amount, or cancel it. Confirming an online booking takes its seats.' },
+        { target: 'nav-enquiries', sidebar: true, title: 'Enquiries', text: 'Trip requests and messages from the website. The number shows how many still need a reply; you can turn an enquiry into a booking.' },
+        { target: 'nav-destinations', sidebar: true, title: 'Destinations', text: 'Bookings, travellers and revenue for each destination your clients travel to.' },
+        { target: 'nav-online-booking', sidebar: true, title: 'Online booking', text: 'Open or close the “Book now” button for each Smart Muslim package, and set the available seats for each package or departure.' },
+        { target: 'nav-clients', sidebar: true, title: 'Clients', text: 'Client accounts with their contact details and booking history. You can add clients and suspend an account if needed.' },
+        { target: 'nav-package-likes', sidebar: true, title: 'Package likes', text: 'Full statistics of the ♥ likes visitors give each package.' },
+        { target: 'nav-settings', sidebar: true, title: 'Settings', text: 'Your own account: name, email, password, light or dark mode, and the devices you are signed in on.' },
+        { target: 'nav-smart-holidays', sidebar: true, title: 'Edit the Smart Holidays website', text: 'Change the text, photos and videos of the homepage, Group, Ground and Domestic Tours, Ticketing and Contact Us. Right-click a page for quick actions.' },
+        { target: 'nav-smart-muslim', sidebar: true, title: 'Edit the Smart Muslim website', text: 'Manage the Smart Muslim homepage, menus, tour packages, series departures, China Muslim, Island & Honeymoon, MICE and the gallery.' },
+        { target: 'notifications', title: 'New enquiries', text: 'A dot on the bell means enquiries are waiting. Press it to go straight to them.' },
+        { target: 'help', title: 'Need a reminder?', text: 'Press this “?” button whenever you want to see this tour again.' },
+        { title: 'You are all set! 🎉', text: 'That is everything. Enjoy managing Smart Holidays, and press “?” on the Overview page if you need the tour again.', next: 'Finish' },
+    ];
+    const menuToggle = document.querySelector('.admin-menu-toggle');
+    const isVisible = (element) => element !== null && element.getClientRects().length > 0;
+    const sidebarIsDrawer = () => isVisible(menuToggle);
+    const setSidebarOpen = (open) => {
+        if (sidebarIsDrawer() && (menuToggle.getAttribute('aria-expanded') === 'true') !== open) {
+            menuToggle.click();
+        }
+    };
+
+    let index = -1;
+    let target = null;
+    let frame = null;
+    let ui = null;
+
+    const build = () => {
+        const backdrop = document.createElement('div');
+        backdrop.className = 'cp-tour-backdrop';
+        const spotlight = document.createElement('div');
+        spotlight.className = 'cp-tour-spotlight admin-tour-spotlight';
+        const card = document.createElement('section');
+        card.className = 'cp-tour-card admin-tour-card';
+        card.setAttribute('role', 'dialog');
+        card.setAttribute('aria-modal', 'true');
+        card.setAttribute('aria-labelledby', 'admin-tour-title');
+        card.innerHTML = `
+            <div class="cp-tour-progress"><span></span></div>
+            <p class="cp-tour-count"></p>
+            <h2 id="admin-tour-title"></h2>
+            <p class="cp-tour-text"></p>
+            <div class="cp-tour-actions">
+                <button type="button" class="cp-tour-skip" data-tour-skip></button>
+                <span>
+                    <button type="button" class="cp-tour-back" data-tour-back>Back</button>
+                    <button type="button" class="cp-tour-next" data-tour-next></button>
+                </span>
+            </div>`;
+        document.body.append(backdrop, spotlight, card);
+        // Clicks inside the card must not reach the page, which would close the phone menu.
+        card.addEventListener('click', (event) => event.stopPropagation());
+        card.querySelector('[data-tour-skip]').addEventListener('click', () => finish());
+        card.querySelector('[data-tour-back]').addEventListener('click', () => go(index - 1));
+        card.querySelector('[data-tour-next]').addEventListener('click', () => go(index + 1));
+
+        return { backdrop, spotlight, card };
+    };
+
+    const place = () => {
+        frame = null;
+
+        if (!ui) {
+            return;
+        }
+
+        const { spotlight, card, backdrop } = ui;
+        const centered = !isVisible(target);
+
+        document.body.classList.toggle('cp-tour-centered', centered);
+        backdrop.hidden = !centered;
+        spotlight.hidden = centered;
+
+        if (centered) {
+            card.style.top = '';
+            card.style.left = '';
+
+            return;
+        }
+
+        // Inside the scrolling sidebar, only highlight the part of the target that is in view.
+        const box = target.getBoundingClientRect();
+        const clip = target.closest('.admin-sidebar')?.getBoundingClientRect();
+        const visibleTop = clip ? Math.max(box.top, clip.top) : box.top;
+        const visibleBottom = clip ? Math.min(box.bottom, clip.bottom) : box.bottom;
+        const rect = { top: visibleTop, bottom: visibleBottom, left: box.left, right: box.right, width: box.width, height: Math.max(0, visibleBottom - visibleTop) };
+        const pad = 6;
+        Object.assign(spotlight.style, {
+            top: `${rect.top - pad}px`,
+            left: `${rect.left - pad}px`,
+            width: `${rect.width + pad * 2}px`,
+            height: `${rect.height + pad * 2}px`,
+        });
+
+        if (innerWidth < 600) {
+            card.style.top = '';
+            card.style.left = '';
+
+            return;
+        }
+
+        const gap = 16;
+        const cardBox = card.getBoundingClientRect();
+        const below = rect.bottom + pad + gap;
+        const above = rect.top - pad - gap - cardBox.height;
+        let top = below + cardBox.height <= innerHeight - 12 ? below : above >= 12 ? above : null;
+        let left = rect.left;
+
+        // Tall targets and the sidebar menu get the card beside them.
+        if (top === null) {
+            left = rect.right + gap + cardBox.width < innerWidth - 12 ? rect.right + pad + gap : rect.left - pad - gap - cardBox.width;
+            top = Math.min(Math.max(12, rect.top), innerHeight - cardBox.height - 12);
+        }
+
+        card.style.top = `${Math.max(12, top)}px`;
+        card.style.left = `${Math.min(Math.max(12, left), innerWidth - cardBox.width - 12)}px`;
+    };
+
+    const schedulePlace = () => {
+        frame ??= requestAnimationFrame(place);
+    };
+
+    const show = (stepIndex) => {
+        index = stepIndex;
+        ui ??= build();
+        document.body.classList.add('cp-tour-running');
+
+        const step = steps[index];
+        const { card } = ui;
+
+        setSidebarOpen(Boolean(step.sidebar));
+        document.querySelectorAll('.is-admin-tour-target').forEach((element) => element.classList.remove('is-admin-tour-target'));
+        target = step.target ? document.querySelector(`[data-admin-tour="${step.target}"]`) : null;
+        target?.classList.add('is-admin-tour-target');
+
+        card.querySelector('.cp-tour-count').textContent = `Step ${index + 1} of ${steps.length}`;
+        card.querySelector('.cp-tour-progress span').style.width = `${((index + 1) / steps.length) * 100}%`;
+        card.querySelector('#admin-tour-title').textContent = step.title;
+        card.querySelector('.cp-tour-text').textContent = step.text;
+        card.querySelector('[data-tour-back]').hidden = index === 0;
+        card.querySelector('[data-tour-skip]').hidden = index === steps.length - 1;
+        card.querySelector('[data-tour-skip]').textContent = step.skip ?? 'Skip tour';
+        card.querySelector('[data-tour-next]').textContent = step.next ?? 'Next →';
+
+        // The phone menu slides in first, so wait a moment before measuring it.
+        setTimeout(() => {
+            if (isVisible(target)) {
+                const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+                target.scrollIntoView({ block: target.offsetHeight > innerHeight * 0.6 ? 'start' : 'center', behavior });
+            }
+
+            place();
+        }, step.sidebar && sidebarIsDrawer() ? 320 : 0);
+        place();
+        setTimeout(place, 500);
+        setTimeout(place, 1000);
+        card.querySelector('[data-tour-next]').focus({ preventScroll: true });
+    };
+
+    const finish = () => {
+        document.body.classList.remove('cp-tour-running', 'cp-tour-centered');
+        document.querySelectorAll('.is-admin-tour-target').forEach((element) => element.classList.remove('is-admin-tour-target'));
+        ui?.backdrop.remove();
+        ui?.spotlight.remove();
+        ui?.card.remove();
+        ui = null;
+        target = null;
+        setSidebarOpen(false);
+        document.querySelector('[data-admin-tour-start]')?.focus({ preventScroll: true });
+    };
+
+    const go = (stepIndex) => {
+        if (stepIndex < 0) {
+            return;
+        }
+
+        if (stepIndex >= steps.length) {
+            finish();
+
+            return;
+        }
+
+        show(stepIndex);
+    };
+
+    window.addEventListener('resize', schedulePlace);
+    window.addEventListener('scroll', schedulePlace, { passive: true, capture: true });
+    document.addEventListener('keydown', (event) => {
+        if (!ui) {
+            return;
+        }
+
+        if (event.key === 'Escape') {
+            event.stopPropagation();
+            finish();
+        } else if (event.key === 'ArrowRight') {
+            go(index + 1);
+        } else if (event.key === 'ArrowLeft') {
+            go(index - 1);
+        }
+    }, true);
+    // The "?" button skips the welcome question and starts showing things straight away.
+    document.querySelectorAll('[data-admin-tour-start]').forEach((button) => button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        go(1);
+    }));
+
+    if (root.dataset.tourOffer === 'true') {
+        show(0);
+    }
+});
+
+// Dashboard: full-screen bookings view. Filter by status, search, and change a booking's status in place.
+document.querySelectorAll('[data-booking-manager]').forEach((manager) => {
+    const rows = [...manager.querySelectorAll('[data-manager-row]')];
+    const search = manager.querySelector('[data-manager-search]');
+    const message = manager.querySelector('[data-manager-message]');
+    const token = manager.dataset.token;
+    let status = 'all';
+    let messageTimer = null;
+
+    const say = (text, isError = false) => {
+        window.clearTimeout(messageTimer);
+        message.textContent = text;
+        message.hidden = false;
+        message.classList.toggle('is-error', isError);
+        messageTimer = window.setTimeout(() => {
+            message.hidden = true;
+        }, isError ? 9000 : 3500);
+    };
+
+    const apply = () => {
+        const words = search.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+        let shown = 0;
+
+        rows.forEach((row) => {
+            const visible = (status === 'all' || row.dataset.status === status)
+                && words.every((word) => row.dataset.search.includes(word));
+
+            row.hidden = !visible;
+            shown += visible ? 1 : 0;
+        });
+
+        manager.querySelector('[data-manager-empty]').hidden = shown > 0;
+        manager.querySelector('[data-manager-result]').textContent = shown === rows.length
+            ? `Showing ${shown} of ${manager.dataset.total} bookings`
+            : `Showing ${shown} of the ${rows.length} latest bookings`;
+    };
+
+    const recount = () => {
+        manager.querySelectorAll('[data-manager-count]').forEach((count) => {
+            const value = count.dataset.managerCount;
+
+            count.textContent = String(value === 'all' ? rows.length : rows.filter((row) => row.dataset.status === value).length);
+        });
+    };
+
+    document.querySelectorAll('[data-booking-manager-open]').forEach((button) => button.addEventListener('click', () => {
+        manager.showModal();
+        search.focus();
+    }));
+    manager.querySelector('[data-booking-manager-close]').addEventListener('click', () => manager.close());
+    // Changes made here also show on the dashboard once it reloads.
+    manager.addEventListener('close', () => {
+        if (manager.dataset.changed === 'true') {
+            window.location.reload();
+        }
+    });
+
+    manager.querySelectorAll('[data-manager-status]').forEach((chip) => chip.addEventListener('click', () => {
+        status = chip.dataset.managerStatus;
+        manager.querySelectorAll('[data-manager-status]').forEach((other) => {
+            other.classList.toggle('is-active', other === chip);
+            other.setAttribute('aria-pressed', String(other === chip));
+        });
+        apply();
+    }));
+    search.addEventListener('input', apply);
+
+    manager.querySelectorAll('[data-manager-status-select]').forEach((select) => {
+        let saved = select.value;
+
+        select.addEventListener('change', async () => {
+            const row = select.closest('[data-manager-row]');
+            const field = select.closest('[data-manager-status-field]');
+
+            field.classList.add('is-saving');
+            select.disabled = true;
+
+            try {
+                const response = await fetch(select.dataset.url, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': token },
+                    body: JSON.stringify({ status: select.value }),
+                });
+                const result = await response.json().catch(() => ({}));
+
+                if (!response.ok) {
+                    throw new Error(result.errors?.status?.[0] ?? result.message ?? 'Could not change the status. Please try again.');
+                }
+
+                field.classList.remove(`status-${saved}`);
+                saved = result.status;
+                field.classList.add(`status-${saved}`);
+                row.dataset.status = saved;
+                manager.dataset.changed = 'true';
+                recount();
+                say(result.message);
+            } catch (error) {
+                select.value = saved;
+                say(`${select.dataset.reference}: ${error.message}`, true);
+            } finally {
+                field.classList.remove('is-saving');
+                select.disabled = false;
+            }
+        });
+    });
+});

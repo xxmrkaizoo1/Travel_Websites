@@ -120,19 +120,6 @@
                             </div>
 
 
-                             {{-- <div class="nav-subitem has-submenu destination-nav">
-                                <a class="destination-link{{ request()->routeIs('indonesia') ? ' is-current' : '' }}" href="{{ route('indonesia') }}">Indonesia</a>
-                                <button class="submenu-trigger destination-toggle" type="button" aria-label="Show Indonesia destinations" aria-expanded="false" aria-controls="indonesia-destination-menu">
-                                    <span class="submenu-arrow" aria-hidden="true">›</span>
-                                </button>
-                                <div class="submenu-menu" id="indonesia-destination-menu">
-                                    @include('partials.tour-package-submenu', ['parentSlug' => 'indonesia'])
-                                </div>
-                            </div>
- --}}
-
-
-
                             <div class="nav-subitem has-submenu destination-nav">
                                 <a class="destination-link{{ request()->routeIs('thailand') ? ' is-current' : '' }}" href="{{ route('thailand') }}">Thailand</a>
                                 <button class="submenu-trigger destination-toggle" type="button" aria-label="Show Thailand destinations" aria-expanded="false" aria-controls="thailand-destination-menu">
@@ -234,6 +221,15 @@
             </div>
             <a class="{{ request()->routeIs('ticketing') ? 'is-current' : '' }}" href="{{ route('ticketing') }}" @if (request()->routeIs('ticketing')) aria-current="page" @endif>Ticketing</a>
             <a class="{{ request()->routeIs('contact') ? 'is-current' : '' }}" href="{{ route('contact') }}" @if (request()->routeIs('contact')) aria-current="page" @endif>Contact Us</a>
+
+            {{-- Shown at the foot of the phone and tablet menu only. --}}
+            <div class="nav-panel-help">
+                <p><strong>Need help planning?</strong> <span>Chat with our travel team on WhatsApp.</span></p>
+                <a class="nav-panel-whatsapp" href="https://wa.me/60165500590" target="_blank" rel="noreferrer">
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.5 19.5 5.6 16A8 8 0 1 1 8.4 18.6Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9.3 9.2c.2 2.1 3.2 5.1 5.4 5.4l1-1.2-1.8-1-1 .8a5 5 0 0 1-2.2-2.2l.8-1-1-1.8Z" fill="currentColor"/></svg>
+                    WhatsApp us
+                </a>
+            </div>
         </nav>
 
         <div class="header-actions">
@@ -246,7 +242,7 @@
                     </button>
                 @endunless
             @endauth
-            <a class="whatsapp-button" data-tour="whatsapp" href="https://wa.me/60165500590" target="_blank" rel="noreferrer"><span class="whatsapp-icon" aria-hidden="true">◔</span> WhatsApp Us</a>
+            <a class="whatsapp-button" data-tour="whatsapp" href="https://wa.me/60165500590" target="_blank" rel="noreferrer"><span class="whatsapp-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4.5 19.5 5.6 16A8 8 0 1 1 8.4 18.6Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9.3 9.2c.2 2.1 3.2 5.1 5.4 5.4l1-1.2-1.8-1-1 .8a5 5 0 0 1-2.2-2.2l.8-1-1-1.8Z" fill="currentColor"/></svg></span> WhatsApp Us</a>
             <a class="book-button" href="#contact">Book Now</a>
         </div>
     </div>

@@ -20,7 +20,7 @@ class SmartMuslimConsultantsTest extends TestCase
         $this->get(route('smart-muslim'))
             ->assertOk()
             ->assertSeeInOrder(['id="services-title"', 'We’re here to help', 'Badrul', 'Wani', 'Izzren', 'Azam'], false)
-            ->assertSee('class="consultant-avatar"', false)
+            ->assertSee('class="smx-consultant-avatar"', false)
             ->assertSee('https://wa.me/60161234567?text='.rawurlencode('Hi Wani, I have a question about Smart Muslim tours.'), false)
             ->assertSee('https://wa.me/'.HomepageConsultant::MAIN_WHATSAPP.'?text='.rawurlencode('Hi, I would like to speak to Badrul about Smart Muslim tours.'), false);
 

@@ -23,6 +23,7 @@
             </dl>
             <nav class="admin-settings-jump" aria-label="Settings sections">
                 <a href="#settings-profile">Profile</a>
+                <a href="#settings-appearance">Appearance</a>
                 <a href="#settings-password">Password</a>
                 <a href="#settings-devices">Signed-in devices</a>
             </nav>
@@ -51,6 +52,31 @@
                 <div class="admin-form-actions">
                     <button class="admin-primary-button" type="submit">Save profile <span aria-hidden="true">→</span></button>
                 </div>
+            </form>
+
+            <form class="admin-panel admin-record-form admin-settings-section" id="settings-appearance" method="POST" action="{{ route('admin.settings.appearance') }}" data-admin-theme-form>
+                @csrf
+                @method('PUT')
+                <div class="admin-settings-heading">
+                    <span class="admin-settings-icon" aria-hidden="true">◐</span>
+                    <div><h2>Appearance</h2><p>How the admin pages look for you. Saved to your account, so it follows you to every device.</p></div>
+                </div>
+                <fieldset class="admin-theme-options">
+                    <legend class="visually-hidden">Colour theme</legend>
+                    @foreach (['light' => ['Light', 'Bright pages, best in daylight'], 'dark' => ['Dark', 'Easier on the eyes at night'], 'system' => ['Same as device', 'Follows your computer or phone']] as $theme => [$themeLabel, $themeHint])
+                        <label class="admin-theme-option">
+                            <input type="radio" name="admin_theme" value="{{ $theme }}" @checked(old('admin_theme', $admin->admin_theme) === $theme)>
+                            <span class="admin-theme-preview admin-theme-preview--{{ $theme }}" aria-hidden="true"><i></i><i></i><i></i></span>
+                            <strong>{{ $themeLabel }}</strong>
+                            <small>{{ $themeHint }}</small>
+                        </label>
+                    @endforeach
+                </fieldset>
+                @error('admin_theme') <small class="admin-settings-error">{{ $message }}</small> @enderror
+                <div class="admin-form-actions" data-admin-theme-save>
+                    <button class="admin-primary-button" type="submit">Save appearance <span aria-hidden="true">→</span></button>
+                </div>
+                <p class="admin-theme-status" role="status" data-admin-theme-status></p>
             </form>
 
             <form class="admin-panel admin-record-form admin-settings-section" id="settings-password" method="POST" action="{{ route('admin.settings.password') }}">

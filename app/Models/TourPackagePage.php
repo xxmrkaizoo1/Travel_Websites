@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\Storage;
 
@@ -66,6 +67,7 @@ class TourPackagePage extends Model
             'package_data' => 'array',
             'is_custom' => 'boolean',
             'booking_open' => 'boolean',
+            'seats' => 'integer',
         ];
     }
 
@@ -82,6 +84,16 @@ class TourPackagePage extends Model
     public function bookings(): MorphMany
     {
         return $this->morphMany(Booking::class, 'bookable');
+    }
+
+    /**
+     * Seats the admin set on each departure of this series package.
+     *
+     * @return HasMany<PackageDepartureSeat, $this>
+     */
+    public function departureSeats(): HasMany
+    {
+        return $this->hasMany(PackageDepartureSeat::class);
     }
 
     public function isPackage(): bool

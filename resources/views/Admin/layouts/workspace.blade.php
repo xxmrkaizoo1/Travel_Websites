@@ -7,6 +7,7 @@
     <meta name="description" content="Smart Holidays administration dashboard.">
     <title>@yield('title') | Smart Holidays Admin</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @include('Admin.partials.theme-head')
     <style>@view-transition { navigation: auto; }</style>
 </head>
 <body class="admin-page">
@@ -29,7 +30,7 @@
                 </div>
                 <div class="admin-topbar-actions">
                     <span class="admin-today"><span aria-hidden="true">◷</span> {{ now()->format('D, d M Y') }}</span>
-                    <a class="admin-icon-button" href="{{ route('admin.enquiries.index') }}" aria-label="{{ ($sidebarPendingEnquiries ?? 0) > 0 ? $sidebarPendingEnquiries.' pending enquiries' : 'Enquiries' }}" title="Pending enquiries">
+                    <a class="admin-icon-button" href="{{ route('admin.enquiries.index') }}" data-admin-tour="notifications" aria-label="{{ ($sidebarPendingEnquiries ?? 0) > 0 ? $sidebarPendingEnquiries.' pending enquiries' : 'Enquiries' }}" title="Pending enquiries">
                         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         @if (($sidebarPendingEnquiries ?? 0) > 0)
                             <span class="admin-notification-dot"></span>

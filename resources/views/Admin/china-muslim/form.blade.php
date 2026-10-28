@@ -7,6 +7,7 @@
     <meta name="description" content="Create or edit a China Muslim series departure card.">
     <title>{{ $package ? 'Edit' : 'New' }} China Muslim card | Smart Holidays Admin</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @include('Admin.partials.theme-head')
     <style>@view-transition { navigation: auto; }</style>
 </head>
 <body class="admin-page">

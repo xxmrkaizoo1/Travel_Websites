@@ -13,6 +13,10 @@ class SmartHolidaysPage extends Model
 
     public const MAX_JOURNEY_SLIDES = 8;
 
+    public const MAX_POSTER_SLIDES = 12;
+
+    public const MAX_REEL_SLIDES = 10;
+
     /** Largest background video an admin may upload (50 MB). */
     public const MAX_VIDEO_KILOBYTES = 51200;
 
@@ -31,10 +35,18 @@ class SmartHolidaysPage extends Model
         'services_heading',
         'services',
         'journey_slides',
+        'posters_eyebrow',
+        'posters_heading',
+        'poster_slides',
+        'reels_eyebrow',
+        'reels_heading',
+        'reel_slides',
         'popular_eyebrow',
         'popular_heading',
         'popular_body',
         'popular_video',
+        'holidays_popular_video',
+        'holidays_popular_image',
         'brands_eyebrow',
         'brands_heading',
         'cta_heading',
@@ -49,6 +61,8 @@ class SmartHolidaysPage extends Model
             'stats' => 'array',
             'services' => 'array',
             'journey_slides' => 'array',
+            'poster_slides' => 'array',
+            'reel_slides' => 'array',
         ];
     }
 
@@ -78,7 +92,7 @@ class SmartHolidaysPage extends Model
     public function storedImagePaths(): array
     {
         $slides = $this->journey_slides ?? [];
-        $paths = [$this->hero_image, $this->popular_video, ...array_column($slides, 'image'), ...array_column($slides, 'video')];
+        $paths = [$this->hero_image, $this->popular_video, $this->holidays_popular_video, $this->holidays_popular_image, ...array_column($slides, 'image'), ...array_column($slides, 'video'), ...array_column($this->poster_slides ?? [], 'image'), ...array_column($this->reel_slides ?? [], 'video'), ...array_column($this->reel_slides ?? [], 'image')];
 
         return array_values(array_unique(array_filter(
             $paths,

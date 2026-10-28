@@ -3,9 +3,11 @@
 namespace App\Http\Requests\Admin;
 
 use App\Enums\BookingStatus;
+use App\Models\Booking;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class BookingRequest extends FormRequest
 {
@@ -35,6 +37,30 @@ class BookingRequest extends FormRequest
             'notes' => ['nullable', 'string', 'max:2000'],
             'enquiry_id' => ['nullable', 'integer', Rule::exists('enquiries', 'id')->whereNull('booking_id')],
         ];
+    }
+
+    /**
+     * A confirmed or completed online booking takes one seat per traveller on its package,
+     * so it can only be confirmed while enough seats are free.
+     *
+     * @return array<int, \Closure(Validator): void>
+     */
+    public function after(): array
+    {
+        return [function (Validator $validator): void {
+            $booking = $this->route('booking');
+            $status = BookingStatus::tryFrom((string) $this->input('status'));
+
+            if (! $booking instanceof Booking || $status === null || $validator->errors()->isNotEmpty()) {
+                return;
+            }
+
+            $problem = $booking->seatProblem($status, (int) $this->input('adults') + (int) $this->input('children', 0));
+
+            if ($problem !== null) {
+                $validator->errors()->add('status', $problem);
+            }
+        }];
     }
 
     /**

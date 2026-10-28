@@ -13,12 +13,20 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'phone', 'password'])]
+#[Fillable(['name', 'email', 'phone', 'password', 'admin_theme'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    /** Colour themes an administrator can pick for the admin pages. */
+    public const ADMIN_THEMES = ['light', 'dark', 'system'];
+
+    /** @var array<string, mixed> */
+    protected $attributes = [
+        'admin_theme' => 'light',
+    ];
 
     /**
      * Get the attributes that should be cast.

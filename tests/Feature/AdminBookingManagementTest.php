@@ -25,6 +25,33 @@ class AdminBookingManagementTest extends TestCase
         $this->assertModelExists($booking);
     }
 
+    public function test_admin_changes_a_status_from_the_full_screen_view(): void
+    {
+        $quoted = Booking::factory()->status(BookingStatus::Pending)->create(['amount' => 2400]);
+        $unquoted = Booking::factory()->status(BookingStatus::Pending)->create(['amount' => null]);
+
+        $this->patchJson(route('admin.bookings.status', $quoted), ['status' => 'confirmed'])->assertUnauthorized();
+        $this->actingAs(User::factory()->create())->patchJson(route('admin.bookings.status', $quoted), ['status' => 'confirmed'])->assertForbidden();
+
+        $this->actingAs(User::factory()->admin()->create());
+        $this->get(route('admin.dashboard'))
+            ->assertSee('data-booking-manager-open', false)
+            ->assertSee('Manage bookings')
+            ->assertSee('data-url="'.route('admin.bookings.status', $quoted).'"', false);
+
+        $this->patchJson(route('admin.bookings.status', $quoted), ['status' => 'confirmed'])
+            ->assertOk()
+            ->assertJson(['status' => 'confirmed', 'label' => 'Confirmed', 'message' => "Booking {$quoted->fresh()->reference} is now Confirmed."]);
+        $this->assertSame(BookingStatus::Confirmed, $quoted->fresh()->status);
+
+        // Same rules as the edit page: a final amount before confirming, and only known statuses.
+        $this->patchJson(route('admin.bookings.status', $unquoted), ['status' => 'completed'])
+            ->assertJsonValidationErrors(['status' => 'Enter the final amount before confirming or completing. Open the booking to add it.']);
+        $this->patchJson(route('admin.bookings.status', $unquoted), ['status' => 'cancelled'])->assertOk();
+        $this->patchJson(route('admin.bookings.status', $unquoted), ['status' => 'lost'])->assertJsonValidationErrors('status');
+        $this->assertSame(BookingStatus::Cancelled, $unquoted->fresh()->status);
+    }
+
     public function test_admin_creates_a_booking_with_a_generated_reference(): void
     {
         $this->travelTo(Carbon::parse('2026-10-15 12:00'));

@@ -7,6 +7,7 @@
     <meta name="description" content="Edit a service card on the Smart Muslim homepage.">
     <title>Edit {{ $service->title }} | Smart Holidays Admin</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @include('Admin.partials.theme-head')
     <style>@view-transition { navigation: auto; }</style>
 </head>
 <body class="admin-page">
@@ -96,7 +97,7 @@
                         <label class="homepage-form-field homepage-form-field-wide">
                             <span>Button and image destination</span>
                             <input name="href" type="text" value="{{ old('href', $service->href) }}" maxlength="2048" required>
-                            <span class="homepage-field-hint">Use an https:// or http:// URL, mailto: email address, or tel: phone number.</span>
+                            <span class="homepage-field-hint">Use a page on this site such as /china-muslim, an https:// or http:// URL, mailto: email address, or tel: phone number.</span>
                             @error('href') <small>{{ $message }}</small> @enderror
                         </label>
                     </div>

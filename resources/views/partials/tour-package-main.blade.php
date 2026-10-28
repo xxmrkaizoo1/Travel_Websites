@@ -14,10 +14,34 @@
                 <a class="island-cta" href="#contact">{{ $page->hero_cta_label }} <span aria-hidden="true">↗</span></a>
                 @if (empty($page->package_data['series']))
                     @include('partials.like-button', ['likeKey' => \App\Support\PackageLikes::key($page), 'likeLabel' => $page->hero_headline.' '.$page->hero_highlight, 'likeClass' => 'package-like--hero'])
+                @else
+                    <a class="series-hero-secondary" href="#destinations">See destinations <span aria-hidden="true">↓</span></a>
                 @endif
             </div>
+            @if (! empty($page->package_data['series']))
+                <ul class="series-hero-facts" role="list">
+                    <li><strong>{{ count($page->package_data['series']) }}</strong><span>{{ \Illuminate\Support\Str::plural('destination', count($page->package_data['series'])) }}</span></li>
+                    <li><strong>Fixed</strong><span>departure dates</span></li>
+                    <li><strong>Guide</strong><span>&amp; transport included</span></li>
+                </ul>
+            @endif
         </div>
-        <span class="island-hero-note">{{ $page->hero_note }}</span>
+        @if (! empty($page->package_data['series']))
+            <div class="series-hero-card">
+                <span class="series-hero-flags" aria-hidden="true">
+                    @foreach (array_slice($page->package_data['series'], 0, 5) as $destination)
+                        <img src="{{ $page->imageUrl(filled($destination['flag'] ?? '') ? $destination['flag'] : \App\Models\TourPackagePage::PLACEHOLDER_IMAGE) }}" alt="" loading="lazy" style="--flag: {{ $loop->index }}">
+                    @endforeach
+                </span>
+                <span class="series-hero-card-text">
+                    <small>This year’s route</small>
+                    <span class="island-hero-note">{{ $page->hero_note }}</span>
+                </span>
+            </div>
+            <a class="series-hero-scroll" href="#destinations" aria-label="Scroll to destinations"><span aria-hidden="true"></span></a>
+        @else
+            <span class="island-hero-note">{{ $page->hero_note }}</span>
+        @endif
     </section>
 
     <section class="island-intro" aria-labelledby="{{ $slug }}-intro-title">
@@ -58,22 +82,32 @@
             <h2 id="{{ $slug }}-destinations-title">{{ $page->destinations_headline }}</h2>
             <p>{{ $page->destinations_body }}</p>
         </div>
-        <div class="destination-carousel" role="region" aria-roledescription="carousel" aria-label="{{ $page->name }} destinations">
-            <div class="destination-viewport">
-                <div class="destination-track">
-                    @foreach ($page->slides as $slide)
-                        <article class="destination-card" role="group" aria-roledescription="slide" aria-label="{{ $loop->iteration }} of {{ $slideCount }}">
-                            <img src="{{ $page->imageUrl($slide['image']) }}" alt="{{ $slide['alt'] }}" loading="lazy">
-                            <div><span>{{ $slide['eyebrow'] }}</span><h3>{{ $slide['title'] }}</h3><p>{{ $slide['body'] }}</p>@if (! empty($slide['link_url']) && ! empty($slide['link_label']))<a class="aceh-card-link" href="{{ $slide['link_url'] }}"@if (str_starts_with($slide['link_url'], 'http')) target="_blank" rel="noreferrer"@endif>{{ $slide['link_label'] }} <span aria-hidden="true">→</span></a>@endif</div>
-                        </article>
-                    @endforeach
-                </div>
-            </div>
-            <div class="destination-controls">
-                <p class="destination-count" aria-live="polite">1–{{ min(3, $slideCount) }} of {{ $slideCount }} destinations</p>
-                <div class="destination-buttons">
-                    <button class="destination-prev" type="button" aria-label="Previous destinations" disabled>←</button>
-                    <button class="destination-next" type="button" aria-label="Next destinations">→</button>
+        <div class="pk-dest" role="region" aria-roledescription="carousel" aria-label="{{ $page->name }} destinations" data-pk-dest>
+            <ol class="pk-dest-track" data-pk-dest-track>
+                @foreach ($page->slides as $slide)
+                    @php($hasLink = ! empty($slide['link_url']) && ! empty($slide['link_label']))
+                    <li class="pk-dest-card" aria-roledescription="slide" aria-label="{{ $loop->iteration }} of {{ $slideCount }}" data-pk-dest-card>
+                        <img src="{{ $page->imageUrl($slide['image']) }}" alt="{{ $slide['alt'] }}" loading="lazy" decoding="async" draggable="false">
+                        <span class="pk-dest-number" aria-hidden="true">{{ sprintf('%02d', $loop->iteration) }}</span>
+                        @if (filled($slide['eyebrow'] ?? ''))
+                            <span class="pk-dest-eyebrow">{{ $slide['eyebrow'] }}</span>
+                        @endif
+                        <div class="pk-dest-body">
+                            <h3>{{ $slide['title'] }}</h3>
+                            <p>{{ $slide['body'] }}</p>
+                            @if ($hasLink)
+                                <a class="pk-dest-link" href="{{ $slide['link_url'] }}"@if (str_starts_with($slide['link_url'], 'http')) target="_blank" rel="noreferrer"@endif>{{ $slide['link_label'] }} <span aria-hidden="true">{{ str_starts_with($slide['link_url'], 'http') ? '↗' : '→' }}</span></a>
+                            @endif
+                        </div>
+                    </li>
+                @endforeach
+            </ol>
+            <div class="pk-dest-controls">
+                <p class="pk-dest-count" aria-live="polite" data-pk-dest-count><b>01</b> / {{ sprintf('%02d', $slideCount) }}</p>
+                <span class="pk-dest-progress" aria-hidden="true"><i data-pk-dest-progress></i></span>
+                <div class="pk-dest-buttons">
+                    <button type="button" aria-label="Previous destinations" data-pk-dest-previous disabled>←</button>
+                    <button type="button" aria-label="Next destinations" data-pk-dest-next>→</button>
                 </div>
             </div>
         </div>

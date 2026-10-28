@@ -37,7 +37,7 @@
 <section class="homepage-form-panel">
     <div class="homepage-form-panel-heading">
         <span class="homepage-form-icon" aria-hidden="true">05</span>
-        <div><h2>Photo gallery</h2><p>Optional slideshow of photos. Leave empty to hide the section.</p></div>
+        <div><h2>Photo slideshow</h2><p>The full-screen showcase on the package page. Add at least 2 photos for arrows, thumbnails and autoplay; 4–6 landscape photos work best. Left empty, the hero and intro photos are shown instead.</p></div>
     </div>
     <div class="homepage-form-grid">
         <label class="homepage-form-field"><span>Eyebrow</span><input name="package[gallery_eyebrow]" value="{{ $text('gallery_eyebrow') }}" required maxlength="120"></label>

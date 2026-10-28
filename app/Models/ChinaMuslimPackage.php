@@ -31,6 +31,7 @@ class ChinaMuslimPackage extends Model
         return [
             'is_hot' => 'boolean',
             'booking_open' => 'boolean',
+            'seats' => 'integer',
             'price' => 'integer',
             'days' => 'integer',
             'nights' => 'integer',

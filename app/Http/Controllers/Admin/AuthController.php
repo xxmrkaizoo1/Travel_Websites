@@ -48,6 +48,8 @@ class AuthController extends Controller
         }
 
         $request->session()->regenerate();
+        // Each new sign-in offers the guided tour once, the next time the dashboard opens.
+        $request->session()->put('admin_tour_offer', true);
 
         return redirect()->intended(route('admin.dashboard'));
     }

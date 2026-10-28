@@ -7,6 +7,7 @@
     <meta name="description" content="Manage the Smart Muslim private tours introduction page.">
     <title>Private Tours | Smart Holidays Admin</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @include('Admin.partials.theme-head')
     <style>@view-transition { navigation: auto; }</style>
 </head>
 <body class="admin-page">

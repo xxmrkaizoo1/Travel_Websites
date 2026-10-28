@@ -7,6 +7,7 @@
     <meta name="description" content="Edit a featured campaign on the Smart Muslim homepage.">
     <title>Edit Smart Muslim Homepage Campaign | Smart Holidays Admin</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @include('Admin.partials.theme-head')
     <style>@view-transition { navigation: auto; }</style>
 </head>
 <body class="admin-page">
@@ -70,7 +71,7 @@
                         <span class="homepage-form-icon" aria-hidden="true">01</span>
                         <div>
                             <h2>Slide design</h2>
-                            <p>Choose how this slide looks on the Smart Muslim homepage. You can switch at any time.</p>
+                            <p>Choose a 3-image or 1-image template for this slide on the Smart Muslim homepage. You can switch at any time.</p>
                         </div>
                     </div>
 
@@ -80,13 +81,13 @@
                             <input type="radio" name="layout" value="collage" @checked($selectedLayout === 'collage') required>
                             <span class="campaign-layout-mock campaign-layout-mock-collage" aria-hidden="true">
                                 <span class="mock-photo"></span>
-                                <span class="mock-circle mock-circle-top"></span>
-                                <span class="mock-circle mock-circle-bottom"></span>
-                                <span class="mock-panel"><i></i><i></i><i></i><b></b></span>
+                                <span class="mock-card mock-card-top"></span>
+                                <span class="mock-card mock-card-bottom"></span>
+                                <span class="mock-text"><i></i><i></i><i></i><b></b></span>
                             </span>
                             <span class="campaign-layout-copy">
-                                <strong>Collage</strong>
-                                <small>Main photo with two round photos, sticker, ribbon and brand stamp. Text sits on a blue panel. Needs 3 images.</small>
+                                <strong>Photo + cards <em class="campaign-layout-badge">3 images</em></strong>
+                                <small>Full-screen main photo with two floating photo cards, a sticker, ribbon and brand stamp.</small>
                             </span>
                         </label>
                         <label class="campaign-layout-option">
@@ -96,8 +97,8 @@
                                 <span class="mock-text"><i></i><i></i><i></i><b></b></span>
                             </span>
                             <span class="campaign-layout-copy">
-                                <strong>Single image</strong>
-                                <small>One full-width photo with the text over it. Simple and bold. Needs 1 image.</small>
+                                <strong>Full photo <em class="campaign-layout-badge">1 image</em></strong>
+                                <small>One full-screen photo with large text over it. Simple and bold.</small>
                             </span>
                         </label>
                     </div>

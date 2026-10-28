@@ -29,6 +29,28 @@ class AdminAuthenticationTest extends TestCase
             ->assertRedirect(route('login'));
     }
 
+    public function test_each_new_admin_sign_in_offers_the_guided_tour_once(): void
+    {
+        $admin = User::factory()->admin()->create(['name' => 'Aisyah Rahman']);
+
+        // Already signed in without a fresh sign-in: the "?" button is there, but nobody is asked.
+        $this->actingAs($admin)->get(route('admin.dashboard'))
+            ->assertSee('data-admin-tour-start', false)
+            ->assertSee('data-tour-offer="false"', false);
+        $this->post(route('logout'));
+
+        $this->post(route('login.store'), ['email' => $admin->email, 'password' => 'password'])->assertRedirect(route('admin.dashboard'));
+
+        $this->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('data-tour-name="Aisyah" data-tour-offer="true"', false)
+            ->assertSee('aria-label="Show me around the admin"', false)
+            ->assertSee('data-admin-tour="stats"', false)
+            ->assertSee('data-admin-tour="nav-online-booking"', false);
+
+        $this->get(route('admin.dashboard'))->assertSee('data-tour-offer="false"', false);
+    }
+
     public function test_admin_can_log_in_access_dashboard_and_log_out(): void
     {
         $admin = User::factory()->create();

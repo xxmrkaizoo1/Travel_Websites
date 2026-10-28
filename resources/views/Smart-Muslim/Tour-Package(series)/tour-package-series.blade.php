@@ -131,7 +131,7 @@
                             <article><span>Tour code</span><strong>{{ $seoulDetails['tour_code'] }}</strong></article>
                             <article><span>Duration</span><strong>{{ $seoulDetails['duration'] }}</strong></article>
                         </div>
-                        @include('Smart-Muslim.Tour-Package(series).partials.departures', ['departures' => $seoulDetails['departures'] ?? [], 'bookingUrl' => $seriesBooking->bookNowUrl('Seoul')])
+                        @include('Smart-Muslim.Tour-Package(series).partials.departures', ['departures' => $seoulDetails['departures'] ?? [], 'bookingUrl' => $seriesBooking->bookNowUrl('Seoul'), 'seatsBooking' => $seriesBooking, 'seatsDestination' => 'Seoul'])
                         <p class="series-details-note">{{ $seoulDetails['note'] }}</p>
                     </section>
 
@@ -211,7 +211,7 @@
                             <article><span>Tour code</span><strong>{{ $kunmingDetails['tour_code'] }}</strong></article>
                             <article><span>Duration</span><strong>{{ $kunmingDetails['duration'] }}</strong></article>
                         </div>
-                        @include('Smart-Muslim.Tour-Package(series).partials.departures', ['departures' => $kunmingDetails['departures'] ?? [], 'bookingUrl' => $seriesBooking->bookNowUrl('Kunming')])
+                        @include('Smart-Muslim.Tour-Package(series).partials.departures', ['departures' => $kunmingDetails['departures'] ?? [], 'bookingUrl' => $seriesBooking->bookNowUrl('Kunming'), 'seatsBooking' => $seriesBooking, 'seatsDestination' => 'Kunming'])
                         <p class="series-details-note">{{ $kunmingDetails['note'] }}</p>
                     </section>
 
@@ -301,7 +301,7 @@
                             <article><span>Tour code</span><strong>{{ $daNangDetails['tour_code'] }}</strong></article>
                             <article><span>Duration</span><strong>{{ $daNangDetails['duration'] }}</strong></article>
                         </div>
-                        @include('Smart-Muslim.Tour-Package(series).partials.departures', ['departures' => $daNangDetails['departures'] ?? [], 'bookingUrl' => $seriesBooking->bookNowUrl('Da Nang')])
+                        @include('Smart-Muslim.Tour-Package(series).partials.departures', ['departures' => $daNangDetails['departures'] ?? [], 'bookingUrl' => $seriesBooking->bookNowUrl('Da Nang'), 'seatsBooking' => $seriesBooking, 'seatsDestination' => 'Da Nang'])
                         <p class="series-details-note">{{ $daNangDetails['note'] }}</p>
                     </section>
 
@@ -411,7 +411,7 @@
                                     @endforeach
                                 </div>
                                 @if (! empty($destinationPackageDetails['departures']))
-                                    @include('Smart-Muslim.Tour-Package(series).partials.departures', ['departures' => $destinationPackageDetails['departures'] ?? [], 'bookingUrl' => $seriesBooking->bookNowUrl($destination['name'])])
+                                    @include('Smart-Muslim.Tour-Package(series).partials.departures', ['departures' => $destinationPackageDetails['departures'] ?? [], 'bookingUrl' => $seriesBooking->bookNowUrl($destination['name']), 'seatsBooking' => $seriesBooking, 'seatsDestination' => $destination['name']])
                                 @endif
                                 @if (filled($destinationPackageDetails['note'] ?? ''))
                                     <p class="series-details-note">{{ $destinationPackageDetails['note'] }}</p>

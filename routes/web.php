@@ -281,6 +281,8 @@ Route::middleware(['auth', EnsureAdmin::class])->group(function () {
     Route::resource('/admin/bookings', BookingController::class)
         ->except('show')
         ->names('admin.bookings');
+    Route::patch('/admin/bookings/{booking}/status', [BookingController::class, 'updateStatus'])
+        ->name('admin.bookings.status');
 
     Route::resource('/admin/clients', ClientController::class)
         ->except('edit')
@@ -302,6 +304,8 @@ Route::middleware(['auth', EnsureAdmin::class])->group(function () {
         ->name('admin.settings');
     Route::put('/admin/settings/profile', [SettingsController::class, 'updateProfile'])
         ->name('admin.settings.profile');
+    Route::put('/admin/settings/appearance', [SettingsController::class, 'updateAppearance'])
+        ->name('admin.settings.appearance');
     Route::put('/admin/settings/password', [SettingsController::class, 'updatePassword'])
         ->middleware('throttle:6,1')
         ->name('admin.settings.password');

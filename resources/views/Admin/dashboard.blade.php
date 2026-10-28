@@ -9,10 +9,10 @@
             <h1>Travel overview</h1>
             <p>Here’s what’s happening with your travel business today.</p>
         </div>
-        <a class="admin-primary-button" href="{{ route('admin.bookings.create') }}"><span aria-hidden="true">＋</span> New booking</a>
+        <a class="admin-primary-button" href="{{ route('admin.bookings.create') }}" data-admin-tour="new-booking"><span aria-hidden="true">＋</span> New booking</a>
     </section>
 
-    <section class="admin-stats" aria-label="Business overview">
+    <section class="admin-stats" aria-label="Business overview" data-admin-tour="stats">
         @foreach ($stats as $stat)
             <article class="admin-stat-card">
                 <div class="admin-stat-top"><span>{{ $stat['label'] }}</span><span class="admin-stat-icon stat-{{ $stat['tone'] }}" aria-hidden="true">{{ $stat['icon'] }}</span></div>
@@ -34,7 +34,7 @@
     </section>
 
     <section class="admin-dashboard-grid" id="reports">
-        <article class="admin-panel admin-revenue-panel">
+        <article class="admin-panel admin-revenue-panel" data-admin-tour="revenue">
             <div class="admin-panel-heading">
                 <div><h2>Revenue overview</h2><p>Confirmed and completed bookings, by booking date</p></div>
                 <form class="admin-range-form" method="GET" action="{{ route('admin.dashboard') }}#reports">
@@ -77,7 +77,7 @@
             </div>
         </article>
 
-        <article class="admin-panel admin-destinations-panel" id="destinations">
+        <article class="admin-panel admin-destinations-panel" id="destinations" data-admin-tour="destinations">
             <div class="admin-panel-heading">
                 <div><h2>Popular destinations</h2><p>Bookings by destination</p></div>
                 <a class="admin-view-link" href="{{ route('admin.destinations.index') }}" aria-label="View all destinations">•••</a>
@@ -101,7 +101,7 @@
         </article>
     </section>
 
-    <section class="admin-panel admin-loved-panel" id="package-likes" aria-labelledby="loved-packages-title">
+    <section class="admin-panel admin-loved-panel" id="package-likes" aria-labelledby="loved-packages-title" data-admin-tour="likes">
         <div class="admin-panel-heading">
             <div><h2 id="loved-packages-title">Most loved packages</h2><p>Smart Muslim packages visitors tapped ♥ on most</p></div>
             <a class="admin-view-link" href="{{ route('admin.package-likes') }}" aria-label="View all package likes">•••</a>
@@ -123,13 +123,19 @@
         <a class="admin-panel-bottom-link" href="{{ route('admin.package-likes') }}">View like statistics <span aria-hidden="true">→</span></a>
     </section>
 
-    <section class="admin-panel admin-bookings-panel" id="bookings">
+    <section class="admin-panel admin-bookings-panel" id="bookings" data-admin-tour="recent-bookings">
         <div class="admin-panel-heading admin-bookings-heading">
             <div><h2>Recent bookings</h2><p>Manage and track your latest client bookings</p></div>
-            <form class="admin-search" method="GET" action="{{ route('admin.bookings.index') }}" role="search">
-                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="1.8"/><path d="m16 16 5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-                <input type="search" name="search" placeholder="Search bookings..." aria-label="Search bookings">
-            </form>
+            <div class="admin-bookings-heading-tools">
+                <form class="admin-search" method="GET" action="{{ route('admin.bookings.index') }}" role="search">
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="1.8"/><path d="m16 16 5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                    <input type="search" name="search" placeholder="Search bookings..." aria-label="Search bookings">
+                </form>
+                <button class="admin-expand-button" type="button" data-booking-manager-open aria-haspopup="dialog" title="Open full screen to manage bookings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                    <span>Full screen</span>
+                </button>
+            </div>
         </div>
         @include('Admin.bookings.partials.table', ['bookings' => $recentBookings, 'emptyMessage' => 'No bookings yet. Create the first one with “New booking”.'])
         <div class="admin-table-footer">
@@ -137,4 +143,11 @@
             <a href="{{ route('admin.bookings.index') }}">View all bookings <span aria-hidden="true">→</span></a>
         </div>
     </section>
+
+    @include('Admin.bookings.partials.manager', ['bookings' => $managerBookings, 'total' => $bookingCount])
+
+    <div data-admin-tour-root data-tour-name="{{ \Illuminate\Support\Str::before(auth()->user()->name, ' ') }}" data-tour-offer="{{ session()->pull('admin_tour_offer', false) ? 'true' : 'false' }}" hidden></div>
+    <button class="admin-help-button" type="button" data-admin-tour="help" data-admin-tour-start aria-label="Show me around the admin" title="Guided tour of the admin">
+        <span aria-hidden="true">?</span>
+    </button>
 @endsection

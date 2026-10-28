@@ -12,6 +12,7 @@
             <div class="admin-booking-switch-text">
                 <strong>Online booking</strong>
                 <span>{{ $switchOpen ? 'Open — clients see a “Book now” button and can send booking requests.' : 'Closed — the “Book now” button is hidden; clients can still enquire on WhatsApp.' }}</span>
+                <span>Available seats: {{ $switchBookable->hasSeatsPerDeparture() ? 'set for each departure' : ($switchBookable->seats() === null ? 'no limit' : ($switchBookable->isFull() ? '0 (fully booked)' : $switchBookable->seatsLeft())) }} · <a href="{{ route('admin.online-booking.edit') }}">Change</a></span>
             </div>
         @endunless
         <label class="admin-booking-toggle">

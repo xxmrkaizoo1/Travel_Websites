@@ -41,6 +41,9 @@
             @if ($booking->special_requests)
                 <p><strong>Special requests:</strong> {{ $booking->special_requests }}</p>
             @endif
+            @if ($bookedPackage?->seats($booking->bookable_option) !== null)
+                <p class="admin-seat-note"><strong>Available seats:</strong> {{ $bookedPackage->seatsLeft($booking->bookable_option) }} on this {{ $bookedPackage->hasSeatsPerDeparture() ? 'departure' : 'package' }}. {{ $booking->status->earnsRevenue() ? 'This booking holds' : 'Confirming it takes' }} {{ $booking->adults + $booking->children }} {{ \Illuminate\Support\Str::plural('seat', $booking->adults + $booking->children) }}. <a href="{{ route('admin.online-booking.edit') }}">Change seats</a></p>
+            @endif
             <small>Clients see this booking as “Requested” until you confirm it.</small>
         </aside>
     @endif

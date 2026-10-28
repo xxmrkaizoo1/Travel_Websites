@@ -7,6 +7,7 @@
     <meta name="description" content="Manage a Smart Holidays group tour destination page.">
     <title>{{ $destination ? $destination->name : 'New destination' }} | Group Tours | Smart Holidays Admin</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @include('Admin.partials.theme-head')
     <style>@view-transition { navigation: auto; }</style>
 </head>
 <body class="admin-page">

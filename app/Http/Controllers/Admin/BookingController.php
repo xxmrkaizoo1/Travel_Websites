@@ -11,10 +11,12 @@ use App\Models\Enquiry;
 use App\Models\User;
 use App\Support\DestinationCatalog;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class BookingController extends Controller
@@ -100,6 +102,33 @@ class BookingController extends Controller
         $booking->update($request->bookingData());
 
         return redirect()->route('admin.bookings.edit', $booking)->with('status', "Booking {$booking->reference} updated.");
+    }
+
+    /**
+     * Quick status change from the full-screen bookings view on the dashboard. The same rules as the edit
+     * page apply: a final amount before confirming, and enough seats on the package or departure.
+     */
+    public function updateStatus(Request $request, Booking $booking): JsonResponse
+    {
+        $status = BookingStatus::from($request->validate([
+            'status' => ['required', Rule::enum(BookingStatus::class)],
+        ])['status']);
+
+        if ($status->earnsRevenue() && $booking->amount === null) {
+            throw ValidationException::withMessages(['status' => 'Enter the final amount before confirming or completing. Open the booking to add it.']);
+        }
+
+        if (($problem = $booking->seatProblem($status, $booking->adults + $booking->children)) !== null) {
+            throw ValidationException::withMessages(['status' => $problem]);
+        }
+
+        $booking->update(['status' => $status]);
+
+        return response()->json([
+            'status' => $status->value,
+            'label' => $status->label(),
+            'message' => "Booking {$booking->reference} is now {$status->label()}.",
+        ]);
     }
 
     public function destroy(Booking $booking): RedirectResponse

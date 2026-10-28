@@ -34,6 +34,33 @@ class AdminSettingsTest extends TestCase
         $this->assertSame(['Aisyah Rahman', 'aisyah@example.test'], [$admin->fresh()->name, $admin->fresh()->email]);
     }
 
+    public function test_admin_picks_a_colour_theme_that_every_admin_page_uses(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $this->actingAs($admin);
+
+        $this->get(route('admin.settings'))
+            ->assertOk()
+            ->assertSee('id="settings-appearance"', false)
+            ->assertSee('value="light" checked', false)
+            ->assertSee("window.applyAdminTheme('light')", false);
+
+        // The settings page saves in the background; without JavaScript the form posts and redirects.
+        $this->putJson(route('admin.settings.appearance'), ['admin_theme' => 'dark'])->assertNoContent();
+        $this->assertSame('dark', $admin->fresh()->admin_theme);
+
+        $this->get(route('admin.dashboard'))->assertSee("window.applyAdminTheme('dark')", false);
+        $this->get(route('admin.smart-holidays.edit'))->assertSee("window.applyAdminTheme('dark')", false);
+
+        $this->put(route('admin.settings.appearance'), ['admin_theme' => 'system'])
+            ->assertRedirect(route('admin.settings'))
+            ->assertSessionHas('status', 'Your appearance setting has been saved.');
+        $this->assertSame('system', $admin->fresh()->admin_theme);
+
+        $this->putJson(route('admin.settings.appearance'), ['admin_theme' => 'purple'])->assertJsonValidationErrors('admin_theme');
+        $this->assertSame('system', $admin->fresh()->admin_theme);
+    }
+
     public function test_admin_changes_password_only_with_the_current_one(): void
     {
         $admin = User::factory()->admin()->create(['password' => 'old-password-1']);

@@ -7,6 +7,7 @@
     <meta name="description" content="Manage Smart Muslim Tour content, tour pages and navigation.">
     <title>Smart Muslim Content | Smart Holidays Admin</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @include('Admin.partials.theme-head')
     <style>@view-transition { navigation: auto; }</style>
 </head>
 <body class="admin-page">

@@ -43,6 +43,11 @@ class HomepageServiceController extends Controller
                 'string',
                 'max:2048',
                 function (string $attribute, mixed $value, \Closure $fail): void {
+                    // A page on this site, such as /china-muslim ("//" would point at another host).
+                    if (preg_match('#^/(?!/)[^\s\\\\]*$#', $value) === 1) {
+                        return;
+                    }
+
                     $scheme = parse_url($value, PHP_URL_SCHEME);
                     $valid = match (strtolower((string) $scheme)) {
                         'http', 'https' => filter_var($value, FILTER_VALIDATE_URL) !== false,
@@ -52,7 +57,7 @@ class HomepageServiceController extends Controller
                     };
 
                     if (! $valid) {
-                        $fail('Enter a valid HTTP, HTTPS, email, or telephone link.');
+                        $fail('Enter a site page such as /china-muslim, or a valid HTTP, HTTPS, email, or telephone link.');
                     }
                 },
             ],

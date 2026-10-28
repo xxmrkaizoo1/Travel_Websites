@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +16,7 @@ use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
 /**
- * The signed-in administrator's own account: profile, password and signed-in devices.
+ * The signed-in administrator's own account: profile, appearance, password and signed-in devices.
  */
 class SettingsController extends Controller
 {
@@ -38,6 +40,24 @@ class SettingsController extends Controller
         $admin->update($validated);
 
         return redirect()->route('admin.settings')->with('status', 'Your profile has been updated.');
+    }
+
+    /**
+     * Saves the admin colour theme. The settings page saves it in the background and gets an empty reply.
+     */
+    public function updateAppearance(Request $request): RedirectResponse|Response
+    {
+        $validated = $request->validate([
+            'admin_theme' => ['required', Rule::in(User::ADMIN_THEMES)],
+        ]);
+
+        $request->user()->update($validated);
+
+        if ($request->expectsJson()) {
+            return response()->noContent();
+        }
+
+        return redirect()->route('admin.settings')->with('status', 'Your appearance setting has been saved.');
     }
 
     public function updatePassword(Request $request): RedirectResponse

@@ -3,6 +3,17 @@
     $data = $page->package_data ?? [];
     $itineraries = $data['itineraries'] ?? [];
     $gallery = $data['gallery'] ?? [];
+
+    // Without gallery photos the showcase falls back to the package's own hero and intro photos.
+    if ($gallery === []) {
+        $gallery = collect([[$page->hero_image, $page->hero_eyebrow], [$page->intro_image, $page->intro_eyebrow]])
+            ->filter(fn (array $photo): bool => filled($photo[0]))
+            ->unique(0)
+            ->map(fn (array $photo): array => ['image' => $photo[0], 'alt' => $page->name, 'eyebrow' => (string) $photo[1], 'title' => $page->name])
+            ->values()
+            ->all();
+    }
+
     $galleryCount = count($gallery);
     $hotels = $data['hotels'] ?? [];
     $packageBooking = new \App\Support\BookablePackage($page);

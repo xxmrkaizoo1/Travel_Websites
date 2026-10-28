@@ -22,7 +22,7 @@ class HomepageServiceManagementTest extends TestCase
     public function test_regular_user_cannot_manage_homepage_services(): void
     {
         $user = User::factory()->create();
-        $service = HomepageService::query()->where('slug', 'rest-of-the-world')->firstOrFail();
+        $service = HomepageService::query()->where('slug', 'tour-package-private')->firstOrFail();
 
         $this->actingAs($user)
             ->get(route('admin.homepage.services'))
@@ -34,14 +34,14 @@ class HomepageServiceManagementTest extends TestCase
 
         $this->assertDatabaseHas('homepage_services', [
             'id' => $service->id,
-            'title' => 'Rest of the World',
+            'title' => 'Tour Package (Private)',
         ]);
     }
 
     public function test_admin_can_edit_service_section_heading_and_card_content(): void
     {
         $admin = $this->createAdmin();
-        $service = HomepageService::query()->where('slug', 'rest-of-the-world')->firstOrFail();
+        $service = HomepageService::query()->where('slug', 'tour-package-private')->firstOrFail();
 
         $this->actingAs($admin)
             ->get(route('admin.homepage'))
@@ -52,7 +52,7 @@ class HomepageServiceManagementTest extends TestCase
         $this->get(route('admin.homepage.services'))
             ->assertOk()
             ->assertSee('Section title')
-            ->assertSee('Rest of the World');
+            ->assertSee('Tour Package (Private)');
 
         $this->put(route('admin.homepage.services.heading'), [
             'heading' => 'Explore our travel services',
@@ -91,7 +91,7 @@ class HomepageServiceManagementTest extends TestCase
     {
         Storage::fake('public');
         $admin = $this->createAdmin();
-        $service = HomepageService::query()->where('slug', 'ticketing')->firstOrFail();
+        $service = HomepageService::query()->where('slug', 'tour-package-series')->firstOrFail();
 
         $this->actingAs($admin)
             ->put(route('admin.homepage.services.update', $service), [
@@ -116,24 +116,54 @@ class HomepageServiceManagementTest extends TestCase
     public function test_invalid_service_link_is_rejected_and_not_saved(): void
     {
         $admin = $this->createAdmin();
-        $service = HomepageService::query()->where('slug', 'rest-of-the-world')->firstOrFail();
+        $service = HomepageService::query()->where('slug', 'tour-package-private')->firstOrFail();
 
-        $this->actingAs($admin)
-            ->from(route('admin.homepage.services.edit', $service))
-            ->put(route('admin.homepage.services.update', $service), [
-                'title' => 'Unsafe destination',
-                'overlay_label' => 'WORLD',
-                'button_label' => 'Go',
-                'href' => 'javascript:alert(1)',
-                'image_alt' => 'A destination',
-            ])
-            ->assertRedirect(route('admin.homepage.services.edit', $service))
-            ->assertSessionHasErrors('href');
+        // "//host" and "/\host" are treated by browsers as links to another site.
+        foreach (['javascript:alert(1)', '//evil.example', '/\\evil.example'] as $unsafeLink) {
+            $this->actingAs($admin)
+                ->from(route('admin.homepage.services.edit', $service))
+                ->put(route('admin.homepage.services.update', $service), [
+                    'title' => 'Unsafe destination',
+                    'overlay_label' => 'WORLD',
+                    'button_label' => 'Go',
+                    'href' => $unsafeLink,
+                    'image_alt' => 'A destination',
+                ])
+                ->assertRedirect(route('admin.homepage.services.edit', $service))
+                ->assertSessionHasErrors('href');
+        }
 
         $this->assertDatabaseHas('homepage_services', [
             'id' => $service->id,
-            'title' => 'Rest of the World',
+            'title' => 'Tour Package (Private)',
         ]);
+    }
+
+    public function test_service_cards_link_to_the_smart_muslim_sections_and_accept_site_pages(): void
+    {
+        $this->get(route('smart-muslim'))
+            ->assertOk()
+            ->assertSeeInOrder(['TOUR PACKAGE', '(PRIVATE)', 'TOUR PACKAGE', '(SERIES)', 'CHINA', 'MUSLIM', 'COMPANY TRIP', '(MICE)'])
+            ->assertSee('href="/tour-package-private"', false)
+            ->assertSee('href="/tour/series-departures-2026"', false)
+            ->assertSee('href="/china-muslim"', false)
+            ->assertSee('href="/company-trip-mice"', false)
+            ->assertSee(asset('images/series/hero.jpg'), false);
+
+        $service = HomepageService::query()->where('slug', 'china-muslim')->firstOrFail();
+
+        $this->actingAs($this->createAdmin())
+            ->put(route('admin.homepage.services.update', $service), [
+                'title' => 'China Muslim',
+                'overlay_label' => "CHINA\nMUSLIM",
+                'button_label' => 'See packages',
+                'href' => '/china-muslim#china-series-title',
+                'image_alt' => $service->image_alt,
+            ])
+            ->assertRedirect(route('admin.homepage.services.edit', $service))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('/china-muslim#china-series-title', $service->fresh()->href);
     }
 
     private function createAdmin(): User

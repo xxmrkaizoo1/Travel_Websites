@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Enums\BookingStatus;
 use App\Models\ChinaMuslimPackage;
 use App\Models\TourPackagePage;
 use Illuminate\Support\Carbon;
@@ -13,6 +14,15 @@ use Illuminate\Support\Str;
  */
 class BookablePackage
 {
+    /** @var array<string, int>|null Travellers on confirmed bookings, by departure key ("" for none). */
+    private ?array $seatsTaken = null;
+
+    /** @var array<string, int>|null */
+    private ?array $departureSeats = null;
+
+    /** @var list<array<string, mixed>>|null */
+    private ?array $options = null;
+
     public function __construct(public readonly TourPackagePage|ChinaMuslimPackage $package) {}
 
     /**
@@ -35,7 +45,7 @@ class BookablePackage
 
         $bookable = new self($package);
 
-        return $bookable->options() === [] ? null : $bookable;
+        return $bookable->isBookable() ? $bookable : null;
     }
 
     public function routeKey(): string
@@ -56,12 +66,12 @@ class BookablePackage
     }
 
     /**
-     * Link for a "Book now" button, or null when booking is closed or there is nothing to book
-     * for that series destination or option.
+     * Link for a "Book now" button, or null when booking is closed, every seat is taken, or there
+     * is nothing to book for that series destination or option.
      */
     public function bookNowUrl(?string $destination = null, ?string $option = null): ?string
     {
-        if (! $this->isOpen()) {
+        if (! $this->isOpen() || $this->isFull()) {
             return null;
         }
 
@@ -101,20 +111,142 @@ class BookablePackage
     }
 
     /**
-     * Whether the package has something clients can book, open or not.
+     * Series packages count seats per departure; every other package counts them for the whole package.
      */
-    public function isBookable(): bool
+    public function hasSeatsPerDeparture(): bool
     {
-        return $this->options() !== [];
+        return $this->package instanceof TourPackagePage && $this->package->isSeries();
     }
 
     /**
-     * The choices offered on the booking form. A fixed travel date comes from a series departure;
-     * otherwise the client picks their own date.
+     * Stable key of a series departure, e.g. "melbourne--6-oct-2026". Bookings and seat settings use it.
+     */
+    public static function departureKey(string $destination, string $date): string
+    {
+        return Str::slug($destination).'--'.Str::slug($date);
+    }
+
+    /**
+     * Seats the admin offers, or null for no limit: on one departure for series packages,
+     * on the whole package otherwise.
+     */
+    public function seats(?string $departureKey = null): ?int
+    {
+        if (! $this->hasSeatsPerDeparture()) {
+            return $this->package->seats;
+        }
+
+        if ($departureKey === null) {
+            return null;
+        }
+
+        $this->departureSeats ??= $this->package->departureSeats()->pluck('seats', 'departure_key')->all();
+
+        return isset($this->departureSeats[$departureKey]) ? (int) $this->departureSeats[$departureKey] : null;
+    }
+
+    /**
+     * Travellers (adults and children) on confirmed or completed bookings, for one departure on series
+     * packages. Requests still pending and cancelled bookings do not hold a seat.
+     */
+    public function seatsTaken(?string $departureKey = null): int
+    {
+        $this->seatsTaken ??= $this->package->bookings()
+            ->whereIn('status', BookingStatus::revenueValues())
+            ->groupBy('bookable_option')
+            ->selectRaw('bookable_option, SUM(adults + children) as travellers')
+            ->pluck('travellers', 'bookable_option')
+            ->map(fn (mixed $travellers): int => (int) $travellers)
+            ->all();
+
+        if (! $this->hasSeatsPerDeparture()) {
+            return array_sum($this->seatsTaken);
+        }
+
+        return $departureKey === null ? 0 : ($this->seatsTaken[$departureKey] ?? 0);
+    }
+
+    /**
+     * Seats still free, or null when there is no limit.
+     */
+    public function seatsLeft(?string $departureKey = null): ?int
+    {
+        $seats = $this->seats($departureKey);
+
+        return $seats === null ? null : max(0, $seats - $this->seatsTaken($departureKey));
+    }
+
+    /**
+     * Whether every choice is fully booked: the whole package, or every departure on a series package.
+     */
+    public function isFull(): bool
+    {
+        return $this->options() === [] && $this->isBookable();
+    }
+
+    /**
+     * Every departure of a series package, past and fully booked ones included, with its seats.
      *
-     * @return list<array{key: string, group: ?string, label: string, destination: string, package_name: string, travel_date: ?string, price: ?int, days: ?int}>
+     * @return list<array{key: string, destination: string, date: string, price: string, travel_date: ?string, seats: ?int, taken: int, left: ?int}>
+     */
+    public function departures(): array
+    {
+        if (! $this->hasSeatsPerDeparture()) {
+            return [];
+        }
+
+        $departures = [];
+
+        foreach ($this->package->package_data['series'] ?? [] as $destination) {
+            $name = (string) ($destination['name'] ?? '');
+
+            foreach ($destination['package_details']['departures'] ?? [] as $departure) {
+                $date = (string) ($departure['date'] ?? '');
+
+                if ($name === '' || $date === '') {
+                    continue;
+                }
+
+                $key = self::departureKey($name, $date);
+                $departures[] = [
+                    'key' => $key,
+                    'destination' => $name,
+                    'date' => $date,
+                    'price' => (string) ($departure['price'] ?? ''),
+                    'travel_date' => self::departureDates($date)[0],
+                    'seats' => $this->seats($key),
+                    'taken' => $this->seatsTaken($key),
+                    'left' => $this->seatsLeft($key),
+                ];
+            }
+        }
+
+        return $departures;
+    }
+
+    /**
+     * Whether the package has something clients can book, open or not, even if every seat is taken.
+     */
+    public function isBookable(): bool
+    {
+        return $this->allOptions() !== [];
+    }
+
+    /**
+     * The choices offered on the booking form, leaving out those with no seats left. A fixed travel
+     * date comes from a series departure; otherwise the client picks their own date.
+     *
+     * @return list<array{key: string, group: ?string, label: string, destination: string, package_name: string, travel_date: ?string, price: ?int, days: ?int, seat_key: ?string, seats_left: ?int}>
      */
     public function options(): array
+    {
+        return $this->options ??= array_values(array_filter($this->allOptions(), fn (array $option): bool => $option['seats_left'] !== 0));
+    }
+
+    /**
+     * @return list<array{key: string, group: ?string, label: string, destination: string, package_name: string, travel_date: ?string, price: ?int, days: ?int, seat_key: ?string, seats_left: ?int}>
+     */
+    private function allOptions(): array
     {
         if ($this->package instanceof ChinaMuslimPackage) {
             return [[
@@ -126,6 +258,8 @@ class BookablePackage
                 'travel_date' => null,
                 'price' => $this->package->price > 0 ? $this->package->price : null,
                 'days' => $this->package->days ?: null,
+                'seat_key' => null,
+                'seats_left' => $this->seatsLeft(),
             ]];
         }
 
@@ -141,7 +275,7 @@ class BookablePackage
     }
 
     /**
-     * @return array{key: string, group: ?string, label: string, destination: string, package_name: string, travel_date: ?string, price: ?int, days: ?int}|null
+     * @return array{key: string, group: ?string, label: string, destination: string, package_name: string, travel_date: ?string, price: ?int, days: ?int, seat_key: ?string, seats_left: ?int}|null
      */
     public function option(?string $key): ?array
     {
@@ -157,10 +291,11 @@ class BookablePackage
     }
 
     /**
-     * Departures that are not fully booked or already gone, one option each. A destination
-     * without any listed departures can still be booked for a date the client chooses.
+     * Departures that are not marked fully booked or already gone, one option each, with the seats left
+     * on that departure. A destination without any listed departures can still be booked for a date the
+     * client chooses.
      *
-     * @return list<array{key: string, group: ?string, label: string, destination: string, package_name: string, travel_date: ?string, price: ?int, days: ?int}>
+     * @return list<array{key: string, group: ?string, label: string, destination: string, package_name: string, travel_date: ?string, price: ?int, days: ?int, seat_key: ?string, seats_left: ?int}>
      */
     private function seriesOptions(): array
     {
@@ -189,6 +324,8 @@ class BookablePackage
                     'label' => "{$name} · choose your own date",
                     'travel_date' => null,
                     'price' => self::price((string) ($details['price_from'] ?? '')),
+                    'seat_key' => null,
+                    'seats_left' => null,
                     ...$base,
                 ];
 
@@ -202,11 +339,16 @@ class BookablePackage
                     continue;
                 }
 
+                $seatKey = self::departureKey($name, (string) ($departure['date'] ?? ''));
+                $seatsLeft = $this->seatsLeft($seatKey);
+
                 $options[] = [
                     'key' => "{$slug}-{$index}",
-                    'label' => collect([$name, $departure['date'] ?? '', $departure['price'] ?? ''])->filter()->implode(' · '),
+                    'label' => collect([$name, $departure['date'] ?? '', $departure['price'] ?? '', $seatsLeft === null ? '' : $seatsLeft.' '.Str::plural('seat', $seatsLeft).' left'])->filter()->implode(' · '),
                     'travel_date' => $date,
                     'price' => self::price((string) ($departure['price'] ?? '')),
+                    'seat_key' => $seatKey,
+                    'seats_left' => $seatsLeft,
                     ...$base,
                 ];
             }
@@ -216,7 +358,7 @@ class BookablePackage
     }
 
     /**
-     * @return list<array{key: string, group: ?string, label: string, destination: string, package_name: string, travel_date: ?string, price: ?int, days: ?int}>
+     * @return list<array{key: string, group: ?string, label: string, destination: string, package_name: string, travel_date: ?string, price: ?int, days: ?int, seat_key: ?string, seats_left: ?int}>
      */
     private function itineraryOptions(): array
     {
@@ -238,6 +380,8 @@ class BookablePackage
                 'travel_date' => null,
                 'price' => null,
                 'days' => self::days((string) ($itinerary['duration'] ?? '')),
+                'seat_key' => null,
+                'seats_left' => $this->seatsLeft(),
             ];
         }
 

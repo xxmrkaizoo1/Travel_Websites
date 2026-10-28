@@ -7,6 +7,7 @@ use App\Models\Booking;
 use App\Models\ChinaMuslimPackage;
 use App\Models\TourPackagePage;
 use App\Models\User;
+use App\Support\BookablePackage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -214,6 +215,170 @@ class PackageBookingTest extends TestCase
         $this->put(route('admin.bookings.update', $booking), [...$payload, 'amount' => '4200'])->assertSessionHasNoErrors();
 
         $this->assertSame([BookingStatus::Confirmed, '4200.00'], [$booking->fresh()->status, $booking->fresh()->amount]);
+    }
+
+    public function test_confirmed_bookings_take_seats_until_the_package_is_full(): void
+    {
+        $package = ChinaMuslimPackage::factory()->create(['title' => 'XINJIANG MUSLIM TOURS', 'price' => 3990, 'seats' => 5]);
+        $routeKey = 'china-muslim-package/'.$package->id;
+        $seats = fn (): ?int => (new BookablePackage($package->fresh()))->seatsLeft();
+        $client = User::factory()->create();
+        $admin = User::factory()->admin()->create();
+        $confirm = fn (Booking $booking, string $status = 'confirmed') => $this->actingAs($admin)->put(route('admin.bookings.update', $booking), [
+            'user_id' => $booking->user_id,
+            'destination' => $booking->destination,
+            'travel_date' => $booking->travel_date->toDateString(),
+            'adults' => $booking->adults,
+            'children' => $booking->children,
+            'amount' => '1000',
+            'status' => $status,
+        ]);
+
+        // A request does not hold seats; confirming it takes one seat per adult and child.
+        $this->actingAs($client)->get(route('client.package-bookings.create', $routeKey))->assertSee('5 seats available');
+        $this->post(route('client.package-bookings.store', $routeKey), ['option' => 'package', 'travel_date' => '2026-11-20', 'adults' => 2, 'children' => 1])->assertSessionHasNoErrors();
+        $first = Booking::query()->latest('id')->first();
+        $this->assertSame(5, $seats());
+
+        $this->actingAs($admin)->get(route('admin.bookings.edit', $first))->assertSee('Available seats:</strong> 5 on this package', false);
+        $confirm($first)->assertSessionHasNoErrors();
+        $this->assertSame(2, $seats());
+        $confirm($first->fresh())->assertSessionHasNoErrors();
+        $this->assertSame(2, $seats(), 'Saving a confirmed booking again does not take its seats twice.');
+
+        // Clients cannot ask for more travellers than seats left.
+        $this->actingAs($client)->post(route('client.package-bookings.store', $routeKey), ['option' => 'package', 'travel_date' => '2026-11-20', 'adults' => 3])
+            ->assertSessionHasErrors(['adults' => 'Only 2 seats available on this package. Please book for fewer travellers or contact us.']);
+        $this->post(route('client.package-bookings.store', $routeKey), ['option' => 'package', 'travel_date' => '2026-11-20', 'adults' => 2])->assertSessionHasNoErrors();
+        $this->post(route('client.package-bookings.store', $routeKey), ['option' => 'package', 'travel_date' => '2026-11-21', 'adults' => 1])->assertSessionHasNoErrors();
+        [$second, $third] = Booking::query()->where('id', '>', $first->id)->orderBy('id')->get()->all();
+
+        $confirm($second)->assertSessionHasNoErrors();
+        $this->assertSame(0, $seats());
+        $this->assertNull((new BookablePackage($package->fresh()))->bookNowUrl());
+        $this->actingAs($client)->get(route('client.package-bookings.create', $routeKey))->assertSee('This package is fully booked');
+
+        // The admin cannot confirm past the limit; cancelling frees the seats again.
+        $confirm($third)->assertSessionHasErrors(['status' => 'This package is fully booked, so the booking cannot be confirmed. Raise the available seats on the Online booking page first.']);
+        $third->forceFill(['amount' => 3990])->save();
+        $this->actingAs($admin)->patchJson(route('admin.bookings.status', $third), ['status' => 'confirmed'])
+            ->assertJsonValidationErrors(['status' => 'This package is fully booked, so the booking cannot be confirmed. Raise the available seats on the Online booking page first.']);
+        $this->assertSame(BookingStatus::Pending, $third->fresh()->status);
+
+        $confirm($first->fresh(), 'cancelled')->assertSessionHasNoErrors();
+        $this->assertSame(3, $seats());
+        $confirm($third)->assertSessionHasNoErrors();
+        $this->assertSame(2, $seats());
+    }
+
+    public function test_admin_sets_available_seats_for_each_package(): void
+    {
+        $private = $this->privatePackagePage();
+        $china = ChinaMuslimPackage::factory()->create(['title' => 'NINGXIA MUSLIM TOURS', 'seats' => 20]);
+        $confirmed = Booking::factory()->status(BookingStatus::Confirmed)->create(['adults' => 3, 'children' => 1]);
+        $confirmed->bookable()->associate($china)->save();
+        $available = fn (TourPackagePage|ChinaMuslimPackage $package): ?int => (new BookablePackage($package->fresh()))->seatsLeft();
+        $this->actingAs(User::factory()->admin()->create());
+
+        // The field shows the places still available, not the original total.
+        $this->get(route('admin.online-booking.edit'))
+            ->assertOk()
+            ->assertSee('name="china_packages_seats['.$china->id.']" value="16"', false)
+            ->assertSee('4 booked of 20');
+
+        // Typing a number makes exactly that many places available, on top of those already booked.
+        $this->put(route('admin.online-booking.update'), [
+            'tour_packages' => [$private->id],
+            'china_packages' => [$china->id],
+            'tour_packages_seats' => [$private->id => '30'],
+            'tour_packages_seats_shown' => [$private->id => ''],
+            'china_packages_seats' => [$china->id => '10'],
+            'china_packages_seats_shown' => [$china->id => '16'],
+        ])->assertRedirect(route('admin.online-booking.edit'));
+
+        $this->assertSame([30, 10], [$available($private), $available($china)]);
+        $this->assertSame(14, $china->fresh()->seats);
+
+        // A field left as it was is not saved again, so seats confirmed meanwhile still count down.
+        $another = Booking::factory()->status(BookingStatus::Confirmed)->create(['adults' => 2, 'children' => 0]);
+        $another->bookable()->associate($china)->save();
+        $this->put(route('admin.online-booking.update'), [
+            'china_packages' => [$china->id],
+            'china_packages_seats' => [$china->id => '10'],
+            'china_packages_seats_shown' => [$china->id => '10'],
+        ])->assertRedirect(route('admin.online-booking.edit'));
+        $this->assertSame(8, $available($china));
+
+        $this->put(route('admin.online-booking.update'), [
+            'china_packages_seats' => [$china->id => ''],
+            'china_packages_seats_shown' => [$china->id => '8'],
+        ]);
+        $this->assertNull($china->fresh()->seats);
+
+        $this->put(route('admin.online-booking.update'), ['china_packages_seats' => [$china->id => '-3']])
+            ->assertSessionHasErrors(['china_packages_seats.'.$china->id => 'Available seats cannot be below zero.']);
+    }
+
+    public function test_each_series_departure_has_its_own_available_seats(): void
+    {
+        $page = $this->seriesPage();
+        $data = $page->package_data;
+        $data['series'][0]['package_details']['departures'][] = ['date' => '15 Jun 2027', 'price' => 'RM 7,990', 'availability' => 'Open'];
+        $page->forceFill(['package_data' => $data])->save();
+        $routeKey = 'tour-package/'.$page->slug;
+        $april = BookablePackage::departureKey('Melbourne', '26 Apr 2027');
+        $june = BookablePackage::departureKey('Melbourne', '15 Jun 2027');
+        $left = fn (string $key): ?int => (new BookablePackage($page->fresh()))->seatsLeft($key);
+        $admin = User::factory()->admin()->create();
+        $client = User::factory()->create();
+
+        // The admin sees every departure of the series package and sets seats on one of them.
+        $this->actingAs($admin)->get(route('admin.online-booking.edit'))
+            ->assertSee('Available seats for each departure')
+            ->assertSee('name="departure_seats['.$page->id.']['.$april.']"', false)
+            ->assertSee('name="departure_seats['.$page->id.']['.$june.']"', false);
+
+        $this->put(route('admin.online-booking.update'), [
+            'tour_packages' => [$page->id],
+            'departure_seats' => [$page->id => [$april => '4', $june => '']],
+            'departure_seats_shown' => [$page->id => [$april => '', $june => '']],
+        ])->assertSessionHasNoErrors();
+        $this->assertSame([4, null], [$left($april), $left($june)]);
+
+        // The client sees the seats on that departure, and the booking remembers which departure it is for.
+        $this->actingAs($client)->get(route('client.package-bookings.create', $routeKey))->assertSee('26 Apr 2027 · RM 7,790 · 4 seats left');
+        $this->post(route('client.package-bookings.store', $routeKey), ['option' => 'melbourne-1', 'adults' => 3])->assertSessionHasNoErrors();
+        $booking = Booking::query()->latest('id')->first();
+        $this->assertSame($april, $booking->bookable_option);
+        $this->assertSame(4, $left($april), 'A request does not take seats until it is confirmed.');
+
+        $this->actingAs($admin)->put(route('admin.bookings.update', $booking), [
+            'user_id' => $booking->user_id,
+            'destination' => $booking->destination,
+            'travel_date' => '2027-04-26',
+            'adults' => 3,
+            'amount' => '23370',
+            'status' => 'confirmed',
+        ])->assertSessionHasNoErrors();
+        $this->assertSame([1, null], [$left($april), $left($june)]);
+        $this->get(route('tour-package.show', $page->slug))->assertSee('1 seat left');
+
+        $this->actingAs($client)->post(route('client.package-bookings.store', $routeKey), ['option' => 'melbourne-1', 'adults' => 2])
+            ->assertSessionHasErrors(['adults' => 'Only 1 seat available on this departure. Please book for fewer travellers or contact us.']);
+
+        // When the departure is full it disappears from the form; the other departure stays bookable.
+        $this->actingAs($admin)->put(route('admin.online-booking.update'), [
+            'tour_packages' => [$page->id],
+            'departure_seats' => [$page->id => [$april => '0']],
+            'departure_seats_shown' => [$page->id => [$april => '1']],
+        ])->assertSessionHasNoErrors();
+        $this->assertSame(0, $left($april));
+        $this->get(route('tour-package.show', $page->slug))->assertSee('Fully booked');
+
+        $this->actingAs($client)->post(route('client.package-bookings.store', $routeKey), ['option' => 'melbourne-1', 'adults' => 1])
+            ->assertSessionHasErrors(['option' => 'That departure is no longer available. Please choose another one.']);
+        $this->post(route('client.package-bookings.store', $routeKey), ['option' => 'melbourne-3', 'adults' => 5])->assertSessionHasNoErrors();
+        $this->assertSame($june, Booking::query()->latest('id')->first()->bookable_option);
     }
 
     private function seriesPage(): TourPackagePage

@@ -21,6 +21,8 @@ class DashboardController extends Controller
             'popularDestinations' => $overview->destinations(4),
             'recentBookings' => Booking::query()->with('client:id,name,email')->latest()->latest('id')->limit(6)->get(),
             'bookingCount' => Booking::query()->count(),
+            // The full-screen bookings view lists more of the latest bookings than the panel.
+            'managerBookings' => Booking::query()->with('client:id,name,email')->latest()->latest('id')->limit(50)->get(),
             'lovedPackages' => $this->lovedPackages(),
         ]);
     }

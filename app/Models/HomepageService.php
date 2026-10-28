@@ -29,6 +29,10 @@ class HomepageService extends Model
             return $this->image_path;
         }
 
+        if (str_starts_with($this->image_path, 'images/')) {
+            return asset($this->image_path);
+        }
+
         return Storage::disk('public')->url($this->image_path);
     }
 }

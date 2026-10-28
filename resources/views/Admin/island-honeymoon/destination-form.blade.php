@@ -7,6 +7,7 @@
     <meta name="description" content="Edit an Island & Honeymoon destination spotlight.">
     <title>{{ $destination ? 'Edit '.$destination->name : 'Add destination' }} | Smart Holidays Admin</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @include('Admin.partials.theme-head')
     <style>@view-transition { navigation: auto; }</style>
 </head>
 <body class="admin-page">
